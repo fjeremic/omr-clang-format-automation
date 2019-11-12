@@ -133,6 +133,7 @@ OBJECTS += omrmemcategories
 OBJECTS += omrport
 OBJECTS += omrmmap
 OBJECTS += omrsock
+OBJECTS += omrsockptb
 OBJECTS += j9nls
 OBJECTS += j9nlshelpers
 OBJECTS += omrosbacktrace
