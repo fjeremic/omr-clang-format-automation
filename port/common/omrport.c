@@ -298,6 +298,7 @@ static OMRPortLibrary MasterPortLibraryTable = {
     omrmem_categories_decrement_counters, /* mem_categories_decrement_counters */
     omrheap_query_size, /* heap_query_size */
     omrheap_grow, /* heap_grow*/
+    omrsock_startup, /* sock_startup */
     omrsock_getaddrinfo_create_hints, /* sock_getaddrinfo_create_hints */
     omrsock_getaddrinfo, /* sock_getaddrinfo */
     omrsock_getaddrinfo_length, /* sock_getaddrinfo_length */
@@ -315,6 +316,7 @@ static OMRPortLibrary MasterPortLibraryTable = {
     omrsock_recv, /* sock_recv */
     omrsock_recvfrom, /* sock_recvfrom */
     omrsock_close, /* sock_close */
+    omrsock_shutdown, /* sock_shutdown */
 #if defined(OMR_OPT_CUDA)
     NULL, /* cuda_configData */
     omrcuda_startup, /* cuda_startup */
@@ -439,6 +441,7 @@ int32_t omrport_shutdown_library(struct OMRPortLibrary* portLibrary)
 #if defined(OMR_OPT_CUDA)
     portLibrary->cuda_shutdown(portLibrary);
 #endif /* OMR_OPT_CUDA */
+    portLibrary->omrsock_shutdown(portLibrary);
     portLibrary->introspect_shutdown(portLibrary);
     portLibrary->sig_shutdown(portLibrary);
     portLibrary->str_shutdown(portLibrary);
@@ -633,6 +636,11 @@ int32_t omrport_startup_library(struct OMRPortLibrary* portLibrary)
     }
 
     rc = portLibrary->introspect_startup(portLibrary);
+    if (0 != rc) {
+        goto cleanup;
+    }
+
+    rc = portLibrary->omrsock_startup(portLibrary);
     if (0 != rc) {
         goto cleanup;
     }

@@ -31,6 +31,20 @@
 #include "omrportsock.h"
 
 /**
+ * Set up omrsock per thread buffer.
+ *
+ * Pass in user preference of IPv6 Support in omrsock_startup: TODO.
+ *
+ * @param[in] portLibrary The port library.
+ *
+ * @return 0, if no errors occurred, otherwise return an error.
+ */
+int32_t omrsock_startup(struct OMRPortLibrary* portLibrary)
+{
+    return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+}
+
+/**
  * Returns hints as a double pointer to an OMRAddInfoNode structure.
  *
  * This hints structure is used to modify the results returned by a call to
@@ -357,6 +371,18 @@ int32_t omrsock_recvfrom(struct OMRPortLibrary* portLibrary, omrsock_socket_t so
  * @return 0, if no errors occurred, otherwise return an error.
  */
 int32_t omrsock_close(struct OMRPortLibrary* portLibrary, omrsock_socket_t sock)
+{
+    return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+}
+
+/**
+ * Shut down omrsock per thread buffer.
+ *
+ * @param[in] portLibrary The port library.
+ *
+ * @return 0, if no errors occurred, otherwise return an error.
+ */
+int32_t omrsock_shutdown(struct OMRPortLibrary* portLibrary)
 {
     return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
 }
