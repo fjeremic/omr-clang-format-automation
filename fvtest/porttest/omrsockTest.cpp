@@ -70,7 +70,24 @@ connect_client_to_server(struct OMRPortLibrary *portLibrary, const char *addrStr
  */
 TEST(PortSockTest, library_function_pointers_not_null)
 {
-    /* Unimplemented. */
+    OMRPORT_ACCESS_FROM_OMRPORT(portTestEnv->getPortLibrary());
+
+    EXPECT_NE(OMRPORTLIB->sock_getaddrinfo_create_hints, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_getaddrinfo, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_getaddrinfo_length, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_getaddrinfo_family, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_getaddrinfo_socktype, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_getaddrinfo_protocol, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_freeaddrinfo, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_socket, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_bind, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_listen, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_accept, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_send, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_sendto, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_recv, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_recvfrom, nullptr);
+    EXPECT_NE(OMRPORTLIB->sock_close, nullptr);
 }
 
 /**
@@ -81,7 +98,25 @@ TEST(PortSockTest, library_function_pointers_not_null)
  */
 TEST(PortSockTest, per_thread_buffer_functionality)
 {
-    /* Unimplemented. */
+    OMRPORT_ACCESS_FROM_OMRPORT(portTestEnv->getPortLibrary());
+
+    /* Allocate the Per Thread Buffer Key*/
+    OMRPORTLIB->sock_startup(OMRPORTLIB);
+
+    omrsock_addrinfo_t hints = NULL;
+    int32_t family = 0;
+    int32_t sockType = 1;
+    int32_t protocol = 1;
+    int32_t flags = 0;
+
+    OMRPORTLIB->sock_getaddrinfo_create_hints(OMRPORTLIB, &hints, family, sockType, protocol, flags);
+    
+    ASSERT_NE(hints, nullptr);
+    //ASSERT_NE(hints->addrInfo, nullptr);
+
+    /* Deallocate the Per Thread Buffer Key */
+    OMRPORTLIB->sock_shutdown(OMRPORTLIB);
+
 }
 
 /**
