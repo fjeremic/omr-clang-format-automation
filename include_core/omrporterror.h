@@ -314,4 +314,18 @@
  * @}
  */
 
+/**
+ * @name OMR Socket API Errors
+ * Error code returned by the socket API
+ *
+ * @internal OMRPORT_ERROR_SOCK_* range from -500 to -549 avoid overlap
+ * @{
+ */
+#define OMRPORT_ERROR_SOCK_BASE -500
+#define OMRPORT_ERROR_SOCK_PTB_FAILED (OMRPORT_ERROR_SOCK_BASE - 0)
+#define OMRPORT_ERROR_SOCK_SYSTEMFULL (OMRPORT_ERROR_SOCK_BASE - 1)
+/**
+ * @}
+ */
+
 #endif /* omrporterror_h */
