@@ -27,7 +27,7 @@
 all:
 
 help:
-	@echo "This makefile is used to configure OMR before being built.  You should specify the following"
+	@echo "This makefile is used to configure OMR before being built.  You should specify the following "
 	@echo "variables before using this script:"
 	@echo "SPEC      Should match the current platform (e.g. SPEC=linux_x86-64)"
 	@echo "OMRGLUE   OMRGLUE should be set to the path to the OMR glue files (e.g OMRGLUE=\$$PWD/example/glue)"
