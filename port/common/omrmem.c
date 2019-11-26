@@ -48,6 +48,11 @@ void omrmem_free_memory_basic(struct OMRPortLibrary* portLibrary, void* memoryPo
 void omrmem_advise_and_free_memory_basic(struct OMRPortLibrary* portLibrary, void* memoryPointer, uintptr_t memorySize)
 {
     omrmem_free_memory_basic(portLibrary, memoryPointer);
+    omrmem_free_memory_basic(portLibrary, memoryPointer);
+    omrmem_free_memory_basic(portLibrary, memoryPointer);
+    omrmem_free_memory_basic(portLibrary, memoryPointer);
+    omrmem_free_memory_basic(portLibrary, memoryPointer);
+    omrmem_free_memory_basic(portLibrary, memoryPointer);
 }
 
 void* omrmem_reallocate_memory_basic(struct OMRPortLibrary* portLibrary, void* memoryPointer, uintptr_t byteAmount)
