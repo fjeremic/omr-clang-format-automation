@@ -26,9 +26,14 @@
  * @brief Sockets
  */
 
+#include "omrsock.h"
+
+#include <netdb.h>
+#include <string.h> 
+
 #include "omrport.h"
 #include "omrporterror.h"
-#include "omrportsock.h"
+#include "omrsockptb.h"
 
 /**
  * Set up omrsock per thread buffer.
@@ -42,7 +47,9 @@
 int32_t
 omrsock_startup(struct OMRPortLibrary *portLibrary)
 {	
-	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+	int rc = 0;
+	rc = omrsock_ptb_init(portLibrary);
+	return rc;
 }
 
 /**
@@ -64,7 +71,37 @@ omrsock_startup(struct OMRPortLibrary *portLibrary)
 int32_t
 omrsock_getaddrinfo_create_hints(struct OMRPortLibrary *portLibrary, omrsock_addrinfo_t *hints, int32_t family, int32_t socktype, int32_t protocol, int32_t flags)
 {
-	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+	int32_t rc = 0;
+    *hints = NULL;
+	OMRSocketPTB *ptBuffer = NULL;
+
+	/* Initialized the pt buffers if necessary */
+	ptBuffer = omrsock_ptb_get(portLibrary);
+	if (NULL == ptBuffer) {
+        rc = OMRPORT_ERROR_SOCK_PTB_FAILED;
+		return rc;
+	}
+    
+#define ptbHints (ptBuffer->addrInfoHints).addrInfo
+
+	if (NULL == ptbHints) {
+		ptbHints = portLibrary->mem_allocate_memory(portLibrary, sizeof(OMRAddrInfo), OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY);
+		if (NULL == ptbHints) {
+            rc = OMRPORT_ERROR_SOCK_SYSTEMFULL;
+			return rc;
+		}
+	}
+	memset(ptbHints, 0, sizeof(OMRAddrInfo));
+
+	ptbHints->ai_flags = flags;
+	ptbHints->ai_family = family;
+	ptbHints->ai_socktype = socktype;
+	ptbHints->ai_protocol = protocol;
+
+#undef ptbHints
+
+	*hints = &(ptBuffer->addrInfoHints);
+	return rc;
 }
 
 /**
@@ -392,5 +429,8 @@ omrsock_close(struct OMRPortLibrary *portLibrary, omrsock_socket_t sock)
 int32_t
 omrsock_shutdown(struct OMRPortLibrary *portLibrary)
 {	
-	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+	int rc = 0;
+	omrsock_ptb_free(portLibrary);
+	rc = omrsock_ptb_shutdown(portLibrary);
+	return rc;
 }
