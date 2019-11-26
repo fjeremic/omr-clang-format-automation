@@ -532,18 +532,20 @@ int32_t omrfile_unlinkdir(struct OMRPortLibrary* portLibrary, const char* path)
  *
  * @return Number of bytes written on success, negative portable error code on failure.
  */
-intptr_t omrfile_write(struct OMRPortLibrary* portLibrary, intptr_t fd, const void* buf, intptr_t nbytes)
-{
-    intptr_t rc;
+intptr_t omrfile_write(struct OMRPortLibrary* portLibrary, 
+		intptr_t fd, const void* buf, intptr_t nbytes) {
+    intptr_t rc  ;
+     
+/* write will just do the right thing for OMRPORT_TTY_OUT and OMRPORT_TTY_ERR */
+    rc = write(    (int)fd, buf, nbytes);
 
-    /* write will just do the right thing for OMRPORT_TTY_OUT and OMRPORT_TTY_ERR */
-    rc = write((int)fd, buf, nbytes);
+    if(rc== -1)
+    {
 
-    if (rc == -1) {
         return portLibrary->error_set_last_error(portLibrary, errno, findError(errno));
     }
 
-    return rc;
+    return rc;   
 }
 
 static int32_t EsTranslateOpenFlags(int32_t flags)

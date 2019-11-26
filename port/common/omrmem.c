@@ -51,7 +51,7 @@ void omrmem_advise_and_free_memory_basic(struct OMRPortLibrary* portLibrary, voi
     omrmem_free_memory_basic(portLibrary, memoryPointer);
     omrmem_free_memory_basic(portLibrary, memoryPointer);
     omrmem_free_memory_basic(portLibrary, memoryPointer);
-    omrmem_free_memory_basic(portLibrary, memoryPointer);
+        omrmem_free_memory_basic ( portLibrary   , memoryPointer);
     omrmem_free_memory_basic(portLibrary, memoryPointer);
 }
 
