@@ -23,17 +23,17 @@
 #if !defined(HEAPVIRTUALMEMORY_HPP_)
 #define HEAPVIRTUALMEMORY_HPP_
 
-#include "omrcomp.h"
-
 #include "Heap.hpp"
 #include "MemoryHandle.hpp"
+#include "omrcomp.h"
 
 class MM_EnvironmentBase;
 class MM_HeapRegionManager;
 class MM_MemorySubSpace;
 class MM_PhysicalArena;
 
-class MM_HeapVirtualMemory : public MM_Heap {
+class MM_HeapVirtualMemory : public MM_Heap
+{
 protected:
 	MM_MemoryHandle _vmemHandle;
 	uintptr_t _heapAlignment;
@@ -46,18 +46,27 @@ protected:
 	void tearDown(MM_EnvironmentBase* env);
 
 public:
-	static MM_HeapVirtualMemory* newInstance(MM_EnvironmentBase* env, uintptr_t heapAlignment, uintptr_t size, MM_HeapRegionManager* regionManager);
+	static MM_HeapVirtualMemory* newInstance(MM_EnvironmentBase* env,
+	                                         uintptr_t heapAlignment,
+	                                         uintptr_t size,
+	                                         MM_HeapRegionManager* regionManager);
 	virtual void kill(MM_EnvironmentBase* env);
-	
+
 	/**< returning pointer to our vmem handle (have to specify a pointer to const, to ensure caller will not modify it) */
-	const MM_MemoryHandle *getVmemHandle() { return &_vmemHandle; }
+	const MM_MemoryHandle* getVmemHandle() { return &_vmemHandle; }
 
 	virtual uintptr_t getPageSize();
 	virtual uintptr_t getPageFlags();
 	virtual void* getHeapBase();
 	virtual void* getHeapTop();
 #if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-	virtual void *doubleMapArraylet(MM_EnvironmentBase *env, void* arrayletLeaves[], UDATA arrayletLeafCount, UDATA arrayletLeafSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize);
+	virtual void* doubleMapArraylet(MM_EnvironmentBase* env,
+	                                void* arrayletLeaves[],
+	                                UDATA arrayletLeafCount,
+	                                UDATA arrayletLeafSize,
+	                                UDATA byteAmount,
+	                                struct J9PortVmemIdentifier* newIdentifier,
+	                                UDATA pageSize);
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
 	virtual uintptr_t getMaximumPhysicalRange();
@@ -70,18 +79,31 @@ public:
 
 	virtual uintptr_t calculateOffsetFromHeapBase(void* address);
 
-	virtual bool heapAddRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uintptr_t size, void* lowAddress, void* highAddress);
-	virtual bool heapRemoveRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uintptr_t size, void* lowAddress, void* highAddress, void* lowValidAddress, void* highValidAddress);
+	virtual bool heapAddRange(MM_EnvironmentBase* env,
+	                          MM_MemorySubSpace* subspace,
+	                          uintptr_t size,
+	                          void* lowAddress,
+	                          void* highAddress);
+	virtual bool heapRemoveRange(MM_EnvironmentBase* env,
+	                             MM_MemorySubSpace* subspace,
+	                             uintptr_t size,
+	                             void* lowAddress,
+	                             void* highAddress,
+	                             void* lowValidAddress,
+	                             void* highValidAddress);
 	virtual bool initializeHeapRegionManager(MM_EnvironmentBase* env, MM_HeapRegionManager* manager);
 
 	/**
 	 * Create a Heap object.
 	 */
-	MM_HeapVirtualMemory(MM_EnvironmentBase* env, uintptr_t heapAlignment, uintptr_t maximumMemorySize, MM_HeapRegionManager* regionManager)
-		: MM_Heap(env, maximumMemorySize, regionManager)
-		, _vmemHandle()
-		, _heapAlignment(heapAlignment)
-		, _physicalArena(NULL)
+	MM_HeapVirtualMemory(MM_EnvironmentBase* env,
+	                     uintptr_t heapAlignment,
+	                     uintptr_t maximumMemorySize,
+	                     MM_HeapRegionManager* regionManager)
+	        : MM_Heap(env, maximumMemorySize, regionManager),
+	          _vmemHandle(),
+	          _heapAlignment(heapAlignment),
+	          _physicalArena(NULL)
 	{
 		_typeId = __FUNCTION__;
 	}

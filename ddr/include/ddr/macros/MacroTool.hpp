@@ -30,14 +30,13 @@
 struct OMRPortLibrary;
 class Symbol_IR;
 
-class MacroTool
-{
+class MacroTool {
 private:
-	std::vector<MacroInfo> macroList;
+    std::vector<MacroInfo> macroList;
 
 public:
-	DDR_RC getMacros(OMRPortLibrary *portLibrary, const char *filename);
-	DDR_RC addMacrosToIR(Symbol_IR *ir) const;
+    DDR_RC getMacros(OMRPortLibrary* portLibrary, const char* filename);
+    DDR_RC addMacrosToIR(Symbol_IR* ir) const;
 };
 
 #endif /* MACROTOOL_HPP */

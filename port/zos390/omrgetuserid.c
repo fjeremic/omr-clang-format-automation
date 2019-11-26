@@ -43,44 +43,43 @@
  *
  * @return 0 on success, size of required buffer on failure.
  */
-uintptr_t
-omrget_userid(char *userid, uintptr_t length)
+uintptr_t omrget_userid(char* userid, uintptr_t length)
 {
-	/* _USERID() requires that memory be <31bit address, allocating here for use in
-	 * _USERID() call.  */
-	char *tmp_userid = (char *)__malloc31(J9_MAX_USERID);
-	uintptr_t result = 0;
+    /* _USERID() requires that memory be <31bit address, allocating here for use in
+     * _USERID() call.  */
+    char* tmp_userid = (char*)__malloc31(J9_MAX_USERID);
+    uintptr_t result = 0;
 
-	userid[0] = '\0';
+    userid[0] = '\0';
 
-	if (NULL != tmp_userid) {
-		char *ascname = NULL;
-		memset(tmp_userid, '\0', J9_MAX_USERID);
-		_USERID(tmp_userid);  /* requires <31bit address */
+    if (NULL != tmp_userid) {
+        char* ascname = NULL;
+        memset(tmp_userid, '\0', J9_MAX_USERID);
+        _USERID(tmp_userid); /* requires <31bit address */
 #if !defined(OMR_EBCDIC)
-		ascname = e2a_func(tmp_userid, strlen(tmp_userid));
+        ascname = e2a_func(tmp_userid, strlen(tmp_userid));
 #else /* !defined(OMR_EBCDIC) */
-		ascname = tmp_userid;
+        ascname = tmp_userid;
 #endif /* !defined(OMR_EBCDIC) */
 
-		if (NULL != ascname) {
-			uintptr_t width = strcspn(ascname, " ");
-			if (width < length) {
-				strncpy(userid, ascname, width);
-				userid[width] = '\0';
-			} else {
-				/*
-				 * Buffer was too small to hold user id, let the caller know
-				 * how much space is needed.
-				 */
-				result = width;
-			}
+        if (NULL != ascname) {
+            uintptr_t width = strcspn(ascname, " ");
+            if (width < length) {
+                strncpy(userid, ascname, width);
+                userid[width] = '\0';
+            } else {
+                /*
+                 * Buffer was too small to hold user id, let the caller know
+                 * how much space is needed.
+                 */
+                result = width;
+            }
 #if !defined(OMR_EBCDIC)
-			free(ascname);
+            free(ascname);
 #endif /* !defined(OMR_EBCDIC) */
-		}
-		free(tmp_userid);
-	}
+        }
+        free(tmp_userid);
+    }
 
-	return result;
+    return result;
 }

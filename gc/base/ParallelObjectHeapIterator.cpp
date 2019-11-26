@@ -25,11 +25,11 @@
  * @ingroup GC_Base
  */
 
-#include "ModronAssertions.h"
-
 #include "ParallelObjectHeapIterator.hpp"
-#include "ObjectModel.hpp"
+
 #include "MarkMap.hpp"
+#include "ModronAssertions.h"
+#include "ObjectModel.hpp"
 
 /**
  * Loop until either the end of the segment is hit, or a new chunk is acquired.
@@ -47,18 +47,18 @@ GC_ParallelObjectHeapIterator::getNextChunk()
 			 * Thus we also iterate through dead objects at the begining of the each chunk. Dead objects at the
 			 * beginning of the first chunk are also iterated - it is guarantied by setting _chunkBase
 			 * for the first chunk to the segment base. */
-			_objectHeapIterator.reset(_chunkBase, (UDATA *)_topAddress);
+			_objectHeapIterator.reset(_chunkBase, (UDATA*)_topAddress);
 			return true;
 		}
 	}
-	return false;	
+	return false;
 }
 
 /**
  * @see GC_ObjectHeapBufferedIterator::nextObject()
  */
 omrobjectptr_t
-GC_ParallelObjectHeapIterator::nextObject() 
+GC_ParallelObjectHeapIterator::nextObject()
 {
 	omrobjectptr_t nextObject = NULL;
 
@@ -71,7 +71,7 @@ GC_ParallelObjectHeapIterator::nextObject()
 		/* If we hit first marked object beyond the chunk boundary,
 		 * get the next chunk */
 		/* Note:  we can use the mark map directly, in this case, since we know that nextObject must be on the heap */
-		if (((UDATA *)nextObject >= _chunkTop) && _markMap->isBitSet(nextObject)) {
+		if (((UDATA*)nextObject >= _chunkTop) && _markMap->isBitSet(nextObject)) {
 			if (!getNextChunk()) {
 				return NULL;
 			}
@@ -86,7 +86,7 @@ GC_ParallelObjectHeapIterator::nextObject()
  * @todo Provide implementation
  */
 omrobjectptr_t
-GC_ParallelObjectHeapIterator::nextObjectNoAdvance() 
+GC_ParallelObjectHeapIterator::nextObjectNoAdvance()
 {
 	Assert_MM_unimplemented();
 	return NULL;
@@ -97,7 +97,7 @@ GC_ParallelObjectHeapIterator::nextObjectNoAdvance()
  * @todo Provide implementation
  */
 void
-GC_ParallelObjectHeapIterator::advance(UDATA size) 
+GC_ParallelObjectHeapIterator::advance(UDATA size)
 {
 	Assert_MM_unimplemented();
 }
@@ -105,10 +105,9 @@ GC_ParallelObjectHeapIterator::advance(UDATA size)
 /**
  * @see GC_ObjectHeapBufferedIterator::reset()
  */
-void 
-GC_ParallelObjectHeapIterator::reset(UDATA *base, UDATA *top)
+void
+GC_ParallelObjectHeapIterator::reset(UDATA* base, UDATA* top)
 {
 	/* TODO: Not sure what the right thing to do here is */
 	Assert_MM_unimplemented();
 }
-

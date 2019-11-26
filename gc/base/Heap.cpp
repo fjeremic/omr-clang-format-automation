@@ -22,8 +22,6 @@
 
 #include "Heap.hpp"
 
-#include "j9nongenerated.h"
-
 #include "AllocationStats.hpp"
 #include "EnvironmentBase.hpp"
 #include "Forge.hpp"
@@ -33,7 +31,7 @@
 #include "HeapStats.hpp"
 #include "MemorySpace.hpp"
 #include "ModronAssertions.h"
-
+#include "j9nongenerated.h"
 #include "mmhook_common.h"
 
 /****************************************
@@ -56,8 +54,7 @@ MM_Heap::initialize(MM_EnvironmentBase* env)
 
 void
 MM_Heap::tearDown(MM_EnvironmentBase* env)
-{
-}
+{}
 
 /**
  * Reset the largest free chunk of all memorySubSpaces to 0.
@@ -245,7 +242,6 @@ MM_Heap::getApproximateActiveFreeSurvivorMemorySize(uintptr_t includeMemoryType)
 	return memory;
 }
 
-
 /**
  * Get the sum of all free memory currently available for allocation in all memory spaces.
  * This call will return an accurate count of the current size of all free memory.  It will not
@@ -353,7 +349,6 @@ MM_Heap::mergeHeapStats(MM_HeapStats* heapStats)
 	mergeHeapStats(heapStats, (MEMORY_TYPE_OLD | MEMORY_TYPE_NEW));
 }
 
-
 void
 MM_Heap::mergeHeapStats(MM_HeapStats* heapStats, uintptr_t includeMemoryType)
 {
@@ -397,7 +392,11 @@ MM_Heap::resetSpacesForGarbageCollect(MM_EnvironmentBase* env)
  * @note The low address is inclusive, the high address exclusive.
  */
 bool
-MM_Heap::heapAddRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uintptr_t size, void* lowAddress, void* highAddress)
+MM_Heap::heapAddRange(MM_EnvironmentBase* env,
+                      MM_MemorySubSpace* subspace,
+                      uintptr_t size,
+                      void* lowAddress,
+                      void* highAddress)
 {
 	MM_GCExtensionsBase* extensions = env->getExtensions();
 	MM_GlobalCollector* globalCollector = extensions->getGlobalCollector();
@@ -417,14 +416,21 @@ MM_Heap::heapAddRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uint
  *
  */
 bool
-MM_Heap::heapRemoveRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uintptr_t size, void* lowAddress, void* highAddress, void* lowValidAddress, void* highValidAddress)
+MM_Heap::heapRemoveRange(MM_EnvironmentBase* env,
+                         MM_MemorySubSpace* subspace,
+                         uintptr_t size,
+                         void* lowAddress,
+                         void* highAddress,
+                         void* lowValidAddress,
+                         void* highValidAddress)
 {
 	MM_GCExtensionsBase* extensions = env->getExtensions();
 	MM_GlobalCollector* globalCollector = extensions->getGlobalCollector();
 
 	bool result = true;
 	if (NULL != globalCollector) {
-		result = globalCollector->heapRemoveRange(env, subspace, size, lowAddress, highAddress, lowValidAddress, highValidAddress);
+		result = globalCollector->heapRemoveRange(env, subspace, size, lowAddress, highAddress, lowValidAddress,
+		                                          highValidAddress);
 	}
 	return result;
 }
@@ -515,7 +521,8 @@ MM_Heap::initializeCommonGCData(MM_EnvironmentBase* env, struct MM_CommonGCData*
 	data->tenureFreeBytes = getApproximateActiveFreeMemorySize(MEMORY_TYPE_OLD);
 	data->tenureTotalBytes = getActiveMemorySize(MEMORY_TYPE_OLD);
 	data->loaEnabled = (extensions->largeObjectArea ? 1 : 0);
-	data->tenureLOAFreeBytes = (extensions->largeObjectArea ? getApproximateActiveFreeLOAMemorySize(MEMORY_TYPE_OLD) : 0);
+	data->tenureLOAFreeBytes =
+	        (extensions->largeObjectArea ? getApproximateActiveFreeLOAMemorySize(MEMORY_TYPE_OLD) : 0);
 	data->tenureLOATotalBytes = (extensions->largeObjectArea ? getActiveLOAMemorySize(MEMORY_TYPE_OLD) : 0);
 	data->rememberedSetCount = extensions->getRememberedCount();
 	data->immortalFreeBytes = 0;

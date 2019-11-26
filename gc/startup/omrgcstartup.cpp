@@ -20,11 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "StartupManager.hpp"
-#include "omr.h"
-#include "mminitcore.h"
-#include "objectdescription.h"
-
 #include "AllocateDescription.hpp"
 #include "AtomicOperations.hpp"
 #include "Collector.hpp"
@@ -36,26 +31,30 @@
 #include "GlobalCollector.hpp"
 #include "Heap.hpp"
 #include "HeapMemorySubSpaceIterator.hpp"
-#include "HeapRegionIterator.hpp"
 #include "HeapRegionDescriptor.hpp"
+#include "HeapRegionIterator.hpp"
 #include "MemoryPool.hpp"
 #include "MemorySpace.hpp"
 #include "ModronAssertions.h"
 #include "ObjectAllocationInterface.hpp"
 #include "ObjectModel.hpp"
 #include "ParallelDispatcher.hpp"
+#include "StartupManager.hpp"
 #include "VerboseManager.hpp"
+#include "mminitcore.h"
+#include "objectdescription.h"
+#include "omr.h"
 
 /* ****************
  * Internal helpers
  * ****************/
 
 static omr_error_t
-collectorCreationHelper(OMR_VM *omrVM, MM_EnvironmentBase *env)
+collectorCreationHelper(OMR_VM* omrVM, MM_EnvironmentBase* env)
 {
 	OMRPORT_ACCESS_FROM_OMRVM(omrVM);
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(omrVM);
-	MM_GlobalCollector *globalCollector = extensions->configuration->createGlobalCollector(env);
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(omrVM);
+	MM_GlobalCollector* globalCollector = extensions->configuration->createGlobalCollector(env);
 	omr_error_t rc = OMR_ERROR_NONE;
 
 	if (NULL == globalCollector) {
@@ -75,16 +74,16 @@ collectorCreationHelper(OMR_VM *omrVM, MM_EnvironmentBase *env)
 }
 
 static omr_error_t
-heapCreationHelper(OMR_VM *omrVM, MM_StartupManager *startupManager, bool createCollector)
+heapCreationHelper(OMR_VM* omrVM, MM_StartupManager* startupManager, bool createCollector)
 {
 	OMRPORT_ACCESS_FROM_OMRVM(omrVM);
-	MM_MemorySpace *memorySpace = NULL;
+	MM_MemorySpace* memorySpace = NULL;
 	MM_InitializationParameters parameters;
 	omr_error_t rc = OMR_ERROR_NONE;
 
 	/* Create GC Extensions and populate with defaults */
 	gcOmrInitializeDefaults(omrVM);
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(omrVM);
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(omrVM);
 	extensions->_lazyCollectorInit = !createCollector; /* Delay initialize of sweep pool manager if needed. */
 
 	/* The 'fake' environment is necessary because obtaining an environment for a thread
@@ -145,18 +144,23 @@ heapCreationHelper(OMR_VM *omrVM, MM_StartupManager *startupManager, bool create
 		goto done;
 	}
 
-	extensions->configuration->prepareParameters(omrVM, extensions->initialMemorySize,
-		extensions->minNewSpaceSize, extensions->newSpaceSize, extensions->maxNewSpaceSize,
-		extensions->minOldSpaceSize, extensions->oldSpaceSize, extensions->maxOldSpaceSize,
-		extensions->maxSizeDefaultMemorySpace, MEMORY_TYPE_DISCARDABLE, &parameters);
+	extensions->configuration->prepareParameters(omrVM, extensions->initialMemorySize, extensions->minNewSpaceSize,
+	                                             extensions->newSpaceSize, extensions->maxNewSpaceSize,
+	                                             extensions->minOldSpaceSize, extensions->oldSpaceSize,
+	                                             extensions->maxOldSpaceSize, extensions->maxSizeDefaultMemorySpace,
+	                                             MEMORY_TYPE_DISCARDABLE, &parameters);
 
-	if (0 != omrthread_monitor_init_with_name(&extensions->gcExclusiveAccessMutex, 0, "GCExtensions::gcExclusiveAccessMutex")) {
+	if (0
+	    != omrthread_monitor_init_with_name(&extensions->gcExclusiveAccessMutex, 0,
+	                                        "GCExtensions::gcExclusiveAccessMutex")) {
 		omrtty_printf("Failed to create gcExclusiveAccessMutex.\n");
 		rc = OMR_ERROR_INTERNAL;
 		goto done;
 	}
 
-	if (0 != omrthread_monitor_init_with_name(&extensions->_lightweightNonReentrantLockPoolMutex, 0, "GCExtensions::_lightweightNonReentrantLockPoolMutex")) {
+	if (0
+	    != omrthread_monitor_init_with_name(&extensions->_lightweightNonReentrantLockPoolMutex, 0,
+	                                        "GCExtensions::_lightweightNonReentrantLockPoolMutex")) {
 		omrtty_printf("Failed to create _lightweightNonReentrantLockPoolMutex.\n");
 		rc = OMR_ERROR_INTERNAL;
 		goto done;
@@ -201,13 +205,13 @@ done:
  * ****************/
 
 omr_error_t
-OMR_GC_InitializeHeap(OMR_VM *omrVM, MM_StartupManager *manager)
+OMR_GC_InitializeHeap(OMR_VM* omrVM, MM_StartupManager* manager)
 {
 	return heapCreationHelper(omrVM, manager, false);
 }
 
 omr_error_t
-OMR_GC_IntializeHeapAndCollector(OMR_VM* omrVM, MM_StartupManager *manager)
+OMR_GC_IntializeHeapAndCollector(OMR_VM* omrVM, MM_StartupManager* manager)
 {
 	return heapCreationHelper(omrVM, manager, true);
 }
@@ -215,7 +219,7 @@ OMR_GC_IntializeHeapAndCollector(OMR_VM* omrVM, MM_StartupManager *manager)
 omr_error_t
 OMR_GC_InitializeDispatcherThreads(OMR_VMThread* omrVMThread)
 {
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(omrVMThread->_vm);
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(omrVMThread->_vm);
 	omr_error_t rc = OMR_ERROR_NONE;
 
 	if (!extensions->dispatcher->startUpThreads()) {
@@ -229,7 +233,7 @@ OMR_GC_InitializeDispatcherThreads(OMR_VMThread* omrVMThread)
 omr_error_t
 OMR_GC_ShutdownDispatcherThreads(OMR_VMThread* omrVMThread)
 {
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(omrVMThread->_vm);
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(omrVMThread->_vm);
 	omr_error_t rc = OMR_ERROR_NONE;
 
 	if (NULL != extensions->dispatcher) {
@@ -244,22 +248,22 @@ OMR_GC_ShutdownDispatcherThreads(OMR_VMThread* omrVMThread)
 omr_error_t
 OMR_GC_InitializeCollector(OMR_VMThread* omrVMThread)
 {
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(omrVMThread->_vm);
-	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(omrVMThread);
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(omrVMThread->_vm);
+	MM_EnvironmentBase* env = MM_EnvironmentBase::getEnvironment(omrVMThread);
 	omr_error_t rc = OMR_ERROR_NONE;
 
 	if (OMR_ERROR_NONE != collectorCreationHelper(omrVMThread->_vm, env)) {
 		rc = OMR_ERROR_INTERNAL;
 	} else {
-		MM_Collector *globalCollector = extensions->getGlobalCollector();
-		MM_Heap *heap = env->getMemorySpace()->getHeap();
+		MM_Collector* globalCollector = extensions->getGlobalCollector();
+		MM_Heap* heap = env->getMemorySpace()->getHeap();
 
 		/* We now need to inform the existing subspaces about the new collector */
 		MM_HeapMemorySubSpaceIterator iter(heap);
-		MM_MemorySubSpace *subspace = NULL;
+		MM_MemorySubSpace* subspace = NULL;
 		while (NULL != (subspace = iter.nextSubSpace())) {
 			subspace->setCollector(globalCollector);
-			MM_MemoryPool *pool = subspace->getMemoryPool();
+			MM_MemoryPool* pool = subspace->getMemoryPool();
 			/* Setup sweep pool manager which requires a collector */
 			if (NULL != pool && !pool->initializeSweepPool(env)) {
 				rc = OMR_ERROR_INTERNAL;
@@ -269,16 +273,14 @@ OMR_GC_InitializeCollector(OMR_VMThread* omrVMThread)
 
 		if (OMR_ERROR_NONE == rc) {
 			/* We also need to commit the mark map for the consumed heap */
-			MM_HeapRegionDescriptor *region = NULL;
-			MM_HeapRegionManager *regionManager = heap->getHeapRegionManager();
+			MM_HeapRegionDescriptor* region = NULL;
+			MM_HeapRegionManager* regionManager = heap->getHeapRegionManager();
 			GC_HeapRegionIterator regionIterator(regionManager);
-			while(NULL != (region = regionIterator.nextRegion())) {
+			while (NULL != (region = regionIterator.nextRegion())) {
 				if (region->isCommitted()) {
-					globalCollector->heapAddRange(env,
-							env->getMemorySpace()->getDefaultMemorySubSpace(),
-							region->getSize(),
-							region->getLowAddress(),
-							region->getHighAddress());
+					globalCollector->heapAddRange(
+					        env, env->getMemorySpace()->getDefaultMemorySubSpace(),
+					        region->getSize(), region->getLowAddress(), region->getHighAddress());
 				}
 			}
 
@@ -293,10 +295,10 @@ OMR_GC_InitializeCollector(OMR_VMThread* omrVMThread)
 omr_error_t
 OMR_GC_ShutdownCollector(OMR_VM* vm)
 {
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(vm);
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(vm);
 
 	if (NULL != extensions) {
-		MM_Collector *globalCollector = extensions->getGlobalCollector();
+		MM_Collector* globalCollector = extensions->getGlobalCollector();
 
 		if (NULL != globalCollector) {
 			globalCollector->collectorShutdown(extensions);
@@ -313,9 +315,9 @@ OMR_GC_ShutdownCollector(OMR_VMThread* vmThread)
 }
 
 omr_error_t
-OMR_GC_ShutdownHeap(OMR_VM *omrVM)
+OMR_GC_ShutdownHeap(OMR_VM* omrVM)
 {
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(omrVM);
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(omrVM);
 	MM_EnvironmentBase env(omrVM);
 	omrthread_t self = NULL;
 
@@ -345,9 +347,9 @@ OMR_GC_ShutdownHeap(OMR_VM *omrVM)
 }
 
 omr_error_t
-OMR_GC_ShutdownHeapAndCollector(OMR_VM* omrVM) {
+OMR_GC_ShutdownHeapAndCollector(OMR_VM* omrVM)
+{
 	OMR_GC_ShutdownCollector(omrVM);
 	OMR_GC_ShutdownHeap(omrVM);
 	return OMR_ERROR_NONE;
 }
-

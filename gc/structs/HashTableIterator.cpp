@@ -38,17 +38,17 @@
  *	Continues the interation of all nodes in a J9HashTable
  *      
  */
-void **
+void**
 GC_HashTableIterator::nextSlot()
 {
-	void **value;
-	
+	void** value;
+
 	if (_firstIteration) {
 		_firstIteration = false;
 
-		value = (void **)hashTableStartDo(_hashTable, &_handle);
+		value = (void**)hashTableStartDo(_hashTable, &_handle);
 	} else {
-		value = (void **)hashTableNextDo(&_handle);
+		value = (void**)hashTableNextDo(&_handle);
 	}
 
 	return value;
@@ -61,7 +61,7 @@ GC_HashTableIterator::nextSlot()
  *	Removes the current slot in a J9HashTable (not valid in Out Of Process) 
  *      
  */
-void 
+void
 GC_HashTableIterator::removeSlot()
 {
 	hashTableDoRemove(&_handle);

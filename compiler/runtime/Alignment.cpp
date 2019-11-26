@@ -27,8 +27,7 @@
 //
 // e.g., use align(ptr, 31) NOT align(ptr, 32) for 32-byte alignment
 //
-uint8_t *
-align(uint8_t *ptr, uint32_t alignmentMask)
-   {
-   return (uint8_t*)((size_t)(ptr + alignmentMask) & (~(size_t)alignmentMask));
-   }
+uint8_t* align(uint8_t* ptr, uint32_t alignmentMask)
+{
+    return (uint8_t*)((size_t)(ptr + alignmentMask) & (~(size_t)alignmentMask));
+}

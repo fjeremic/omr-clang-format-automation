@@ -27,19 +27,19 @@
 #include "Math.hpp"
 #include "ObjectModel.hpp"
 
-
 bool
-MM_HeapMapIterator::setHeapMap(MM_HeapMap *heapMap)
+MM_HeapMapIterator::setHeapMap(MM_HeapMap* heapMap)
 {
 	uintptr_t heapOffsetInBytes = (uintptr_t)_heapSlotCurrent - (uintptr_t)heapMap->getHeapBase();
 
 	_bitIndexHead = heapMap->getBitIndex((omrobjectptr_t)_heapSlotCurrent);
 
-	_heapMapSlotCurrent = (uintptr_t *) ( ((uint8_t *)heapMap->getHeapMapBits())
-		+ (MM_Math::roundToFloor(J9MODRON_HMI_HEAPMAP_ALIGNMENT, heapOffsetInBytes) / J9MODRON_HEAP_SLOTS_PER_HEAPMAP_SLOT) );
+	_heapMapSlotCurrent = (uintptr_t*)(((uint8_t*)heapMap->getHeapMapBits())
+	                                   + (MM_Math::roundToFloor(J9MODRON_HMI_HEAPMAP_ALIGNMENT, heapOffsetInBytes)
+	                                      / J9MODRON_HEAP_SLOTS_PER_HEAPMAP_SLOT));
 
 	/* Cache the first heap map value ONLY if we are starting the iteration with at least 1 valid heap slot to scan */
-	if(_heapSlotCurrent < _heapChunkTop) {
+	if (_heapSlotCurrent < _heapChunkTop) {
 		_heapMapSlotValue = *_heapMapSlotCurrent;
 		_heapMapSlotValue >>= _bitIndexHead;
 	}
@@ -47,20 +47,21 @@ MM_HeapMapIterator::setHeapMap(MM_HeapMap *heapMap)
 	return true;
 }
 
-bool 
-MM_HeapMapIterator::reset(MM_HeapMap *heapMap, uintptr_t *heapChunkBase, uintptr_t *heapChunkTop)
+bool
+MM_HeapMapIterator::reset(MM_HeapMap* heapMap, uintptr_t* heapChunkBase, uintptr_t* heapChunkTop)
 {
 	uintptr_t heapOffsetInBytes = (uintptr_t)heapChunkBase - (uintptr_t)heapMap->getHeapBase();
 	_heapChunkTop = heapChunkTop;
 	_heapSlotCurrent = heapChunkBase;
-	
+
 	_bitIndexHead = heapMap->getBitIndex((omrobjectptr_t)heapChunkBase);
-	
-	_heapMapSlotCurrent = (uintptr_t *) ( ((uint8_t *)heapMap->getHeapMapBits())
-		+ (MM_Math::roundToFloor(J9MODRON_HMI_HEAPMAP_ALIGNMENT, heapOffsetInBytes) / J9MODRON_HEAP_SLOTS_PER_HEAPMAP_SLOT) );
+
+	_heapMapSlotCurrent = (uintptr_t*)(((uint8_t*)heapMap->getHeapMapBits())
+	                                   + (MM_Math::roundToFloor(J9MODRON_HMI_HEAPMAP_ALIGNMENT, heapOffsetInBytes)
+	                                      / J9MODRON_HEAP_SLOTS_PER_HEAPMAP_SLOT));
 
 	/* Cache the first heap map value ONLY if we are starting the iteration with at least 1 valid heap slot to scan */
-	if(_heapSlotCurrent < _heapChunkTop) {
+	if (_heapSlotCurrent < _heapChunkTop) {
 		_heapMapSlotValue = *_heapMapSlotCurrent;
 		_heapMapSlotValue >>= _bitIndexHead;
 	}
@@ -87,7 +88,7 @@ MM_HeapMapIterator::nextObject()
 		if (_heapMapSlotValue != J9MODRON_HMI_SLOT_EMPTY) {
 			leadingZeroes = MM_Bits::leadingZeroes(_heapMapSlotValue);
 
-			if(0 != leadingZeroes) {
+			if (0 != leadingZeroes) {
 				_heapSlotCurrent += J9MODRON_HEAP_SLOTS_PER_HEAPMAP_BIT * leadingZeroes;
 				_heapMapSlotValue >>= leadingZeroes;
 				_bitIndexHead += leadingZeroes;
@@ -96,7 +97,10 @@ MM_HeapMapIterator::nextObject()
 			omrobjectptr_t nextObject = (omrobjectptr_t)_heapSlotCurrent;
 			uintptr_t sizeInHeapMapBits = 1;
 			if (_useLargeObjectOptimization) {
-				sizeInHeapMapBits = MM_Bits::convertBytesToSlots(_extensions->objectModel.getConsumedSizeInBytesWithHeader(nextObject)) / J9MODRON_HEAP_SLOTS_PER_HEAPMAP_BIT;
+				sizeInHeapMapBits =
+				        MM_Bits::convertBytesToSlots(
+				                _extensions->objectModel.getConsumedSizeInBytesWithHeader(nextObject))
+				        / J9MODRON_HEAP_SLOTS_PER_HEAPMAP_BIT;
 			}
 
 			/* Jump over the body of the object */
@@ -109,8 +113,8 @@ MM_HeapMapIterator::nextObject()
 			 * has been advanced - if it has, we need to load the new value and adjust according to the scan index.
 			 * Otherwise just adjust our existing copy.
 			 */
-			if(0 != heapMapAdvance) {
-				if(_heapSlotCurrent < _heapChunkTop) {
+			if (0 != heapMapAdvance) {
+				if (_heapSlotCurrent < _heapChunkTop) {
 					/* Not adjusting the map will be inconsequential - the iteration is complete */
 					_heapMapSlotValue = *_heapMapSlotCurrent;
 					_heapMapSlotValue >>= _bitIndexHead;
@@ -129,7 +133,7 @@ MM_HeapMapIterator::nextObject()
 		/* Move to the next mark map slot */
 		_heapMapSlotCurrent += 1;
 		_bitIndexHead = 0;
-		if(_heapSlotCurrent < _heapChunkTop) {
+		if (_heapSlotCurrent < _heapChunkTop) {
 			_heapMapSlotValue = *_heapMapSlotCurrent;
 		}
 	}

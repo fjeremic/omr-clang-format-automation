@@ -23,16 +23,16 @@
 #if !defined(MEMORYMANAGER_HPP)
 #define MEMORYMANAGER_HPP
 
-#include "omrcomp.h"
-#include "modronbase.h"
-
 #include "BaseNonVirtual.hpp"
 #include "MemoryHandle.hpp"
 #include "VirtualMemory.hpp"
+#include "modronbase.h"
+#include "omrcomp.h"
 
 class MM_EnvironmentBase;
 
-class MM_MemoryManager : public MM_BaseNonVirtual {
+class MM_MemoryManager : public MM_BaseNonVirtual
+{
 	/*
 	 * Data members
 	 */
@@ -41,7 +41,6 @@ private:
 
 protected:
 public:
-
 	/*
 	 * Function members
 	 */
@@ -60,7 +59,7 @@ private:
 
 #if (defined(AIXPPC) && !defined(PPC64))
 		result = false;
-#elif(defined(AIXPPC) && defined(OMR_GC_REALTIME))
+#elif (defined(AIXPPC) && defined(OMR_GC_REALTIME))
 		MM_GCExtensionsBase* extensions = env->getExtensions();
 		if (extensions->isMetronomeGC()) {
 			result = false;
@@ -112,11 +111,7 @@ protected:
 	 */
 	bool initialize(MM_EnvironmentBase* env);
 
-	MM_MemoryManager(MM_EnvironmentBase* env)
-		: _preAllocated()
-	{
-		_typeId = __FUNCTION__;
-	};
+	MM_MemoryManager(MM_EnvironmentBase* env) : _preAllocated() { _typeId = __FUNCTION__; };
 
 public:
 	/**
@@ -147,7 +142,13 @@ public:
 	 * @return true if pointer to virtual memory is not NULL
 	 *
 	 */
-	bool createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryHandle* handle, uintptr_t heapAlignment, uintptr_t size, uintptr_t tailPadding, void* preferredAddress, void* ceiling);
+	bool createVirtualMemoryForHeap(MM_EnvironmentBase* env,
+	                                MM_MemoryHandle* handle,
+	                                uintptr_t heapAlignment,
+	                                uintptr_t size,
+	                                uintptr_t tailPadding,
+	                                void* preferredAddress,
+	                                void* ceiling);
 
 	/**
 	 * Creates the correct type of VirtualMemory object for the current platform and configuration
@@ -158,7 +159,10 @@ public:
 	 * @param size required memory size
 	 * @return true if pointer to virtual memory is not NULL
 	 */
-	bool createVirtualMemoryForMetadata(MM_EnvironmentBase* env, MM_MemoryHandle* handle, uintptr_t heapAlignment, uintptr_t size);
+	bool createVirtualMemoryForMetadata(MM_EnvironmentBase* env,
+	                                    MM_MemoryHandle* handle,
+	                                    uintptr_t heapAlignment,
+	                                    uintptr_t size);
 
 	/**
 	 * Destroy virtual memory instance
@@ -167,7 +171,7 @@ public:
 	 * @param[in/out] handle pointer to memory handle
 	 */
 	void destroyVirtualMemory(MM_EnvironmentBase* env, MM_MemoryHandle* handle);
-	
+
 	/**
 	 * Destroy virtual memory instance, plus everything that is heap specific (for example, shadow heap)
 	 *
@@ -175,7 +179,7 @@ public:
 	 * @param[in/out] handle pointer to memory handle
 	 */
 	void destroyVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryHandle* handle);
-	
+
 	/**
  	 * Double maps arraylets, arrays that does not fit into one region are split into leaves, 
  	 * which are then double mapped by this function 
@@ -191,7 +195,14 @@ public:
  	 * @param category
   	 */
 #if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-	void *doubleMapArraylet(MM_MemoryHandle* handle, MM_EnvironmentBase *env, void* arrayletLeaves[], UDATA arrayletLeafCount, UDATA arrayletLeafSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize);
+	void* doubleMapArraylet(MM_MemoryHandle* handle,
+	                        MM_EnvironmentBase* env,
+	                        void* arrayletLeaves[],
+	                        UDATA arrayletLeafCount,
+	                        UDATA arrayletLeafSize,
+	                        UDATA byteAmount,
+	                        struct J9PortVmemIdentifier* newIdentifier,
+	                        UDATA pageSize);
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
 	/**
@@ -215,7 +226,11 @@ public:
 	 * @return true if succeed
 	 *
 	 */
-	bool decommitMemory(MM_MemoryHandle* handle, void* address, uintptr_t size, void* lowValidAddress, void* highValidAddress);
+	bool decommitMemory(MM_MemoryHandle* handle,
+	                    void* address,
+	                    uintptr_t size,
+	                    void* lowValidAddress,
+	                    void* highValidAddress);
 
 #if defined(OMR_GC_VLHGC) || defined(OMR_GC_MODRON_SCAVENGER)
 	/*
@@ -228,8 +243,8 @@ public:
 	 *
 	 * @return true on success, false on failure
 	 */
-	bool setNumaAffinity(const MM_MemoryHandle *handle, uintptr_t numaNode, void *address, uintptr_t byteAmount);
-#endif /* defined(OMR_GC_VLHGC) || defined(OMR_GC_MODRON_SCAVENGER) */	
+	bool setNumaAffinity(const MM_MemoryHandle* handle, uintptr_t numaNode, void* address, uintptr_t byteAmount);
+#endif /* defined(OMR_GC_VLHGC) || defined(OMR_GC_MODRON_SCAVENGER) */
 
 	/**
 	 * Call roundDownTop for virtual memory instance provided in memory handle
@@ -251,10 +266,7 @@ public:
 	 * @param handle pointer to memory handle
 	 * @return pointer to base address of virtual memory
 	 */
-	MMINLINE void* getHeapBase(MM_MemoryHandle* handle)
-	{
-		return handle->getMemoryBase();
-	};
+	MMINLINE void* getHeapBase(MM_MemoryHandle* handle) { return handle->getMemoryBase(); };
 
 	/**
 	 * Return the top of the heap of the virtual memory object.
@@ -262,10 +274,7 @@ public:
 	 * @param handle pointer to memory handle
 	 * @return pointer to top address of virtual memory
 	 */
-	MMINLINE void* getHeapTop(MM_MemoryHandle* handle)
-	{
-		return handle->getMemoryTop();
-	};
+	MMINLINE void* getHeapTop(MM_MemoryHandle* handle) { return handle->getMemoryTop(); };
 
 	/**
 	 * Return the size of the pages used in the virtual memory object

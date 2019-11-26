@@ -42,33 +42,32 @@
  * @param[in] length The length of the data area addressed by
  *       jobname.
  */
-void
-omrget_jobname(struct OMRPortLibrary *portLibrary, char *jobname, uintptr_t length)
+void omrget_jobname(struct OMRPortLibrary* portLibrary, char* jobname, uintptr_t length)
 {
-	char *tmp_jobname = (char *)__malloc31(J9_MAX_JOBNAME);
+    char* tmp_jobname = (char*)__malloc31(J9_MAX_JOBNAME);
 
-	if (NULL != tmp_jobname) {
-		char *ascname = NULL;
-		memset(tmp_jobname, '\0', J9_MAX_JOBNAME);
-		_JOBNAME(tmp_jobname);  /* requires <31bit address */
+    if (NULL != tmp_jobname) {
+        char* ascname = NULL;
+        memset(tmp_jobname, '\0', J9_MAX_JOBNAME);
+        _JOBNAME(tmp_jobname); /* requires <31bit address */
 #if !defined(OMR_EBCDIC)
-		ascname = e2a_func(tmp_jobname, strlen(tmp_jobname));
+        ascname = e2a_func(tmp_jobname, strlen(tmp_jobname));
 #else /* !defined(OMR_EBCDIC) */
-		ascname = tmp_jobname;
+        ascname = tmp_jobname;
 #endif /* !defined(OMR_EBCDIC) */
 
-		if (NULL != ascname) {
-			uintptr_t width = strcspn(ascname, " ");
-			strncpy(jobname, ascname, width);
-			jobname[width] = '\0';
+        if (NULL != ascname) {
+            uintptr_t width = strcspn(ascname, " ");
+            strncpy(jobname, ascname, width);
+            jobname[width] = '\0';
 #if !defined(OMR_EBCDIC)
-			free(ascname);
+            free(ascname);
 #endif /* !defined(OMR_EBCDIC) */
-		}
-		free(tmp_jobname);
-	} else {
-		if (length >= 5) {
-			strcpy(jobname, "%job");
-		}
-	}
+        }
+        free(tmp_jobname);
+    } else {
+        if (length >= 5) {
+            strcpy(jobname, "%job");
+        }
+    }
 }

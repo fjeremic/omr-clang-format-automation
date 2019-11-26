@@ -24,16 +24,14 @@
 
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
 
+#include "ConcurrentClearNewMarkBitsTask.hpp"
 #include "ConcurrentGC.hpp"
 
-#include "ConcurrentClearNewMarkBitsTask.hpp"
-
 void
-MM_ConcurrentClearNewMarkBitsTask::run(MM_EnvironmentBase *envBase)
+MM_ConcurrentClearNewMarkBitsTask::run(MM_EnvironmentBase* envBase)
 {
-	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
+	MM_EnvironmentStandard* env = MM_EnvironmentStandard::getEnvironment(envBase);
 	_collector->clearNewMarkBits(env);
 }
 
 #endif /* OMR_GC_MODRON_CONCURRENT_MARK */
- 

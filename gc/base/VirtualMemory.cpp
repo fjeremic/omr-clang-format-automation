@@ -20,11 +20,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <string.h>
-
-#include "omrcomp.h"
-#include "omrport.h"
-#include "omr.h"
+#include "VirtualMemory.hpp"
 
 #include "EnvironmentBase.hpp"
 #include "Forge.hpp"
@@ -32,7 +28,10 @@
 #include "Math.hpp"
 #include "ModronAssertions.h"
 #include "NUMAManager.hpp"
-#include "VirtualMemory.hpp"
+#include "omr.h"
+#include "omrcomp.h"
+#include "omrport.h"
+#include <string.h>
 
 #define HIGH_ADDRESS UDATA_MAX
 
@@ -42,9 +41,20 @@
  */
 
 MM_VirtualMemory*
-MM_VirtualMemory::newInstance(MM_EnvironmentBase* env, uintptr_t heapAlignment, uintptr_t size, uintptr_t pageSize, uintptr_t pageFlags, uintptr_t tailPadding, void* preferredAddress, void* ceiling, uintptr_t mode, uintptr_t options, uint32_t memoryCategory)
+MM_VirtualMemory::newInstance(MM_EnvironmentBase* env,
+                              uintptr_t heapAlignment,
+                              uintptr_t size,
+                              uintptr_t pageSize,
+                              uintptr_t pageFlags,
+                              uintptr_t tailPadding,
+                              void* preferredAddress,
+                              void* ceiling,
+                              uintptr_t mode,
+                              uintptr_t options,
+                              uint32_t memoryCategory)
 {
-	MM_VirtualMemory* vmem = (MM_VirtualMemory*)env->getForge()->allocate(sizeof(MM_VirtualMemory), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_VirtualMemory* vmem = (MM_VirtualMemory*)env->getForge()->allocate(
+	        sizeof(MM_VirtualMemory), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 
 	if (vmem) {
 		new (vmem) MM_VirtualMemory(env, heapAlignment, pageSize, pageFlags, tailPadding, mode);
@@ -65,7 +75,12 @@ MM_VirtualMemory::kill(MM_EnvironmentBase* env)
 }
 
 bool
-MM_VirtualMemory::initialize(MM_EnvironmentBase* env, uintptr_t size, void* preferredAddress, void* ceiling, uintptr_t options, uint32_t memoryCategory)
+MM_VirtualMemory::initialize(MM_EnvironmentBase* env,
+                             uintptr_t size,
+                             void* preferredAddress,
+                             void* ceiling,
+                             uintptr_t options,
+                             uint32_t memoryCategory)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
@@ -114,13 +129,18 @@ MM_VirtualMemory::initialize(MM_EnvironmentBase* env, uintptr_t size, void* pref
 
 		/* If heap touches top of address range */
 		if (lastByte == HIGH_ADDRESS) {
-			_heapTop = (void*)MM_Math::roundToFloor(_heapAlignment, ((uintptr_t)_baseAddress) + (allocateSize - _tailPadding - _heapAlignment));
+			_heapTop = (void*)MM_Math::roundToFloor(
+			        _heapAlignment,
+			        ((uintptr_t)_baseAddress) + (allocateSize - _tailPadding - _heapAlignment));
 		} else {
-			_heapTop = (void*)MM_Math::roundToFloor(_heapAlignment, ((uintptr_t)_baseAddress) + (allocateSize - _tailPadding));
+			_heapTop = (void*)MM_Math::roundToFloor(
+			        _heapAlignment, ((uintptr_t)_baseAddress) + (allocateSize - _tailPadding));
 		}
 
-		if ((_heapBase >= _heapTop) /* CMVC 45178: Need to catch the case where we aligned heapTop and heapBase to the same address and consider it an error. */
-		|| ((NULL != ceiling) && (_heapTop > ceiling)) /* Check that memory we got is located below ceiling */
+		if ((_heapBase
+		     >= _heapTop) /* CMVC 45178: Need to catch the case where we aligned heapTop and heapBase to the same address and consider it an error. */
+		    || ((NULL != ceiling)
+		        && (_heapTop > ceiling)) /* Check that memory we got is located below ceiling */
 		) {
 			freeMemory();
 			_heapBase = NULL;
@@ -163,17 +183,27 @@ MM_VirtualMemory::reserveMemory(J9PortVmemParams* params)
 
 #if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
 void*
-MM_VirtualMemory::doubleMapArraylet(MM_EnvironmentBase *env, void* arrayletLeaves[], UDATA arrayletLeafCount, UDATA arrayletLeafSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize)
+MM_VirtualMemory::doubleMapArraylet(MM_EnvironmentBase* env,
+                                    void* arrayletLeaves[],
+                                    UDATA arrayletLeafCount,
+                                    UDATA arrayletLeafSize,
+                                    UDATA byteAmount,
+                                    struct J9PortVmemIdentifier* newIdentifier,
+                                    UDATA pageSize)
 {
 	OMRPORT_ACCESS_FROM_OMRVM(_extensions->getOmrVM());
-	struct J9PortVmemIdentifier *oldIdentifier = &_identifier;
-	uintptr_t mode = OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT;
+	struct J9PortVmemIdentifier* oldIdentifier = &_identifier;
+	uintptr_t mode = OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE
+	        | OMRPORT_VMEM_MEMORY_MODE_COMMIT;
 
-	return omrvmem_get_contiguous_region_memory(arrayletLeaves, arrayletLeafCount, arrayletLeafSize, byteAmount, oldIdentifier, newIdentifier, mode, pageSize, omrmem_get_category(OMRMEM_CATEGORY_MM));
+	return omrvmem_get_contiguous_region_memory(arrayletLeaves, arrayletLeafCount, arrayletLeafSize, byteAmount,
+	                                            oldIdentifier, newIdentifier, mode, pageSize,
+	                                            omrmem_get_category(OMRMEM_CATEGORY_MM));
 }
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
-bool MM_VirtualMemory::freeMemory()
+bool
+MM_VirtualMemory::freeMemory()
 {
 	OMRPORT_ACCESS_FROM_OMRVM(_extensions->getOmrVM());
 	bool success = (0 == omrvmem_free_memory(_baseAddress, _reserveSize, &_identifier));
@@ -307,7 +337,8 @@ MM_VirtualMemory::setNumaAffinity(uintptr_t numaNode, void* address, uintptr_t b
 		 */
 		Assert_MM_true(((uintptr_t)address + byteAmountPageAligned) <= ((uintptr_t)_heapBase + _reserveSize));
 
-		didSetAffinity = (0 == omrvmem_numa_set_affinity(numaNode, address, byteAmountPageAligned, &_identifier));
+		didSetAffinity =
+		        (0 == omrvmem_numa_set_affinity(numaNode, address, byteAmountPageAligned, &_identifier));
 	}
 	return didSetAffinity;
 }

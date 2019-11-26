@@ -28,27 +28,30 @@
 #if !defined(CONFIGURATIONFLAT_HPP_)
 #define CONFIGURATIONFLAT_HPP_
 
-#include "omrcfg.h"
-
 #include "ConfigurationStandard.hpp"
+#include "omrcfg.h"
 
 #if defined(OMR_GC_MODRON_STANDARD)
 
-class MM_ConfigurationFlat : public MM_ConfigurationStandard {
+class MM_ConfigurationFlat : public MM_ConfigurationStandard
+{
 public:
 protected:
 private:
 public:
 	static MM_Configuration* newInstance(MM_EnvironmentBase* env);
 
-	virtual MM_MemorySpace* createDefaultMemorySpace(MM_EnvironmentBase* env, MM_Heap* heap, MM_InitializationParameters* parameters);
+	virtual MM_MemorySpace*
+	createDefaultMemorySpace(MM_EnvironmentBase* env, MM_Heap* heap, MM_InitializationParameters* parameters);
 
 	MM_ConfigurationFlat(MM_EnvironmentBase* env)
-		: MM_ConfigurationStandard(env, env->getExtensions()->configurationOptions._gcPolicy, STANDARD_REGION_SIZE_BYTES)
+	        : MM_ConfigurationStandard(env,
+	                                   env->getExtensions()->configurationOptions._gcPolicy,
+	                                   STANDARD_REGION_SIZE_BYTES)
 	{
 		_typeId = __FUNCTION__;
 	};
-	
+
 protected:
 private:
 };

@@ -26,13 +26,14 @@
 #include <cstdio>
 #include <cstdlib>
 
-typedef int32_t (IncOrDecFunction)(int32_t*);
+typedef int32_t(IncOrDecFunction)(int32_t*);
 
-int main(int argc, char const * const * const argv) {
+int main(int argc, char const* const* const argv)
+{
     assert(argc == 2);
 
-   bool initialized = initializeJit();
-   if (!initialized) {
+    bool initialized = initializeJit();
+    if (!initialized) {
         fprintf(stderr, "FAIL: could not initialize JIT\n");
         exit(-1);
     }
@@ -51,8 +52,8 @@ int main(int argc, char const * const * const argv) {
 
     int32_t result = incordecCompiler.compile();
     if (result != 0) {
-       printf("Failed to compile\n");
-       exit(-2);
+        printf("Failed to compile\n");
+        exit(-2);
     }
 
     auto incordec = incordecCompiler.getEntryPoint<IncOrDecFunction*>();

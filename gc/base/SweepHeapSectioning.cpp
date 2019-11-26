@@ -20,9 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
-#include "omrcfg.h"
-
 #include "SweepHeapSectioning.hpp"
 
 #include "EnvironmentBase.hpp"
@@ -30,13 +27,15 @@
 #include "MemorySubSpace.hpp"
 #include "ParallelSweepChunk.hpp"
 #include "SweepHeapSectioning.hpp"
+#include "omrcfg.h"
 
 /**
  * Internal storage memory pool for heap sectioning chunks.
  * 
  * @ingroup GC_Base
  */
-class MM_ParallelSweepChunkArray : public MM_BaseVirtual {
+class MM_ParallelSweepChunkArray : public MM_BaseVirtual
+{
 private:
 	MM_ParallelSweepChunk* _array; /**< backing store for chunks */
 	uintptr_t _used; /**< number of array elements used */
@@ -54,13 +53,7 @@ public:
 	void kill(MM_EnvironmentBase* env);
 
 	MM_ParallelSweepChunkArray(uintptr_t size)
-		: MM_BaseVirtual()
-		, _array(NULL)
-		, _used(0)
-		, _size(size)
-		, _next(NULL)
-		, _memoryHandle()
-		, _useVmem(false)
+	        : MM_BaseVirtual(), _array(NULL), _used(0), _size(size), _next(NULL), _memoryHandle(), _useVmem(false)
 	{
 		_typeId = __FUNCTION__;
 	}
@@ -86,17 +79,24 @@ MM_ParallelSweepChunkArray::initialize(MM_EnvironmentBase* env, bool useVmem)
 	} else {
 		if (useVmem) {
 			MM_MemoryManager* memoryManager = extensions->memoryManager;
-			if (memoryManager->createVirtualMemoryForMetadata(env, &_memoryHandle, extensions->heapAlignment, _size * sizeof(MM_ParallelSweepChunk))) {
+			if (memoryManager->createVirtualMemoryForMetadata(env, &_memoryHandle,
+			                                                  extensions->heapAlignment,
+			                                                  _size * sizeof(MM_ParallelSweepChunk))) {
 				void* base = memoryManager->getHeapBase(&_memoryHandle);
-				result = memoryManager->commitMemory(&_memoryHandle, base, _size * sizeof(MM_ParallelSweepChunk));
+				result = memoryManager->commitMemory(&_memoryHandle, base,
+				                                     _size * sizeof(MM_ParallelSweepChunk));
 				if (!result) {
-					Trc_MM_SweepHeapSectioning_parallelSweepChunkArrayCommitFailed(env->getLanguageVMThread(), base, _size * sizeof(MM_ParallelSweepChunk));
+					Trc_MM_SweepHeapSectioning_parallelSweepChunkArrayCommitFailed(
+					        env->getLanguageVMThread(), base,
+					        _size * sizeof(MM_ParallelSweepChunk));
 				}
 				_array = (MM_ParallelSweepChunk*)base;
 			}
 		} else {
 			if (0 != _size) {
-				_array = (MM_ParallelSweepChunk*)env->getForge()->allocate(_size * sizeof(MM_ParallelSweepChunk), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+				_array = (MM_ParallelSweepChunk*)env->getForge()->allocate(
+				        _size * sizeof(MM_ParallelSweepChunk), OMR::GC::AllocationCategory::FIXED,
+				        OMR_GET_CALLSITE());
 				result = (NULL != _array);
 			} else {
 				result = true;
@@ -131,7 +131,8 @@ MM_ParallelSweepChunkArray::newInstance(MM_EnvironmentBase* env, uintptr_t size,
 {
 	MM_ParallelSweepChunkArray* array;
 
-	array = (MM_ParallelSweepChunkArray*)env->getForge()->allocate(sizeof(MM_ParallelSweepChunkArray), OMR::GC::AllocationCategory::OTHER, OMR_GET_CALLSITE());
+	array = (MM_ParallelSweepChunkArray*)env->getForge()->allocate(
+	        sizeof(MM_ParallelSweepChunkArray), OMR::GC::AllocationCategory::OTHER, OMR_GET_CALLSITE());
 	if (NULL != array) {
 		new (array) MM_ParallelSweepChunkArray(size);
 		if (!array->initialize(env, useVmem)) {
@@ -214,7 +215,7 @@ MM_SweepHeapSectioning::initialize(MM_EnvironmentBase* env)
 void
 MM_SweepHeapSectioning::tearDown(MM_EnvironmentBase* env)
 {
-	MM_ParallelSweepChunkArray* array, *nextArray;
+	MM_ParallelSweepChunkArray *array, *nextArray;
 
 	array = _head;
 	while (array) {
@@ -295,7 +296,7 @@ MM_SweepHeapSectioning::update(MM_EnvironmentBase* env)
 
 		/* clear chunks */
 		MM_ParallelSweepChunk* chunk;
-		for(uintptr_t count=0; count<newArray->_size; count++) {
+		for (uintptr_t count = 0; count < newArray->_size; count++) {
 			chunk = newArray->_array + count;
 			chunk->clear();
 		}

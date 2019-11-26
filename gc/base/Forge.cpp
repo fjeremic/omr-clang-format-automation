@@ -22,11 +22,13 @@
 
 #include "Forge.hpp"
 
-#include "omrcomp.h"
 #include "EnvironmentBase.hpp"
+#include "omrcomp.h"
 
-namespace OMR {
-namespace GC {
+namespace OMR
+{
+namespace GC
+{
 
 bool
 Forge::initialize(OMRPortLibrary* port)
@@ -35,7 +37,7 @@ Forge::initialize(OMRPortLibrary* port)
 	return true;
 }
 
-void 
+void
 Forge::tearDown()
 {
 	_portLibrary = NULL;
@@ -50,7 +52,7 @@ Forge::tearDown()
  * @param[in] callsite - the origin of the memory request (e.g. filename.c:5), which should be found using the OMR_GET_CALLSITE() macro
  * @return a pointer to the allocated memory, or NULL if the request could not be performed
  */
-void* 
+void*
 Forge::allocate(std::size_t bytesRequested, OMR::GC::AllocationCategory::Enum category, const char* callsite)
 {
 	return _portLibrary->mem_allocate_memory(_portLibrary, bytesRequested, callsite, OMRMEM_CATEGORY_MM);
@@ -62,13 +64,13 @@ Forge::allocate(std::size_t bytesRequested, OMR::GC::AllocationCategory::Enum ca
  *
  * @param[in] memoryPointer - a pointer to the memory that will be freed
  */
-void 
+void
 Forge::free(void* memoryPointer)
-{	
+{
 	if (NULL == memoryPointer) {
 		return;
 	}
-	
+
 	OMRPORT_ACCESS_FROM_OMRPORT(_portLibrary);
 	omrmem_free_memory(memoryPointer);
 }

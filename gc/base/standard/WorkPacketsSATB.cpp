@@ -24,31 +24,31 @@
 
 #if defined(OMR_GC_REALTIME)
 
-#include "WorkPacketsSATB.hpp"
-
 #include "Debug.hpp"
 #include "GCExtensionsBase.hpp"
 #include "OverflowStandard.hpp"
+#include "WorkPacketsSATB.hpp"
 
 /**
  * Instantiate a MM_WorkPacketsSATB
  * @param mode type of packets (used for getting the right overflow handler)
  * @return pointer to the new object
  */
-MM_WorkPacketsSATB *
-MM_WorkPacketsSATB::newInstance(MM_EnvironmentBase *env)
+MM_WorkPacketsSATB*
+MM_WorkPacketsSATB::newInstance(MM_EnvironmentBase* env)
 {
-	MM_WorkPacketsSATB *workPackets;
-	
-	workPackets = (MM_WorkPacketsSATB *)env->getForge()->allocate(sizeof(MM_WorkPacketsSATB), MM_AllocationCategory::WORK_PACKETS, J9_GET_CALLSITE());
+	MM_WorkPacketsSATB* workPackets;
+
+	workPackets = (MM_WorkPacketsSATB*)env->getForge()->allocate(
+	        sizeof(MM_WorkPacketsSATB), MM_AllocationCategory::WORK_PACKETS, J9_GET_CALLSITE());
 	if (workPackets) {
-		new(workPackets) MM_WorkPacketsSATB(env);
+		new (workPackets) MM_WorkPacketsSATB(env);
 		if (!workPackets->initialize(env)) {
 			workPackets->kill(env);
-			workPackets = NULL;	
+			workPackets = NULL;
 		}
 	}
-	
+
 	return workPackets;
 }
 
@@ -57,7 +57,7 @@ MM_WorkPacketsSATB::newInstance(MM_EnvironmentBase *env)
  * @return true on success, false otherwise
  */
 bool
-MM_WorkPacketsSATB::initialize(MM_EnvironmentBase *env)
+MM_WorkPacketsSATB::initialize(MM_EnvironmentBase* env)
 {
 	if (!MM_WorkPackets::initialize(env)) {
 		return false;
@@ -74,7 +74,7 @@ MM_WorkPacketsSATB::initialize(MM_EnvironmentBase *env)
  * Destroy the resources a MM_WorkPacketsSATB is responsible for
  */
 void
-MM_WorkPacketsSATB::tearDown(MM_EnvironmentBase *env)
+MM_WorkPacketsSATB::tearDown(MM_EnvironmentBase* env)
 {
 	MM_WorkPackets::tearDown(env);
 
@@ -84,8 +84,8 @@ MM_WorkPacketsSATB::tearDown(MM_EnvironmentBase *env)
 /**
  * Create the overflow handler
  */
-MM_WorkPacketOverflow *
-MM_WorkPacketsSATB::createOverflowHandler(MM_EnvironmentBase *env, MM_WorkPackets *wp)
+MM_WorkPacketOverflow*
+MM_WorkPacketsSATB::createOverflowHandler(MM_EnvironmentBase* env, MM_WorkPackets* wp)
 {
 	return MM_OverflowStandard::newInstance(env, wp);
 }
@@ -94,14 +94,14 @@ MM_WorkPacketsSATB::createOverflowHandler(MM_EnvironmentBase *env, MM_WorkPacket
  * Return an empty packet for barrier processing.
  * If the emptyPacketList is empty then overflow a full packet.
  */
-MM_Packet *
-MM_WorkPacketsSATB::getBarrierPacket(MM_EnvironmentBase *env)
+MM_Packet*
+MM_WorkPacketsSATB::getBarrierPacket(MM_EnvironmentBase* env)
 {
-	MM_Packet *barrierPacket = NULL;
+	MM_Packet* barrierPacket = NULL;
 
 	/* Check the free list */
 	barrierPacket = getPacket(env, &_emptyPacketList);
-	if(NULL != barrierPacket) {
+	if (NULL != barrierPacket) {
 		return barrierPacket;
 	}
 
@@ -119,10 +119,10 @@ MM_WorkPacketsSATB::getBarrierPacket(MM_EnvironmentBase *env)
  *
  * @return pointer to a packet, or NULL if no packets could be overflowed
  */
-MM_Packet *
-MM_WorkPacketsSATB::getPacketByOverflowing(MM_EnvironmentBase *env)
+MM_Packet*
+MM_WorkPacketsSATB::getPacketByOverflowing(MM_EnvironmentBase* env)
 {
-	MM_Packet *packet = NULL;
+	MM_Packet* packet = NULL;
 
 	if (NULL != (packet = getPacket(env, &_fullPacketList))) {
 		/* Attempt to overflow a full mark packet.
@@ -133,7 +133,7 @@ MM_WorkPacketsSATB::getPacketByOverflowing(MM_EnvironmentBase *env)
 		omrthread_monitor_enter(_inputListMonitor);
 
 		/* Overflow was created - alert other threads that are waiting */
-		if(_inputListWaitCount > 0) {
+		if (_inputListWaitCount > 0) {
 			omrthread_monitor_notify(_inputListMonitor);
 		}
 		omrthread_monitor_exit(_inputListMonitor);
@@ -152,19 +152,19 @@ MM_WorkPacketsSATB::getPacketByOverflowing(MM_EnvironmentBase *env)
  * @param packet the packet to put on the list
  */
 void
-MM_WorkPacketsSATB::putInUsePacket(MM_EnvironmentBase *env, MM_Packet *packet)
+MM_WorkPacketsSATB::putInUsePacket(MM_EnvironmentBase* env, MM_Packet* packet)
 {
 	_inUseBarrierPacketList.push(env, packet);
 }
 
 void
-MM_WorkPacketsSATB::removePacketFromInUseList(MM_EnvironmentBase *env, MM_Packet *packet)
+MM_WorkPacketsSATB::removePacketFromInUseList(MM_EnvironmentBase* env, MM_Packet* packet)
 {
 	_inUseBarrierPacketList.remove(packet);
 }
 
 void
-MM_WorkPacketsSATB::putFullPacket(MM_EnvironmentBase *env, MM_Packet *packet)
+MM_WorkPacketsSATB::putFullPacket(MM_EnvironmentBase* env, MM_Packet* packet)
 {
 	_fullPacketList.push(env, packet);
 }
@@ -174,7 +174,7 @@ MM_WorkPacketsSATB::putFullPacket(MM_EnvironmentBase *env, MM_Packet *packet)
  * so they are available for processing.
  */
 void
-MM_WorkPacketsSATB::moveInUseToNonEmpty(MM_EnvironmentBase *env)
+MM_WorkPacketsSATB::moveInUseToNonEmpty(MM_EnvironmentBase* env)
 {
 	MM_Packet *head, *tail;
 	UDATA count;
@@ -194,7 +194,7 @@ MM_WorkPacketsSATB::moveInUseToNonEmpty(MM_EnvironmentBase *env)
  * @return the heap capactify factor
  */
 float
-MM_WorkPacketsSATB::getHeapCapacityFactor(MM_EnvironmentBase *env)
+MM_WorkPacketsSATB::getHeapCapacityFactor(MM_EnvironmentBase* env)
 {
 	/* Increase the factor for SATB barrier since more packets are required */
 	return (float)0.008;
@@ -205,22 +205,22 @@ MM_WorkPacketsSATB::getHeapCapacityFactor(MM_EnvironmentBase *env)
  *
  * @return a packet if one is found, NULL otherwise
  */
-MM_Packet *
-MM_WorkPacketsSATB::getInputPacketFromOverflow(MM_EnvironmentBase *env)
+MM_Packet*
+MM_WorkPacketsSATB::getInputPacketFromOverflow(MM_EnvironmentBase* env)
 {
-	MM_Packet *overflowPacket;
+	MM_Packet* overflowPacket;
 
 	/* SATB spec cannot loop here as all packets may currently be on
 	 * the InUseBarrierList.  If all packets are on the InUseBarrierList then this
 	 * would turn into an infinite busy loop.
 	 * while(!_overflowHandler->isEmpty()) {
 	 */
-	if(!_overflowHandler->isEmpty()) {
-		if(NULL != (overflowPacket = getPacket(env, &_emptyPacketList))) {
+	if (!_overflowHandler->isEmpty()) {
+		if (NULL != (overflowPacket = getPacket(env, &_emptyPacketList))) {
 
 			_overflowHandler->fillFromOverflow(env, overflowPacket);
 
-			if(overflowPacket->isEmpty()) {
+			if (overflowPacket->isEmpty()) {
 				/* If we didn't end up filling the packet with anything, don't return it and try again */
 				putPacket(env, overflowPacket);
 			} else {

@@ -23,13 +23,12 @@
 #if !defined(GLOBALCOLLECTOR_HPP_)
 #define GLOBALCOLLECTOR_HPP_
 
-#include "omrcomp.h"
-#include "omrgcconsts.h"
-#include "modronbase.h"
-#include "omr.h"
-
 #include "Collector.hpp"
 #include "GlobalCollectorDelegate.hpp"
+#include "modronbase.h"
+#include "omr.h"
+#include "omrcomp.h"
+#include "omrgcconsts.h"
 
 class MM_EnvironmentBase;
 class MM_MemorySubSpace;
@@ -38,38 +37,29 @@ class MM_MemorySubSpace;
  * Abstract class representing a collector for the entire heap.
  * @ingroup GC_Base_Core
  */
-class MM_GlobalCollector : public MM_Collector {
+class MM_GlobalCollector : public MM_Collector
+{
 private:
 protected:
 	MM_GlobalCollectorDelegate _delegate; /**< Language specific delegate -- subclass must initialize */
 
 public:
-
 private:
 protected:
-	virtual void internalPostCollect(MM_EnvironmentBase *env, MM_MemorySubSpace *subSpace);
+	virtual void internalPostCollect(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace);
 
 public:
-	MM_GlobalCollectorDelegate *getGlobalCollectorDelegate() { return &_delegate; }
+	MM_GlobalCollectorDelegate* getGlobalCollectorDelegate() { return &_delegate; }
 
 	virtual bool isTimeForGlobalGCKickoff();
 
-	virtual bool condYield(MM_EnvironmentBase *env, uint64_t timeSlackNanoSec)
-	{
-		return false;
-	}
+	virtual bool condYield(MM_EnvironmentBase* env, uint64_t timeSlackNanoSec) { return false; }
 
-	virtual bool shouldYield(MM_EnvironmentBase *env)
-	{
-		return false;
-	}
+	virtual bool shouldYield(MM_EnvironmentBase* env) { return false; }
 
-	virtual void yield(MM_EnvironmentBase *env) {};
-	
-	virtual bool isStwCollectionInProgress()
-	{
-		return false;
-	}
+	virtual void yield(MM_EnvironmentBase* env){};
+
+	virtual bool isStwCollectionInProgress() { return false; }
 
 	/**
  	 * Perform any collector-specific initialization.
@@ -100,9 +90,7 @@ public:
  	*/
 	virtual void deleteSweepPoolState(MM_EnvironmentBase* env, void* sweepPoolState) = 0;
 
-	MM_GlobalCollector()
-		: MM_Collector()
-		, _delegate()
+	MM_GlobalCollector() : MM_Collector(), _delegate()
 	{
 		_typeId = __FUNCTION__;
 		_cycleType = OMR_GC_CYCLE_TYPE_GLOBAL;

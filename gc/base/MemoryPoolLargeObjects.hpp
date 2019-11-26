@@ -28,15 +28,14 @@
 #if !defined(MEMORYPOOLLARGEOBJECTS_HPP_)
 #define MEMORYPOOLLARGEOBJECTS_HPP_
 
-#include "omrcfg.h"
-#include "omrcomp.h"
-#include "modronopt.h"
-
 #include "AtomicOperations.hpp"
 #include "Base.hpp"
 #include "GCExtensionsBase.hpp"
 #include "MemoryPool.hpp"
 #include "MemoryPoolAddressOrderedListBase.hpp"
+#include "modronopt.h"
+#include "omrcfg.h"
+#include "omrcomp.h"
 class MM_AllocateDescription;
 class MM_EnvironmentBase;
 class MM_LargeObjectAllocateStats;
@@ -54,7 +53,6 @@ class MM_MemorySubSpace;
  */
 #define LOA_MINIMUM_SIZE2 ((double)0.001)
 #define LOA_RESIZE_AMOUNT_SMALL ((double)0.001)
-
 
 #define LOA_CONTRACT_TRIGGER1 ((double)0.70)
 #define LOA_CONTRACT_TRIGGER2 ((double)0.90)
@@ -77,7 +75,8 @@ class MM_MemorySubSpace;
  * @todo Provide class documentation
  * @ingroup GC_Base
  */
-class MM_MemoryPoolLargeObjects : public MM_MemoryPool {
+class MM_MemoryPoolLargeObjects : public MM_MemoryPool
+{
 	/*
 	 * Data members
 	 */
@@ -94,8 +93,7 @@ private:
 	uintptr_t _soaSize;
 	double _currentLOARatio;
 	double _minLOAFreeRatio;
-	double *_loaFreeRatioHistory; /**<history of LOA free/total size ratio  for a past few global GCs */
-
+	double* _loaFreeRatioHistory; /**<history of LOA free/total size ratio  for a past few global GCs */
 
 	uintptr_t _soaObjectSizeLWM;
 
@@ -122,7 +120,9 @@ private:
 
 protected:
 public:
-	static MM_MemoryPoolLargeObjects* newInstance(MM_EnvironmentBase* env, MM_MemoryPoolAddressOrderedListBase* largeObjectArea, MM_MemoryPoolAddressOrderedListBase* smallObjectArea);
+	static MM_MemoryPoolLargeObjects* newInstance(MM_EnvironmentBase* env,
+	                                              MM_MemoryPoolAddressOrderedListBase* largeObjectArea,
+	                                              MM_MemoryPoolAddressOrderedListBase* smallObjectArea);
 
 	virtual void lock(MM_EnvironmentBase* env);
 	virtual void unlock(MM_EnvironmentBase* env);
@@ -135,33 +135,45 @@ public:
 	virtual MM_MemoryPool* getMemoryPool(uintptr_t size);
 	virtual MM_MemoryPool* getMemoryPool(MM_EnvironmentBase* env, void* addrBase, void* addrTop, void*& highAddr);
 
-	virtual uintptr_t getMemoryPoolCount()
-	{
-		return 2;
-	}
+	virtual uintptr_t getMemoryPoolCount() { return 2; }
 
-	virtual uintptr_t getActiveMemoryPoolCount()
-	{
-		return _loaSize > 0 ? 2 : 1;
-	}
+	virtual uintptr_t getActiveMemoryPoolCount() { return _loaSize > 0 ? 2 : 1; }
 
 	virtual void resetHeapStatistics(bool memoryPoolCollected);
 	virtual void mergeHeapStats(MM_HeapStats* heapStats, bool active);
 
 	virtual void* allocateObject(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription);
-	virtual void* collectorAllocate(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, bool lockingRequired);
+	virtual void*
+	collectorAllocate(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, bool lockingRequired);
 
-	virtual void* allocateTLH(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, uintptr_t maximumSizeInBytesRequired, void*& addrBase, void*& addrTop);
-	virtual void* collectorAllocateTLH(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, uintptr_t maximumSizeInBytesRequired, void*& addrBase, void*& addrTop, bool lockingRequired);
+	virtual void* allocateTLH(MM_EnvironmentBase* env,
+	                          MM_AllocateDescription* allocDescription,
+	                          uintptr_t maximumSizeInBytesRequired,
+	                          void*& addrBase,
+	                          void*& addrTop);
+	virtual void* collectorAllocateTLH(MM_EnvironmentBase* env,
+	                                   MM_AllocateDescription* allocDescription,
+	                                   uintptr_t maximumSizeInBytesRequired,
+	                                   void*& addrBase,
+	                                   void*& addrTop,
+	                                   bool lockingRequired);
 
 	virtual void reset(Cause cause = any);
 
-	virtual void expandWithRange(MM_EnvironmentBase* env, uintptr_t expandSize, void* lowAddress, void* highAddress, bool canCoalesce);
-	virtual void* contractWithRange(MM_EnvironmentBase* env, uintptr_t expandSize, void* lowAddress, void* highAddress);
+	virtual void expandWithRange(MM_EnvironmentBase* env,
+	                             uintptr_t expandSize,
+	                             void* lowAddress,
+	                             void* highAddress,
+	                             bool canCoalesce);
+	virtual void*
+	contractWithRange(MM_EnvironmentBase* env, uintptr_t expandSize, void* lowAddress, void* highAddress);
 	virtual bool abandonHeapChunk(void* addrBase, void* addrTop);
 
 	virtual void* findFreeEntryEndingAtAddr(MM_EnvironmentBase* env, void* addr);
-	virtual uintptr_t getAvailableContractionSizeForRangeEndingAt(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, void* lowAddr, void* highAddr);
+	virtual uintptr_t getAvailableContractionSizeForRangeEndingAt(MM_EnvironmentBase* env,
+	                                                              MM_AllocateDescription* allocDescription,
+	                                                              void* lowAddr,
+	                                                              void* highAddr);
 	virtual void* findFreeEntryTopStartingAtAddr(MM_EnvironmentBase* env, void* addr);
 	virtual void* getFirstFreeStartingAddr(MM_EnvironmentBase* env);
 	virtual void* getNextFreeStartingAddr(MM_EnvironmentBase* env, void* currentFree);
@@ -170,10 +182,7 @@ public:
 	virtual uintptr_t getApproximateFreeMemorySize();
 	virtual uintptr_t getActualFreeEntryCount();
 
-	MMINLINE virtual uintptr_t getCurrentLOASize()
-	{
-		return _loaSize;
-	}
+	MMINLINE virtual uintptr_t getCurrentLOASize() { return _loaSize; }
 
 	MMINLINE virtual uintptr_t getApproximateFreeLOAMemorySize()
 	{
@@ -217,11 +226,7 @@ public:
 	/**
 	 * @return the ratio of Large Object Area
 	 */
-	MMINLINE double
-	getLOARatio()
-	{
-		return _currentLOARatio;
-	}
+	MMINLINE double getLOARatio() { return _currentLOARatio; }
 
 #if defined(OMR_GC_IDLE_HEAP_MANAGER)
 	virtual uintptr_t releaseFreeMemoryPages(MM_EnvironmentBase* env);
@@ -230,22 +235,23 @@ public:
 	/**
 	 * Create a MemoryPoolLargeObjects object.
 	 */
-	MM_MemoryPoolLargeObjects(MM_EnvironmentBase* env, MM_MemoryPoolAddressOrderedListBase* largeObjectArea, MM_MemoryPoolAddressOrderedListBase* smallObjectArea)
-		: MM_MemoryPool(env, 0)
-		, _omrVM(env->getOmrVM())
-		, _currentOldAreaSize(0)
-		, _currentLOABase(NULL)
-		, _memoryPoolSmallObjects(smallObjectArea)
-		, _memoryPoolLargeObjects(largeObjectArea)
-		, _loaSize(0)
-		, _soaSize(0)
-		, _currentLOARatio(_extensions->largeObjectAreaInitialRatio)
-		, _soaObjectSizeLWM(UDATA_MAX)
-		, _soaFreeBytesAfterLastGC(0)
+	MM_MemoryPoolLargeObjects(MM_EnvironmentBase* env,
+	                          MM_MemoryPoolAddressOrderedListBase* largeObjectArea,
+	                          MM_MemoryPoolAddressOrderedListBase* smallObjectArea)
+	        : MM_MemoryPool(env, 0),
+	          _omrVM(env->getOmrVM()),
+	          _currentOldAreaSize(0),
+	          _currentLOABase(NULL),
+	          _memoryPoolSmallObjects(smallObjectArea),
+	          _memoryPoolLargeObjects(largeObjectArea),
+	          _loaSize(0),
+	          _soaSize(0),
+	          _currentLOARatio(_extensions->largeObjectAreaInitialRatio),
+	          _soaObjectSizeLWM(UDATA_MAX),
+	          _soaFreeBytesAfterLastGC(0)
 	{
 		_typeId = __FUNCTION__;
 	}
 };
-
 
 #endif /* MEMORYPOOLLARGEOBJECTS_HPP_ */

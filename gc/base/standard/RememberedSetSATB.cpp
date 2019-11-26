@@ -39,14 +39,15 @@
  *
  * @param workPackets The workPackets 
  */
-MM_RememberedSetSATB *
-MM_RememberedSetSATB::newInstance(MM_EnvironmentBase *env, MM_WorkPacketsSATB *workPackets)
+MM_RememberedSetSATB*
+MM_RememberedSetSATB::newInstance(MM_EnvironmentBase* env, MM_WorkPacketsSATB* workPackets)
 {
-	MM_RememberedSetSATB *rememberedSet;
-	
-	rememberedSet = (MM_RememberedSetSATB *)env->getForge()->allocate(sizeof(MM_RememberedSetSATB), MM_AllocationCategory::WORK_PACKETS, J9_GET_CALLSITE());
+	MM_RememberedSetSATB* rememberedSet;
+
+	rememberedSet = (MM_RememberedSetSATB*)env->getForge()->allocate(
+	        sizeof(MM_RememberedSetSATB), MM_AllocationCategory::WORK_PACKETS, J9_GET_CALLSITE());
 	if (NULL != rememberedSet) {
-		new(rememberedSet) MM_RememberedSetSATB(env, workPackets);
+		new (rememberedSet) MM_RememberedSetSATB(env, workPackets);
 		if (!rememberedSet->initialize(env)) {
 			rememberedSet->kill(env);
 			rememberedSet = NULL;
@@ -59,7 +60,7 @@ MM_RememberedSetSATB::newInstance(MM_EnvironmentBase *env, MM_WorkPacketsSATB *w
  * Kill the MM_RememberedSetSATB instance
  */
 void
-MM_RememberedSetSATB::kill(MM_EnvironmentBase *env)
+MM_RememberedSetSATB::kill(MM_EnvironmentBase* env)
 {
 	tearDown(env);
 	env->getForge()->free(this);
@@ -69,7 +70,7 @@ MM_RememberedSetSATB::kill(MM_EnvironmentBase *env)
  * Initialize the MM_RememberedSetSATB class.
  */
 bool
-MM_RememberedSetSATB::initialize(MM_EnvironmentBase *env)
+MM_RememberedSetSATB::initialize(MM_EnvironmentBase* env)
 {
 	return true;
 }
@@ -78,9 +79,8 @@ MM_RememberedSetSATB::initialize(MM_EnvironmentBase *env)
  * Teardown the MM_RememberedSetSATB class.
  */
 void
-MM_RememberedSetSATB::tearDown(MM_EnvironmentBase *env)
-{	
-}
+MM_RememberedSetSATB::tearDown(MM_EnvironmentBase* env)
+{}
 
 /**
  * Initialize a fragment to a "null" state such that the first store into it will cause a
@@ -93,7 +93,7 @@ MM_RememberedSetSATB::initializeFragment(MM_EnvironmentBase* env, MM_GCRemembere
 	fragment->fragmentAlloc = NULL;
 	fragment->fragmentTop = NULL;
 	fragment->fragmentStorage = NULL;
-	
+
 	/* The initial values of the following fields were chosen to ensure the local fragment
 	 * index isn't initialized to the J9GC_REMEMBERED_SET_RESERVED_INDEX, since depending
 	 * on when the fragment is initialized, it could be interpreted as meaning the double
@@ -117,13 +117,13 @@ MM_RememberedSetSATB::storeInFragment(MM_EnvironmentBase* env, MM_GCRememberedSe
 {
 	if (!isFragmentValid(env, fragment)) {
 		if (!refreshFragment(env, fragment)) {
-			_workPackets->overflowItem(env, (void *)value, OVERFLOW_TYPE_BARRIER);
+			_workPackets->overflowItem(env, (void*)value, OVERFLOW_TYPE_BARRIER);
 			return;
 		}
 	}
-	
+
 	assume(isFragmentValid(env, fragment), "Refreshed fragment invalid.");
-	*(*(fragment->fragmentAlloc)) = (UDATA) value;
+	*(*(fragment->fragmentAlloc)) = (UDATA)value;
 	(*(fragment->fragmentAlloc))++;
 }
 
@@ -152,7 +152,8 @@ MM_RememberedSetSATB::isFragmentValid(MM_EnvironmentBase* env, const MM_GCRememb
 void
 MM_RememberedSetSATB::preserveLocalFragmentIndex(MM_EnvironmentBase* env, MM_GCRememberedSetFragment* fragment)
 {
-	assume((fragment->localFragmentIndex != J9GC_REMEMBERED_SET_RESERVED_INDEX), "Attempt to preserve an already preserved fragment index.");
+	assume((fragment->localFragmentIndex != J9GC_REMEMBERED_SET_RESERVED_INDEX),
+	       "Attempt to preserve an already preserved fragment index.");
 	fragment->preservedLocalFragmentIndex = fragment->localFragmentIndex;
 	fragment->localFragmentIndex = J9GC_REMEMBERED_SET_RESERVED_INDEX;
 }
@@ -164,7 +165,8 @@ MM_RememberedSetSATB::preserveLocalFragmentIndex(MM_EnvironmentBase* env, MM_GCR
 void
 MM_RememberedSetSATB::restoreLocalFragmentIndex(MM_EnvironmentBase* env, MM_GCRememberedSetFragment* fragment)
 {
-	assume((fragment->localFragmentIndex == J9GC_REMEMBERED_SET_RESERVED_INDEX), "Attempt to restore a non-preserved fragment index.");
+	assume((fragment->localFragmentIndex == J9GC_REMEMBERED_SET_RESERVED_INDEX),
+	       "Attempt to restore a non-preserved fragment index.");
 	fragment->localFragmentIndex = fragment->preservedLocalFragmentIndex;
 }
 
@@ -175,7 +177,8 @@ MM_RememberedSetSATB::restoreLocalFragmentIndex(MM_EnvironmentBase* env, MM_GCRe
 void
 MM_RememberedSetSATB::preserveGlobalFragmentIndex(MM_EnvironmentBase* env)
 {
-	assume((_rememberedSetStruct.globalFragmentIndex != J9GC_REMEMBERED_SET_RESERVED_INDEX), "Attempt to preserve an already preserved global index.");
+	assume((_rememberedSetStruct.globalFragmentIndex != J9GC_REMEMBERED_SET_RESERVED_INDEX),
+	       "Attempt to preserve an already preserved global index.");
 	_rememberedSetStruct.preservedGlobalFragmentIndex = _rememberedSetStruct.globalFragmentIndex;
 	_rememberedSetStruct.globalFragmentIndex = J9GC_REMEMBERED_SET_RESERVED_INDEX;
 }
@@ -186,7 +189,8 @@ MM_RememberedSetSATB::preserveGlobalFragmentIndex(MM_EnvironmentBase* env)
 void
 MM_RememberedSetSATB::restoreGlobalFragmentIndex(MM_EnvironmentBase* env)
 {
-	assume((_rememberedSetStruct.globalFragmentIndex == J9GC_REMEMBERED_SET_RESERVED_INDEX), "Attempt to restore a non-preserved global index.");
+	assume((_rememberedSetStruct.globalFragmentIndex == J9GC_REMEMBERED_SET_RESERVED_INDEX),
+	       "Attempt to restore a non-preserved global index.");
 	_rememberedSetStruct.globalFragmentIndex = _rememberedSetStruct.preservedGlobalFragmentIndex;
 }
 
@@ -260,7 +264,7 @@ MM_RememberedSetSATB::setGlobalIndex(MM_EnvironmentBase* env, UDATA indexValue)
 		_rememberedSetStruct.preservedGlobalFragmentIndex = indexValue;
 	} else {
 		_rememberedSetStruct.globalFragmentIndex = indexValue;
-	} 
+	}
 }
 
 /**
@@ -271,40 +275,41 @@ MM_RememberedSetSATB::setGlobalIndex(MM_EnvironmentBase* env, UDATA indexValue)
  * is to be updated.
  */
 bool
-MM_RememberedSetSATB::refreshFragment(MM_EnvironmentBase *env, MM_GCRememberedSetFragment* fragment)
+MM_RememberedSetSATB::refreshFragment(MM_EnvironmentBase* env, MM_GCRememberedSetFragment* fragment)
 {
-	MM_Packet *packet = NULL;
+	MM_Packet* packet = NULL;
 	bool result = false;
-	
+
 	packet = _workPackets->getBarrierPacket(env);
-	MM_Packet *oldPacket = (MM_Packet *)fragment->fragmentStorage;
-		
-	if ((NULL != oldPacket) && (getLocalFragmentIndex(env, fragment) == getGlobalFragmentIndex(env)) && (*fragment->fragmentTop == *fragment->fragmentAlloc)) {
+	MM_Packet* oldPacket = (MM_Packet*)fragment->fragmentStorage;
+
+	if ((NULL != oldPacket) && (getLocalFragmentIndex(env, fragment) == getGlobalFragmentIndex(env))
+	    && (*fragment->fragmentTop == *fragment->fragmentAlloc)) {
 		_workPackets->removePacketFromInUseList(env, oldPacket);
 		_workPackets->putFullPacket(env, oldPacket);
 	}
-	
+
 	if (J9GC_REMEMBERED_SET_RESERVED_INDEX == fragment->localFragmentIndex) {
 		fragment->preservedLocalFragmentIndex = getGlobalFragmentIndex(env);
 	} else {
 		fragment->localFragmentIndex = getGlobalFragmentIndex(env);
 	}
-    fragment->fragmentParent = &_rememberedSetStruct;
-	
+	fragment->fragmentParent = &_rememberedSetStruct;
+
 	if (NULL != packet) {
 		fragment->fragmentAlloc = packet->getCurrentAddr(env);
 		fragment->fragmentTop = packet->getTopAddr(env);
-		fragment->fragmentStorage = (void *)packet;
-	    
-	    _workPackets->putInUsePacket(env, packet);
-	    
-	    result = true;
+		fragment->fragmentStorage = (void*)packet;
+
+		_workPackets->putInUsePacket(env, packet);
+
+		result = true;
 	} else {
 		fragment->fragmentAlloc = NULL;
 		fragment->fragmentTop = NULL;
 		fragment->fragmentStorage = NULL;
 	}
-	
+
 	return result;
 }
 

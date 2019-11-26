@@ -28,7 +28,7 @@
  * Initialize GAM
  */
 bool
-MM_GlobalAllocationManager::initialize(MM_EnvironmentBase *env)
+MM_GlobalAllocationManager::initialize(MM_EnvironmentBase* env)
 {
 	return true;
 }
@@ -37,15 +37,14 @@ MM_GlobalAllocationManager::initialize(MM_EnvironmentBase *env)
  * Tear down a GAM instance
  */
 void
-MM_GlobalAllocationManager::tearDown(MM_EnvironmentBase *env)
-{
-}
+MM_GlobalAllocationManager::tearDown(MM_EnvironmentBase* env)
+{}
 
 /**
  * Flush all allocation contexts such that the cells allocated to them becomes safe for traversal.
  */
 void
-MM_GlobalAllocationManager::flushAllocationContexts(MM_EnvironmentBase *env)
+MM_GlobalAllocationManager::flushAllocationContexts(MM_EnvironmentBase* env)
 {
 	Assert_MM_true(_managedAllocationContextCount > 0);
 	for (uintptr_t i = 0; i < _managedAllocationContextCount; i++) {
@@ -53,8 +52,8 @@ MM_GlobalAllocationManager::flushAllocationContexts(MM_EnvironmentBase *env)
 	}
 }
 
-void 
-MM_GlobalAllocationManager::flushAllocationContextsForShutdown(MM_EnvironmentBase *env)
+void
+MM_GlobalAllocationManager::flushAllocationContextsForShutdown(MM_EnvironmentBase* env)
 {
 	Assert_MM_true(_managedAllocationContextCount > 0);
 	if (NULL != _managedAllocationContexts) {

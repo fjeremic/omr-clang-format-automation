@@ -22,14 +22,12 @@
 
 #include "GCExtensionsBase.hpp"
 
-#include <string.h>
-
-#include "hookable_api.h"
-#include "omrmemcategories.h"
-#include "modronbase.h"
-
 #include "CollectorLanguageInterface.hpp"
 #include "EnvironmentBase.hpp"
+#include "hookable_api.h"
+#include "modronbase.h"
+#include "omrmemcategories.h"
+#include <string.h>
 #if defined(OMR_GC_MODRON_SCAVENGER)
 #include "Scavenger.hpp"
 #endif /* OMR_GC_MODRON_SCAVENGER */
@@ -41,7 +39,8 @@ MM_GCExtensionsBase::newInstance(MM_EnvironmentBase* env)
 	MM_GCExtensionsBase* extensions;
 
 	/* Avoid using OMR::GC::Forge to allocate memory for the extension, since OMR::GC::Forge itself has not been created! */
-	extensions = static_cast<MM_GCExtensionsBase*>(omrmem_allocate_memory(sizeof(MM_GCExtensionsBase), OMRMEM_CATEGORY_MM));
+	extensions = static_cast<MM_GCExtensionsBase*>(
+	        omrmem_allocate_memory(sizeof(MM_GCExtensionsBase), OMRMEM_CATEGORY_MM));
 	if (extensions) {
 		new (extensions) MM_GCExtensionsBase();
 		if (!extensions->initialize(env)) {
@@ -65,8 +64,8 @@ bool
 MM_GCExtensionsBase::initialize(MM_EnvironmentBase* env)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-	uintptr_t *pageSizes = NULL;
-	uintptr_t *pageFlags = NULL;
+	uintptr_t* pageSizes = NULL;
+	uintptr_t* pageFlags = NULL;
 
 #if defined(OMR_GC_COMPRESSED_POINTERS) && defined(OMR_GC_FULL_POINTERS)
 	_compressObjectReferences = env->compressObjectReferences();
@@ -92,7 +91,6 @@ MM_GCExtensionsBase::initialize(MM_EnvironmentBase* env)
 #error Default GC policy cannot be determined
 #endif /* OMR_GC_MODRON_STANDARD */
 
-
 #if defined(OMR_GC_MODRON_SCAVENGER)
 	if (!rememberedSet.initialize(env, OMR::GC::AllocationCategory::REMEMBERED_SET)) {
 		goto failed;
@@ -110,7 +108,7 @@ MM_GCExtensionsBase::initialize(MM_EnvironmentBase* env)
 	excessiveGCStats.endGCTimeStamp = omrtime_hires_clock();
 	excessiveGCStats.lastEndGlobalGCTimeStamp = excessiveGCStats.endGCTimeStamp;
 
-        /* Get usable physical memory from portlibrary. This is used by computeDefaultMaxHeap().
+	/* Get usable physical memory from portlibrary. This is used by computeDefaultMaxHeap().
 	 * It can also be used by downstream projects to compute project specific GC parameters.
 	 */
 	usablePhysicalMemory = omrsysinfo_get_addressable_physical_memory();
@@ -130,9 +128,9 @@ MM_GCExtensionsBase::initialize(MM_EnvironmentBase* env)
 	gcmetadataPageSize = pageSizes[0];
 	gcmetadataPageFlags = OMRPORT_VMEM_PAGE_FLAG_NOT_USED;
 
-#define SIXTY_FOUR_KB	((uintptr_t)64 * 1024)
-#define ONE_MB			((uintptr_t)1 * 1024 * 1024)
-#define TWO_MB			((uintptr_t)2 * 1024 * 1024)
+#define SIXTY_FOUR_KB ((uintptr_t)64 * 1024)
+#define ONE_MB ((uintptr_t)1 * 1024 * 1024)
+#define TWO_MB ((uintptr_t)2 * 1024 * 1024)
 
 #if defined(AIXPPC)
 	requestedPageSize = SIXTY_FOUR_KB; /* Use 64K pages for AIX-32 and AIX-64 */
@@ -155,7 +153,6 @@ MM_GCExtensionsBase::initialize(MM_EnvironmentBase* env)
 		gcmetadataPageFlags = pageFlags[0];
 	}
 
-
 	if (!_forge.initialize(env->getPortLibrary())) {
 		goto failed;
 	}
@@ -172,7 +169,8 @@ MM_GCExtensionsBase::initialize(MM_EnvironmentBase* env)
 		goto failed;
 	}
 
-	if (omrthread_monitor_init_with_name(&_lightweightNonReentrantLockPoolMutex, 0, "GCExtensions::_lightweightNonReentrantLockPoolMutex")) {
+	if (omrthread_monitor_init_with_name(&_lightweightNonReentrantLockPoolMutex, 0,
+	                                     "GCExtensions::_lightweightNonReentrantLockPoolMutex")) {
 		goto failed;
 	}
 
@@ -203,7 +201,10 @@ failed:
 }
 
 bool
-MM_GCExtensionsBase::validateDefaultPageParameters(uintptr_t pageSize, uintptr_t pageFlags, uintptr_t *pageSizesArray, uintptr_t *pageFlagsArray)
+MM_GCExtensionsBase::validateDefaultPageParameters(uintptr_t pageSize,
+                                                   uintptr_t pageFlags,
+                                                   uintptr_t* pageSizesArray,
+                                                   uintptr_t* pageFlagsArray)
 {
 	bool result = false;
 
@@ -228,7 +229,7 @@ MM_GCExtensionsBase::tearDown(MM_EnvironmentBase* env)
 #if defined(OMR_GC_REALTIME)
 	if (_omrVM->_gcCycleOnMonitor) {
 		omrthread_monitor_destroy(_omrVM->_gcCycleOnMonitor);
-		_omrVM->_gcCycleOnMonitor = (omrthread_monitor_t) NULL;
+		_omrVM->_gcCycleOnMonitor = (omrthread_monitor_t)NULL;
 	}
 #endif /* defined(OMR_GC_REALTIME) */
 
@@ -248,12 +249,12 @@ MM_GCExtensionsBase::tearDown(MM_EnvironmentBase* env)
 
 	if (NULL != gcExclusiveAccessMutex) {
 		omrthread_monitor_destroy(gcExclusiveAccessMutex);
-		gcExclusiveAccessMutex = (omrthread_monitor_t) NULL;
+		gcExclusiveAccessMutex = (omrthread_monitor_t)NULL;
 	}
 
 	if (NULL != _lightweightNonReentrantLockPoolMutex) {
 		omrthread_monitor_destroy(_lightweightNonReentrantLockPoolMutex);
-		_lightweightNonReentrantLockPoolMutex = (omrthread_monitor_t) NULL;
+		_lightweightNonReentrantLockPoolMutex = (omrthread_monitor_t)NULL;
 	}
 
 	_forge.tearDown();
@@ -286,13 +287,21 @@ MM_GCExtensionsBase::isConcurrentScavengerInProgress()
 }
 
 void
-MM_GCExtensionsBase::identityHashDataAddRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uintptr_t size, void* lowAddress, void* highAddress)
+MM_GCExtensionsBase::identityHashDataAddRange(MM_EnvironmentBase* env,
+                                              MM_MemorySubSpace* subspace,
+                                              uintptr_t size,
+                                              void* lowAddress,
+                                              void* highAddress)
 {
 	/* empty */
 }
 
 void
-MM_GCExtensionsBase::identityHashDataRemoveRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uintptr_t size, void* lowAddress, void* highAddress)
+MM_GCExtensionsBase::identityHashDataRemoveRange(MM_EnvironmentBase* env,
+                                                 MM_MemorySubSpace* subspace,
+                                                 uintptr_t size,
+                                                 void* lowAddress,
+                                                 void* highAddress)
 {
 	/* empty */
 }

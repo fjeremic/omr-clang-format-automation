@@ -23,10 +23,9 @@
 #if !defined(GLOBALGCSTATS_HPP_)
 #define GLOBALGCSTATS_HPP_
 
-#include "omrcomp.h"
-#include "modronbase.h"
-
 #include "ClassUnloadStats.hpp"
+#include "modronbase.h"
+#include "omrcomp.h"
 #if defined(OMR_GC_MODRON_COMPACTION)
 #include "CompactStats.hpp"
 #endif /* OMR_GC_MODRON_COMPACTION */
@@ -39,7 +38,8 @@
  * Storage for statistics relevant to global garbage collections
  * @ingroup GC_Stats_Core
  */
-class MM_GlobalGCStats {
+class MM_GlobalGCStats
+{
 public:
 	uintptr_t gcCount; /**< Count of the number of GC cycles that have occurred */
 	MM_WorkPacketStats workPacketStats;
@@ -78,18 +78,20 @@ public:
 	};
 
 	MM_GlobalGCStats()
-		: gcCount(0)
-		, workPacketStats()
-		, sweepStats()
+	        : gcCount(0),
+	          workPacketStats(),
+	          sweepStats()
 #if defined(OMR_GC_MODRON_COMPACTION)
-		, compactStats()
+	          ,
+	          compactStats()
 #endif /* OMR_GC_MODRON_COMPACTION */
-		, fixHeapForWalkReason(FIXUP_NONE)
-		, fixHeapForWalkTime(0)
-		, markStats()
-		, classUnloadStats()
-		, metronomeStats()
-		, finalizableCount(0) {};
+	          ,
+	          fixHeapForWalkReason(FIXUP_NONE),
+	          fixHeapForWalkTime(0),
+	          markStats(),
+	          classUnloadStats(),
+	          metronomeStats(),
+	          finalizableCount(0){};
 };
 
 #endif /* GLOBALGCSTATS_HPP_ */

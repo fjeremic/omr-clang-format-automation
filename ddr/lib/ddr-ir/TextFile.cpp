@@ -27,65 +27,62 @@
  * Open the named file for reading.
  * Returns true if the file was newly opened; false otherwise.
  */
-bool
-TextFile::openRead(const char *filename)
+bool TextFile::openRead(const char* filename)
 {
-	if (_file < 0) {
-		OMRPORT_ACCESS_FROM_OMRPORT(_portLibrary);
+    if (_file < 0) {
+        OMRPORT_ACCESS_FROM_OMRPORT(_portLibrary);
 
-		_file = omrfile_open(filename, EsOpenRead, 0);
+        _file = omrfile_open(filename, EsOpenRead, 0);
 
-		if (_file >= 0) {
-			return true;
-		}
-	}
+        if (_file >= 0) {
+            return true;
+        }
+    }
 
-	return false;
+    return false;
 }
 
 /*
  * Read a line of text from this file into 'line'; excluding any line terminators.
  * Returns true if any text was read (even a blank line); false otherwise.
  */
-bool
-TextFile::readLine(std::string &line)
+bool TextFile::readLine(std::string& line)
 {
-	OMRPORT_ACCESS_FROM_OMRPORT(_portLibrary);
-	char buffer[200];
+    OMRPORT_ACCESS_FROM_OMRPORT(_portLibrary);
+    char buffer[200];
 
-	line.clear();
+    line.clear();
 
-	while (NULL != omrfile_read_text(_file, buffer, sizeof(buffer))) {
-		for (size_t index = 0;; ++index) {
-			char ch = buffer[index];
+    while (NULL != omrfile_read_text(_file, buffer, sizeof(buffer))) {
+        for (size_t index = 0;; ++index) {
+            char ch = buffer[index];
 
-			if (('\0' == ch) || ('\n' == ch) || ('\r' == ch)) {
-				if (0 != index) {
-					line.append(buffer, index);
-				}
-				if ('\0' == ch) {
-					break;
-				} else {
-					return true;
-				}
-			}
-		}
-	}
+            if (('\0' == ch) || ('\n' == ch) || ('\r' == ch)) {
+                if (0 != index) {
+                    line.append(buffer, index);
+                }
+                if ('\0' == ch) {
+                    break;
+                } else {
+                    return true;
+                }
+            }
+        }
+    }
 
-	return false;
+    return false;
 }
 
 /*
  * Close this file. This has no effect if the file was not opened
  * or has already been closed.
  */
-void
-TextFile::close()
+void TextFile::close()
 {
-	if (_file >= 0) {
-		OMRPORT_ACCESS_FROM_OMRPORT(_portLibrary);
+    if (_file >= 0) {
+        OMRPORT_ACCESS_FROM_OMRPORT(_portLibrary);
 
-		omrfile_close(_file);
-		_file = -1;
-	}
+        omrfile_close(_file);
+        _file = -1;
+    }
 }

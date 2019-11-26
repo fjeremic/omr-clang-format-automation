@@ -35,7 +35,7 @@ MM_CardCleaningStats::clear()
 }
 
 void
-MM_CardCleaningStats::merge(MM_CardCleaningStats *statsToMerge)
+MM_CardCleaningStats::merge(MM_CardCleaningStats* statsToMerge)
 {
 	_cardCleaningTime += statsToMerge->_cardCleaningTime;
 	_cardsCleaned += statsToMerge->_cardsCleaned;

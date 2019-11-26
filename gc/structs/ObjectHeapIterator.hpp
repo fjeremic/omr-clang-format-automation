@@ -28,11 +28,10 @@
 #if !defined(OBJECTHEAPITERATOR_HPP_)
 #define OBJECTHEAPITERATOR_HPP_
 
-#include "omrcfg.h"
+#include "Base.hpp"
 #include "modronbase.h"
 #include "objectdescription.h"
-
-#include "Base.hpp"
+#include "omrcfg.h"
 
 /**
  * Generic interface for iterating over all objects and non-objects in a memory segment.
@@ -49,7 +48,7 @@
 class GC_ObjectHeapIterator
 {
 public:
-	void *operator new(size_t size, void *memoryPtr) { return memoryPtr; };
+	void* operator new(size_t size, void* memoryPtr) { return memoryPtr; };
 
 	/**
 	 * Return the next object in the heap.
@@ -60,7 +59,7 @@ public:
 	 * @note nextObject() must return NULL for an uninitialized iterator
 	 */
 	virtual omrobjectptr_t nextObject() = 0;
-	
+
 	/**
 	 * Return the next object, without advancing over it until the next
 	 * call to this method.
@@ -86,7 +85,7 @@ public:
 	 * @param size the number of bytes by which to advance the iterator
 	 */
 	virtual void advance(uintptr_t size) = 0;
-	
+
 	/**
 	 * Reset the iterator to walk a new chunk of heap.
 	 * 
@@ -94,8 +93,7 @@ public:
 	 * valid object, or to some other structure understood by the
 	 * object heap iterator (e.g. a free list entry)
 	 */
-	virtual void reset(uintptr_t *base, uintptr_t *top) = 0;
+	virtual void reset(uintptr_t* base, uintptr_t* top) = 0;
 };
 
 #endif /* OBJECTHEAPITERATOR_HPP_ */
-

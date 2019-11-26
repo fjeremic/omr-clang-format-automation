@@ -24,29 +24,28 @@
 
 #if defined(OMR_GC_MODRON_SCAVENGER)
 
-#include "ModronAssertions.h"
-
 #include "EnvironmentStandard.hpp"
+#include "ModronAssertions.h"
+#include "ParallelScavengeTask.hpp"
 #include "Scavenger.hpp"
 
-#include "ParallelScavengeTask.hpp"
-
 void
-MM_ParallelScavengeTask::run(MM_EnvironmentBase *envBase)
+MM_ParallelScavengeTask::run(MM_EnvironmentBase* envBase)
 {
-	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
+	MM_EnvironmentStandard* env = MM_EnvironmentStandard::getEnvironment(envBase);
 	_collector->workThreadGarbageCollect(env);
 }
 
 void
-MM_ParallelScavengeTask::masterSetup(MM_EnvironmentBase *env)
+MM_ParallelScavengeTask::masterSetup(MM_EnvironmentBase* env)
 {
-	uintptr_t calculatedAliasThreshold = (uintptr_t)(getThreadCount() * env->getExtensions()->aliasInhibitingThresholdPercentage);
+	uintptr_t calculatedAliasThreshold =
+	        (uintptr_t)(getThreadCount() * env->getExtensions()->aliasInhibitingThresholdPercentage);
 	_collector->setAliasThreshold(calculatedAliasThreshold);
 }
 
 void
-MM_ParallelScavengeTask::setup(MM_EnvironmentBase *env)
+MM_ParallelScavengeTask::setup(MM_EnvironmentBase* env)
 {
 	if (env->isMasterThread()) {
 		Assert_MM_true(_cycleState == env->_cycleState);
@@ -57,7 +56,7 @@ MM_ParallelScavengeTask::setup(MM_EnvironmentBase *env)
 }
 
 void
-MM_ParallelScavengeTask::cleanup(MM_EnvironmentBase *env)
+MM_ParallelScavengeTask::cleanup(MM_EnvironmentBase* env)
 {
 	if (env->isMasterThread()) {
 		Assert_MM_true(_cycleState == env->_cycleState);
@@ -68,9 +67,9 @@ MM_ParallelScavengeTask::cleanup(MM_EnvironmentBase *env)
 
 #if defined(J9MODRON_TGC_PARALLEL_STATISTICS)
 void
-MM_ParallelScavengeTask::synchronizeGCThreads(MM_EnvironmentBase *envBase, const char *id)
+MM_ParallelScavengeTask::synchronizeGCThreads(MM_EnvironmentBase* envBase, const char* id)
 {
-	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
+	MM_EnvironmentStandard* env = MM_EnvironmentStandard::getEnvironment(envBase);
 	OMRPORT_ACCESS_FROM_OMRPORT(envBase->getPortLibrary());
 	uint64_t startTime = omrtime_hires_clock();
 	MM_ParallelTask::synchronizeGCThreads(env, id);
@@ -80,9 +79,9 @@ MM_ParallelScavengeTask::synchronizeGCThreads(MM_EnvironmentBase *envBase, const
 }
 
 bool
-MM_ParallelScavengeTask::synchronizeGCThreadsAndReleaseMaster(MM_EnvironmentBase *envBase, const char *id)
+MM_ParallelScavengeTask::synchronizeGCThreadsAndReleaseMaster(MM_EnvironmentBase* envBase, const char* id)
 {
-	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
+	MM_EnvironmentStandard* env = MM_EnvironmentStandard::getEnvironment(envBase);
 	OMRPORT_ACCESS_FROM_OMRPORT(envBase->getPortLibrary());
 	uint64_t startTime = omrtime_hires_clock();
 	bool result = MM_ParallelTask::synchronizeGCThreadsAndReleaseMaster(env, id);
@@ -94,9 +93,9 @@ MM_ParallelScavengeTask::synchronizeGCThreadsAndReleaseMaster(MM_EnvironmentBase
 }
 
 bool
-MM_ParallelScavengeTask::synchronizeGCThreadsAndReleaseSingleThread(MM_EnvironmentBase *envBase, const char *id)
+MM_ParallelScavengeTask::synchronizeGCThreadsAndReleaseSingleThread(MM_EnvironmentBase* envBase, const char* id)
 {
-	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
+	MM_EnvironmentStandard* env = MM_EnvironmentStandard::getEnvironment(envBase);
 	OMRPORT_ACCESS_FROM_OMRPORT(envBase->getPortLibrary());
 	uint64_t startTime = omrtime_hires_clock();
 	bool result = MM_ParallelTask::synchronizeGCThreadsAndReleaseSingleThread(env, id);

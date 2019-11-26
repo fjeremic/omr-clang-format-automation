@@ -25,7 +25,9 @@
 
 // C++11 upgrade (Issue #1916).
 template <typename CompareType, typename ValType>
-class TernaryTest : public TRTest::JitTest, public ::testing::WithParamInterface<std::tuple<std::tuple<CompareType, CompareType>, std::tuple<ValType, ValType>, ValType (*)(CompareType, CompareType, ValType, ValType)>> {};
+class TernaryTest : public TRTest::JitTest,
+                    public ::testing::WithParamInterface<std::tuple<std::tuple<CompareType, CompareType>,
+                        std::tuple<ValType, ValType>, ValType (*)(CompareType, CompareType, ValType, ValType)> > {};
 
 /** \brief
  *     Struct equivalent of the TernaryTestParamStruct tuple.
@@ -37,30 +39,31 @@ class TernaryTest : public TRTest::JitTest, public ::testing::WithParamInterface
  *     The type that the ternary opcode returns.
  */
 template <typename CompareType, typename ValType>
-struct TernaryTestParamStruct
-   {
-   CompareType c1;
-   CompareType c2;
-   ValType v1;
-   ValType v2;
-   ValType (*oracle)(CompareType, CompareType, ValType, ValType);
-   };
+struct TernaryTestParamStruct {
+    CompareType c1;
+    CompareType c2;
+    ValType v1;
+    ValType v2;
+    ValType (*oracle)(CompareType, CompareType, ValType, ValType);
+};
 
 /** \brief
  *     Given an instance of TernaryTestParamStruct, returns an equivalent instance of TernaryTestParamStruct.
  */
 template <typename CompareType, typename ValType>
-TernaryTestParamStruct<CompareType, ValType> to_struct(std::tuple<std::tuple<CompareType, CompareType>, std::tuple<ValType, ValType>, ValType (*)(CompareType, CompareType, ValType, ValType)> param)
-   {
-   TernaryTestParamStruct<CompareType, ValType> s;
+TernaryTestParamStruct<CompareType, ValType> to_struct(std::tuple<std::tuple<CompareType, CompareType>,
+    std::tuple<ValType, ValType>, ValType (*)(CompareType, CompareType, ValType, ValType)>
+        param)
+{
+    TernaryTestParamStruct<CompareType, ValType> s;
 
-   s.c1 = std::get<0>(std::get<0>(param));
-   s.c2 = std::get<1>(std::get<0>(param));
-   s.v1 = std::get<0>(std::get<1>(param));
-   s.v2 = std::get<1>(std::get<1>(param));
-   s.oracle = std::get<2>(param);
-   return s;
-   }
+    s.c1 = std::get<0>(std::get<0>(param));
+    s.c2 = std::get<1>(std::get<0>(param));
+    s.v1 = std::get<0>(std::get<1>(param));
+    s.v2 = std::get<1>(std::get<1>(param));
+    s.oracle = std::get<2>(param);
+    return s;
+}
 
 /** \brief
  *     The oracle function which computes the expected result of the ternary test.
@@ -72,53 +75,52 @@ TernaryTestParamStruct<CompareType, ValType> to_struct(std::tuple<std::tuple<Com
  */
 template <typename CompareType, typename ValType>
 static ValType xternaryOracle(CompareType c1, CompareType c2, ValType v1, ValType v2)
-   {
-   return ((c1 < c2) ? v1 : v2);
-   }
+{
+    return ((c1 < c2) ? v1 : v2);
+}
 
 /** \brief
  *     The function computes the input vector of pairs for the compare node.
  */
 template <typename T>
-static std::vector<std::tuple<T, T>> compareInputs()
-   {
-   std::tuple<T, T> inputArray[] =
-      {
-      std::make_pair(std::numeric_limits<T>::min(), std::numeric_limits<T>::max()),
-      std::make_pair(std::numeric_limits<T>::max(), std::numeric_limits<T>::min()),
-      std::make_pair(std::numeric_limits<T>::min(), std::numeric_limits<T>::min()),
-      std::make_pair(0, std::numeric_limits<T>::max()),
-      std::make_pair(0, std::numeric_limits<T>::min()),
-      std::make_pair(std::numeric_limits<T>::min(), 0),
-      std::make_pair(std::numeric_limits<T>::max(), 0),
-      };
-   return std::vector<std::tuple<T, T>>(inputArray, inputArray + sizeof(inputArray)/sizeof(std::tuple<T, T>));
-   }
+static std::vector<std::tuple<T, T> > compareInputs()
+{
+    std::tuple<T, T> inputArray[] = {
+        std::make_pair(std::numeric_limits<T>::min(), std::numeric_limits<T>::max()),
+        std::make_pair(std::numeric_limits<T>::max(), std::numeric_limits<T>::min()),
+        std::make_pair(std::numeric_limits<T>::min(), std::numeric_limits<T>::min()),
+        std::make_pair(0, std::numeric_limits<T>::max()),
+        std::make_pair(0, std::numeric_limits<T>::min()),
+        std::make_pair(std::numeric_limits<T>::min(), 0),
+        std::make_pair(std::numeric_limits<T>::max(), 0),
+    };
+    return std::vector<std::tuple<T, T> >(inputArray, inputArray + sizeof(inputArray) / sizeof(std::tuple<T, T>));
+}
 
 /** \brief
  *     The function computes the true/false result vector of pairs for the ternary node.
  */
 template <typename T>
-static std::vector<std::tuple<T, T>> resultInputs()
-   {
-   std::tuple<T, T> inputArray[] =
-      {
-      std::make_pair(1, 0),
-      std::make_pair(0, 1),
-      };
-   return std::vector<std::tuple<T, T>>(inputArray, inputArray + sizeof(inputArray)/sizeof(std::tuple<T, T>));
-   }
+static std::vector<std::tuple<T, T> > resultInputs()
+{
+    std::tuple<T, T> inputArray[] = {
+        std::make_pair(1, 0),
+        std::make_pair(0, 1),
+    };
+    return std::vector<std::tuple<T, T> >(inputArray, inputArray + sizeof(inputArray) / sizeof(std::tuple<T, T>));
+}
 
 class Int32TernaryInt32CompareTest : public TernaryTest<int32_t, int32_t> {};
 
-TEST_P(Int32TernaryInt32CompareTest, UsingLoadParam) {
+TEST_P(Int32TernaryInt32CompareTest, UsingLoadParam)
+{
     std::string arch = omrsysinfo_get_CPU_architecture();
     SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, MissingImplementation)
         << "The Z code generator implementation is missing currently (see issue #3796)";
 
     auto param = to_struct(GetParam());
 
-    char inputTrees[512] = {0};
+    char inputTrees[512] = { 0 };
     std::snprintf(inputTrees, sizeof(inputTrees),
         "(method return=Int32 args=[Int32, Int32, Int32, Int32]"
         "  (block"
@@ -137,20 +139,23 @@ TEST_P(Int32TernaryInt32CompareTest, UsingLoadParam) {
     Tril::DefaultCompiler compiler(trees);
 
     int32_t compileResult = compiler.compile();
-    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n"
+                                << "Input trees: " << inputTrees;
 
     auto entry_point = compiler.getEntryPoint<int32_t (*)(int32_t, int32_t, int32_t, int32_t)>();
-    ASSERT_EQ(param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2, param.v1, param.v2));
+    ASSERT_EQ(
+        param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2, param.v1, param.v2));
 }
 
-TEST_P(Int32TernaryInt32CompareTest, UsingConst) {
+TEST_P(Int32TernaryInt32CompareTest, UsingConst)
+{
     std::string arch = omrsysinfo_get_CPU_architecture();
     SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, MissingImplementation)
         << "The Z code generator implementation is missing currently (see issue #3796)";
 
     auto param = to_struct(GetParam());
 
-    char inputTrees[512] = {0};
+    char inputTrees[512] = { 0 };
     std::snprintf(inputTrees, sizeof(inputTrees),
         "(method return=Int32"
         "  (block"
@@ -162,10 +167,7 @@ TEST_P(Int32TernaryInt32CompareTest, UsingConst) {
         "        (iconst %d)"
         "        (iconst %d))"
         ")))",
-        param.c1,
-        param.c2,
-        param.v1,
-        param.v2);
+        param.c1, param.c2, param.v1, param.v2);
     auto trees = parseString(inputTrees);
 
     ASSERT_NOTNULL(trees);
@@ -173,28 +175,28 @@ TEST_P(Int32TernaryInt32CompareTest, UsingConst) {
     Tril::DefaultCompiler compiler(trees);
 
     int32_t compileResult = compiler.compile();
-    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n"
+                                << "Input trees: " << inputTrees;
 
     auto entry_point = compiler.getEntryPoint<int32_t (*)(void)>();
     ASSERT_EQ(param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point());
 }
 
 INSTANTIATE_TEST_CASE_P(TernaryTest, Int32TernaryInt32CompareTest,
-        ::testing::Combine(
-            ::testing::ValuesIn(compareInputs<int32_t>()),
-            ::testing::ValuesIn(resultInputs<int32_t>()),
-            ::testing::Values(xternaryOracle<int32_t, int32_t>)));
+    ::testing::Combine(::testing::ValuesIn(compareInputs<int32_t>()), ::testing::ValuesIn(resultInputs<int32_t>()),
+        ::testing::Values(xternaryOracle<int32_t, int32_t>)));
 
 class Int64TernaryInt64CompareTest : public TernaryTest<int64_t, int64_t> {};
 
-TEST_P(Int64TernaryInt64CompareTest, UsingLoadParam) {
+TEST_P(Int64TernaryInt64CompareTest, UsingLoadParam)
+{
     std::string arch = omrsysinfo_get_CPU_architecture();
     SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, MissingImplementation)
         << "The Z code generator implementation is missing currently (see issue #3796)";
 
     auto param = to_struct(GetParam());
 
-    char inputTrees[512] = {0};
+    char inputTrees[512] = { 0 };
     std::snprintf(inputTrees, sizeof(inputTrees),
         "(method return=Int64 args=[Int64, Int64, Int64, Int64]"
         "  (block"
@@ -213,20 +215,23 @@ TEST_P(Int64TernaryInt64CompareTest, UsingLoadParam) {
     Tril::DefaultCompiler compiler(trees);
 
     int32_t compileResult = compiler.compile();
-    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n"
+                                << "Input trees: " << inputTrees;
 
     auto entry_point = compiler.getEntryPoint<int64_t (*)(int64_t, int64_t, int64_t, int64_t)>();
-    ASSERT_EQ(param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2, param.v1, param.v2));
+    ASSERT_EQ(
+        param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2, param.v1, param.v2));
 }
 
-TEST_P(Int64TernaryInt64CompareTest, UsingConst) {
+TEST_P(Int64TernaryInt64CompareTest, UsingConst)
+{
     std::string arch = omrsysinfo_get_CPU_architecture();
     SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, MissingImplementation)
         << "The Z code generator implementation is missing currently (see issue #3796)";
 
     auto param = to_struct(GetParam());
 
-    char inputTrees[512] = {0};
+    char inputTrees[512] = { 0 };
     std::snprintf(inputTrees, sizeof(inputTrees),
         "(method return=Int64"
         "  (block"
@@ -238,10 +243,7 @@ TEST_P(Int64TernaryInt64CompareTest, UsingConst) {
         "        (lconst %" OMR_PRId64 ")"
         "        (lconst %" OMR_PRId64 "))"
         ")))",
-        param.c1,
-        param.c2,
-        param.v1,
-        param.v2);
+        param.c1, param.c2, param.v1, param.v2);
     auto trees = parseString(inputTrees);
 
     ASSERT_NOTNULL(trees);
@@ -249,29 +251,28 @@ TEST_P(Int64TernaryInt64CompareTest, UsingConst) {
     Tril::DefaultCompiler compiler(trees);
 
     int32_t compileResult = compiler.compile();
-    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n"
+                                << "Input trees: " << inputTrees;
 
     auto entry_point = compiler.getEntryPoint<int64_t (*)(void)>();
     ASSERT_EQ(param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point());
 }
 
 INSTANTIATE_TEST_CASE_P(TernaryTest, Int64TernaryInt64CompareTest,
-        ::testing::Combine(
-            ::testing::ValuesIn(compareInputs<int64_t>()),
-            ::testing::ValuesIn(resultInputs<int64_t>()),
-            ::testing::Values(xternaryOracle<int64_t, int64_t>)));
-
+    ::testing::Combine(::testing::ValuesIn(compareInputs<int64_t>()), ::testing::ValuesIn(resultInputs<int64_t>()),
+        ::testing::Values(xternaryOracle<int64_t, int64_t>)));
 
 class Int64TernaryDoubleCompareTest : public TernaryTest<double, int64_t> {};
 
-TEST_P(Int64TernaryDoubleCompareTest, UsingLoadParam) {
+TEST_P(Int64TernaryDoubleCompareTest, UsingLoadParam)
+{
     std::string arch = omrsysinfo_get_CPU_architecture();
     SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, MissingImplementation)
         << "The Z code generator implementation is missing currently (see issue #3796)";
 
     auto param = to_struct(GetParam());
 
-    char inputTrees[512] = {0};
+    char inputTrees[512] = { 0 };
     std::snprintf(inputTrees, sizeof(inputTrees),
         "(method return=Int64 args=[Double, Double, Int64, Int64]"
         "  (block"
@@ -290,20 +291,23 @@ TEST_P(Int64TernaryDoubleCompareTest, UsingLoadParam) {
     Tril::DefaultCompiler compiler(trees);
 
     int32_t compileResult = compiler.compile();
-    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n"
+                                << "Input trees: " << inputTrees;
 
     auto entry_point = compiler.getEntryPoint<int64_t (*)(double, double, int64_t, int64_t)>();
-    ASSERT_EQ(param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2, param.v1, param.v2));
+    ASSERT_EQ(
+        param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2, param.v1, param.v2));
 }
 
-TEST_P(Int64TernaryDoubleCompareTest, UsingConst) {
+TEST_P(Int64TernaryDoubleCompareTest, UsingConst)
+{
     std::string arch = omrsysinfo_get_CPU_architecture();
     SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, MissingImplementation)
         << "The Z code generator implementation is missing currently (see issue #3796)";
 
     auto param = to_struct(GetParam());
 
-    char inputTrees[512] = {0};
+    char inputTrees[512] = { 0 };
     std::snprintf(inputTrees, sizeof(inputTrees),
         "(method return=Int64 args=[Double, Double]"
         "  (block"
@@ -315,8 +319,7 @@ TEST_P(Int64TernaryDoubleCompareTest, UsingConst) {
         "        (lconst %" OMR_PRId64 ")"
         "        (lconst %" OMR_PRId64 "))"
         ")))",
-        param.v1,
-        param.v2);
+        param.v1, param.v2);
     auto trees = parseString(inputTrees);
 
     ASSERT_NOTNULL(trees);
@@ -324,28 +327,28 @@ TEST_P(Int64TernaryDoubleCompareTest, UsingConst) {
     Tril::DefaultCompiler compiler(trees);
 
     int32_t compileResult = compiler.compile();
-    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n"
+                                << "Input trees: " << inputTrees;
 
     auto entry_point = compiler.getEntryPoint<int64_t (*)(double, double)>();
     ASSERT_EQ(param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2));
 }
 
 INSTANTIATE_TEST_CASE_P(TernaryTest, Int64TernaryDoubleCompareTest,
-        ::testing::Combine(
-            ::testing::ValuesIn(compareInputs<double>()),
-            ::testing::ValuesIn(resultInputs<int64_t>()),
-            ::testing::Values(xternaryOracle<double, int64_t>)));
+    ::testing::Combine(::testing::ValuesIn(compareInputs<double>()), ::testing::ValuesIn(resultInputs<int64_t>()),
+        ::testing::Values(xternaryOracle<double, int64_t>)));
 
 class Int32TernaryDoubleCompareTest : public TernaryTest<double, int32_t> {};
 
-TEST_P(Int32TernaryDoubleCompareTest, UsingLoadParam) {
+TEST_P(Int32TernaryDoubleCompareTest, UsingLoadParam)
+{
     std::string arch = omrsysinfo_get_CPU_architecture();
     SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, MissingImplementation)
         << "The Z code generator implementation is missing currently (see issue #3796)";
 
     auto param = to_struct(GetParam());
 
-    char inputTrees[512] = {0};
+    char inputTrees[512] = { 0 };
     std::snprintf(inputTrees, sizeof(inputTrees),
         "(method return=Int32 args=[Double, Double, Int32, Int32]"
         "  (block"
@@ -364,20 +367,23 @@ TEST_P(Int32TernaryDoubleCompareTest, UsingLoadParam) {
     Tril::DefaultCompiler compiler(trees);
 
     int32_t compileResult = compiler.compile();
-    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n"
+                                << "Input trees: " << inputTrees;
 
     auto entry_point = compiler.getEntryPoint<int32_t (*)(double, double, int32_t, int32_t)>();
-    ASSERT_EQ(param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2, param.v1, param.v2));
+    ASSERT_EQ(
+        param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2, param.v1, param.v2));
 }
 
-TEST_P(Int32TernaryDoubleCompareTest, UsingConst) {
+TEST_P(Int32TernaryDoubleCompareTest, UsingConst)
+{
     std::string arch = omrsysinfo_get_CPU_architecture();
     SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, MissingImplementation)
         << "The Z code generator implementation is missing currently (see issue #3796)";
 
     auto param = to_struct(GetParam());
 
-    char inputTrees[512] = {0};
+    char inputTrees[512] = { 0 };
     std::snprintf(inputTrees, sizeof(inputTrees),
         "(method return=Int32 args=[Double, Double]"
         "  (block"
@@ -389,8 +395,7 @@ TEST_P(Int32TernaryDoubleCompareTest, UsingConst) {
         "        (iconst %d)"
         "        (iconst %d))"
         ")))",
-        param.v1,
-        param.v2);
+        param.v1, param.v2);
     auto trees = parseString(inputTrees);
 
     ASSERT_NOTNULL(trees);
@@ -398,31 +403,31 @@ TEST_P(Int32TernaryDoubleCompareTest, UsingConst) {
     Tril::DefaultCompiler compiler(trees);
 
     int32_t compileResult = compiler.compile();
-    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n"
+                                << "Input trees: " << inputTrees;
 
     auto entry_point = compiler.getEntryPoint<int32_t (*)(double, double)>();
     ASSERT_EQ(param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2));
 }
 
 INSTANTIATE_TEST_CASE_P(TernaryTest, Int32TernaryDoubleCompareTest,
-        ::testing::Combine(
-            ::testing::ValuesIn(compareInputs<double>()),
-            ::testing::ValuesIn(resultInputs<int32_t>()),
-            ::testing::Values(xternaryOracle<double, int32_t>)));
-
+    ::testing::Combine(::testing::ValuesIn(compareInputs<double>()), ::testing::ValuesIn(resultInputs<int32_t>()),
+        ::testing::Values(xternaryOracle<double, int32_t>)));
 
 class ShortTernaryDoubleCompareTest : public TernaryTest<double, int16_t> {};
 
-TEST_P(ShortTernaryDoubleCompareTest, UsingLoadParam) {
+TEST_P(ShortTernaryDoubleCompareTest, UsingLoadParam)
+{
     std::string arch = omrsysinfo_get_CPU_architecture();
     SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, MissingImplementation)
         << "The Z code generator implementation is missing currently (see issue #3796)";
     SKIP_IF(OMRPORT_ARCH_PPC64 == arch || OMRPORT_ARCH_PPC == arch, KnownBug)
-        << "The Power code generator incorrectly spills sub-integer type arguments on big-endian machines (see issue #3525)";
+        << "The Power code generator incorrectly spills sub-integer type arguments on big-endian machines (see issue "
+           "#3525)";
 
     auto param = to_struct(GetParam());
 
-    char inputTrees[512] = {0};
+    char inputTrees[512] = { 0 };
     std::snprintf(inputTrees, sizeof(inputTrees),
         "(method return=Int16 args=[Double, Double, Int16, Int16]"
         "  (block"
@@ -442,20 +447,23 @@ TEST_P(ShortTernaryDoubleCompareTest, UsingLoadParam) {
     Tril::DefaultCompiler compiler(trees);
 
     int32_t compileResult = compiler.compile();
-    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n"
+                                << "Input trees: " << inputTrees;
 
     auto entry_point = compiler.getEntryPoint<int16_t (*)(double, double, int16_t, int16_t)>();
-    ASSERT_EQ(param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2, param.v1, param.v2));
+    ASSERT_EQ(
+        param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2, param.v1, param.v2));
 }
 
-TEST_P(ShortTernaryDoubleCompareTest, UsingConst) {
+TEST_P(ShortTernaryDoubleCompareTest, UsingConst)
+{
     std::string arch = omrsysinfo_get_CPU_architecture();
     SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, MissingImplementation)
         << "The Z code generator implementation is missing currently (see issue #3796)";
 
     auto param = to_struct(GetParam());
 
-    char inputTrees[512] = {0};
+    char inputTrees[512] = { 0 };
     std::snprintf(inputTrees, sizeof(inputTrees),
         "(method return=Int16 args=[Double, Double]"
         "  (block"
@@ -468,8 +476,7 @@ TEST_P(ShortTernaryDoubleCompareTest, UsingConst) {
         "          (sconst %d)"
         "          (sconst %d))"
         "))))",
-        param.v1,
-        param.v2);
+        param.v1, param.v2);
     auto trees = parseString(inputTrees);
 
     ASSERT_NOTNULL(trees);
@@ -477,16 +484,13 @@ TEST_P(ShortTernaryDoubleCompareTest, UsingConst) {
     Tril::DefaultCompiler compiler(trees);
 
     int32_t compileResult = compiler.compile();
-    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+    ASSERT_EQ(0, compileResult) << "Compilation failed unexpectedly\n"
+                                << "Input trees: " << inputTrees;
 
     auto entry_point = compiler.getEntryPoint<int16_t (*)(double, double)>();
     ASSERT_EQ(param.oracle(param.c1, param.c2, param.v1, param.v2), entry_point(param.c1, param.c2));
 }
 
 INSTANTIATE_TEST_CASE_P(TernaryTest, ShortTernaryDoubleCompareTest,
-        ::testing::Combine(
-            ::testing::ValuesIn(compareInputs<double>()),
-            ::testing::ValuesIn(resultInputs<int16_t>()),
-            ::testing::Values((xternaryOracle<double, int16_t>))));
-
-
+    ::testing::Combine(::testing::ValuesIn(compareInputs<double>()), ::testing::ValuesIn(resultInputs<int16_t>()),
+        ::testing::Values((xternaryOracle<double, int16_t>))));

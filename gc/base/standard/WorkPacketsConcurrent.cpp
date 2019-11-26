@@ -24,9 +24,8 @@
 
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
 
-#include "EnvironmentStandard.hpp"
 #include "ConcurrentOverflow.hpp"
-
+#include "EnvironmentStandard.hpp"
 #include "WorkPacketsConcurrent.hpp"
 
 /**
@@ -34,12 +33,13 @@
  * @param mode type of packets (used for getting the right overflow handler)
  * @return pointer to the new object
  */
-MM_WorkPacketsConcurrent *
-MM_WorkPacketsConcurrent::newInstance(MM_EnvironmentBase *env)
+MM_WorkPacketsConcurrent*
+MM_WorkPacketsConcurrent::newInstance(MM_EnvironmentBase* env)
 {
-	MM_WorkPacketsConcurrent *workPackets = (MM_WorkPacketsConcurrent *)env->getForge()->allocate(sizeof(MM_WorkPacketsConcurrent), OMR::GC::AllocationCategory::WORK_PACKETS, OMR_GET_CALLSITE());
+	MM_WorkPacketsConcurrent* workPackets = (MM_WorkPacketsConcurrent*)env->getForge()->allocate(
+	        sizeof(MM_WorkPacketsConcurrent), OMR::GC::AllocationCategory::WORK_PACKETS, OMR_GET_CALLSITE());
 	if (NULL != workPackets) {
-		new(workPackets) MM_WorkPacketsConcurrent(env);
+		new (workPackets) MM_WorkPacketsConcurrent(env);
 		if (!workPackets->initialize(env)) {
 			workPackets->kill(env);
 			workPackets = NULL;
@@ -54,15 +54,14 @@ MM_WorkPacketsConcurrent::resetWorkPacketsOverflow()
 {
 #if defined(OMR_GC_MODRON_SCAVENGER)
 	/* this is a temporary solution, code will be changed to have only one handler very soon */
-	((MM_ConcurrentOverflow *)_overflowHandler)->setCardsForNewSpaceNotCleared();
+	((MM_ConcurrentOverflow*)_overflowHandler)->setCardsForNewSpaceNotCleared();
 #endif /*  OMR_GC_MODRON_SCAVENGER */
 }
 
-MM_WorkPacketOverflow *
-MM_WorkPacketsConcurrent::createOverflowHandler(MM_EnvironmentBase *env, MM_WorkPackets *workPackets)
+MM_WorkPacketOverflow*
+MM_WorkPacketsConcurrent::createOverflowHandler(MM_EnvironmentBase* env, MM_WorkPackets* workPackets)
 {
 	return MM_ConcurrentOverflow::newInstance(env, this);
 }
 
 #endif /* OMR_GC_MODRON_CONCURRENT_MARK */
-

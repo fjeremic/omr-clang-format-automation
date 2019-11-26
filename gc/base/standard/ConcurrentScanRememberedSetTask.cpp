@@ -27,18 +27,17 @@
 #if defined(OMR_GC_MODRON_SCAVENGER)
 
 #include "ConcurrentGC.hpp"
-
 #include "ConcurrentScanRememberedSetTask.hpp"
 
 void
-MM_ConcurrentScanRememberedSetTask::run(MM_EnvironmentBase *envBase)
+MM_ConcurrentScanRememberedSetTask::run(MM_EnvironmentBase* envBase)
 {
-	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
+	MM_EnvironmentStandard* env = MM_EnvironmentStandard::getEnvironment(envBase);
 	_collector->scanRememberedSet(env);
 }
 
 void
-MM_ConcurrentScanRememberedSetTask::setup(MM_EnvironmentBase *env)
+MM_ConcurrentScanRememberedSetTask::setup(MM_EnvironmentBase* env)
 {
 	if (env->isMasterThread()) {
 		Assert_MM_true(_cycleState == env->_cycleState);
@@ -50,7 +49,7 @@ MM_ConcurrentScanRememberedSetTask::setup(MM_EnvironmentBase *env)
 }
 
 void
-MM_ConcurrentScanRememberedSetTask::cleanup(MM_EnvironmentBase *env)
+MM_ConcurrentScanRememberedSetTask::cleanup(MM_EnvironmentBase* env)
 {
 	if (env->isMasterThread()) {
 		Assert_MM_true(_cycleState == env->_cycleState);
@@ -62,4 +61,3 @@ MM_ConcurrentScanRememberedSetTask::cleanup(MM_EnvironmentBase *env)
 }
 #endif /* OMR_GC_MODRON_SCAVENGER */
 #endif /* OMR_GC_MODRON_CONCURRENT_MARK */
- 

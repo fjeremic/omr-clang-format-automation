@@ -22,8 +22,6 @@
 
 #include "HeapVirtualMemory.hpp"
 
-#include "omrport.h"
-
 #include "EnvironmentBase.hpp"
 #include "Forge.hpp"
 #include "GCExtensionsBase.hpp"
@@ -33,6 +31,7 @@
 #include "MemoryManager.hpp"
 #include "MemorySubSpace.hpp"
 #include "PhysicalArena.hpp"
+#include "omrport.h"
 
 #if defined(OMR_VALGRIND_MEMCHECK)
 #include "MemcheckWrapper.hpp"
@@ -50,11 +49,15 @@
  * alignment requirements. Use getMaximumSize() to get the actual allocation size.
  */
 MM_HeapVirtualMemory*
-MM_HeapVirtualMemory::newInstance(MM_EnvironmentBase* env, uintptr_t heapAlignment, uintptr_t size, MM_HeapRegionManager* regionManager)
+MM_HeapVirtualMemory::newInstance(MM_EnvironmentBase* env,
+                                  uintptr_t heapAlignment,
+                                  uintptr_t size,
+                                  MM_HeapRegionManager* regionManager)
 {
 	MM_HeapVirtualMemory* heap;
 
-	heap = (MM_HeapVirtualMemory*)env->getForge()->allocate(sizeof(MM_HeapVirtualMemory), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	heap = (MM_HeapVirtualMemory*)env->getForge()->allocate(sizeof(MM_HeapVirtualMemory),
+	                                                        OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (heap) {
 		new (heap) MM_HeapVirtualMemory(env, heapAlignment, size, regionManager);
 		if (!heap->initialize(env, size)) {
@@ -93,9 +96,11 @@ MM_HeapVirtualMemory::initialize(MM_EnvironmentBase* env, uintptr_t size)
 		 * In this case extra padding is not required because of overflow protection padding can be used instead
 		 */
 		uintptr_t effectiveSize = MM_Math::roundToCeiling(manager->getRegionSize(), size);
-		void *preferredHeapBase = (void *)((uintptr_t)0 - effectiveSize);
+		void* preferredHeapBase = (void*)((uintptr_t)0 - effectiveSize);
 
-		created = memoryManager->createVirtualMemoryForHeap(env, &_vmemHandle, effectiveHeapAlignment, size, padding, preferredHeapBase, (void *)(extensions->heapCeiling));
+		created = memoryManager->createVirtualMemoryForHeap(env, &_vmemHandle, effectiveHeapAlignment, size,
+		                                                    padding, preferredHeapBase,
+		                                                    (void*)(extensions->heapCeiling));
 		if (created) {
 			/* overflow protection must be there to play role of padding even top is not so close to the end of the memory */
 			forcedOverflowProtection = true;
@@ -104,8 +109,7 @@ MM_HeapVirtualMemory::initialize(MM_EnvironmentBase* env, uintptr_t size)
 		{
 			/* Ignore extra full page padding if page size is too large (hard coded here for 1G or larger) */
 #define ONE_GB ((uintptr_t)1 * 1024 * 1024 * 1024)
-			if (extensions->requestedPageSize < ONE_GB)
-			{
+			if (extensions->requestedPageSize < ONE_GB) {
 				if (padding < extensions->requestedPageSize) {
 					padding = extensions->requestedPageSize;
 				}
@@ -113,12 +117,17 @@ MM_HeapVirtualMemory::initialize(MM_EnvironmentBase* env, uintptr_t size)
 		}
 	}
 
-	if (!created && !memoryManager->createVirtualMemoryForHeap(env, &_vmemHandle, effectiveHeapAlignment, size, padding, (void*)(extensions->preferredHeapBase), (void*)(extensions->heapCeiling))) {
+	if (!created
+	    && !memoryManager->createVirtualMemoryForHeap(env, &_vmemHandle, effectiveHeapAlignment, size, padding,
+	                                                  (void*)(extensions->preferredHeapBase),
+	                                                  (void*)(extensions->heapCeiling))) {
 		return false;
 	}
 
 	/* Check we haven't overflowed the address range */
-	if (forcedOverflowProtection || (HIGH_ADDRESS - ((uintptr_t)memoryManager->getHeapTop(&_vmemHandle)) < (OVERFLOW_ROUNDING)) || extensions->fvtest_alwaysApplyOverflowRounding) {
+	if (forcedOverflowProtection
+	    || (HIGH_ADDRESS - ((uintptr_t)memoryManager->getHeapTop(&_vmemHandle)) < (OVERFLOW_ROUNDING))
+	    || extensions->fvtest_alwaysApplyOverflowRounding) {
 		/* Address range overflow */
 		memoryManager->roundDownTop(&_vmemHandle, OVERFLOW_ROUNDING);
 	}
@@ -176,10 +185,17 @@ MM_HeapVirtualMemory::getHeapTop()
 
 #if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
 void*
-MM_HeapVirtualMemory::doubleMapArraylet(MM_EnvironmentBase *env, void* arrayletLeaves[], UDATA arrayletLeafCount, UDATA arrayletLeafSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize)
+MM_HeapVirtualMemory::doubleMapArraylet(MM_EnvironmentBase* env,
+                                        void* arrayletLeaves[],
+                                        UDATA arrayletLeafCount,
+                                        UDATA arrayletLeafSize,
+                                        UDATA byteAmount,
+                                        struct J9PortVmemIdentifier* newIdentifier,
+                                        UDATA pageSize)
 {
 	MM_MemoryManager* memoryManager = MM_GCExtensionsBase::getExtensions(_omrVM)->memoryManager;
-	return memoryManager->doubleMapArraylet(&_vmemHandle, env, arrayletLeaves, arrayletLeafCount, arrayletLeafSize, byteAmount, newIdentifier, pageSize);
+	return memoryManager->doubleMapArraylet(&_vmemHandle, env, arrayletLeaves, arrayletLeafCount, arrayletLeafSize,
+	                                        byteAmount, newIdentifier, pageSize);
 }
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
@@ -347,7 +363,11 @@ MM_HeapVirtualMemory::calculateOffsetFromHeapBase(void* address)
  */
 
 bool
-MM_HeapVirtualMemory::heapAddRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uintptr_t size, void* lowAddress, void* highAddress)
+MM_HeapVirtualMemory::heapAddRange(MM_EnvironmentBase* env,
+                                   MM_MemorySubSpace* subspace,
+                                   uintptr_t size,
+                                   void* lowAddress,
+                                   void* highAddress)
 {
 	MM_GlobalCollector* globalCollector = env->getExtensions()->getGlobalCollector();
 
@@ -355,11 +375,11 @@ MM_HeapVirtualMemory::heapAddRange(MM_EnvironmentBase* env, MM_MemorySubSpace* s
 	if (NULL != globalCollector) {
 		result = globalCollector->heapAddRange(env, subspace, size, lowAddress, highAddress);
 	}
-	
+
 	env->getExtensions()->identityHashDataAddRange(env, subspace, size, lowAddress, highAddress);
 
 #if defined(OMR_VALGRIND_MEMCHECK)
-	valgrindMakeMemNoaccess((uintptr_t)lowAddress,size);
+	valgrindMakeMemNoaccess((uintptr_t)lowAddress, size);
 #endif /* defined(OMR_VALGRIND_MEMCHECK) */
 
 	return result;
@@ -373,21 +393,28 @@ MM_HeapVirtualMemory::heapAddRange(MM_EnvironmentBase* env, MM_MemorySubSpace* s
  * 
  */
 bool
-MM_HeapVirtualMemory::heapRemoveRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uintptr_t size, void* lowAddress, void* highAddress, void* lowValidAddress, void* highValidAddress)
+MM_HeapVirtualMemory::heapRemoveRange(MM_EnvironmentBase* env,
+                                      MM_MemorySubSpace* subspace,
+                                      uintptr_t size,
+                                      void* lowAddress,
+                                      void* highAddress,
+                                      void* lowValidAddress,
+                                      void* highValidAddress)
 {
 	MM_GlobalCollector* globalCollector = env->getExtensions()->getGlobalCollector();
 
 	bool result = true;
 	if (NULL != globalCollector) {
-		result = globalCollector->heapRemoveRange(env, subspace, size, lowAddress, highAddress, lowValidAddress, highValidAddress);
+		result = globalCollector->heapRemoveRange(env, subspace, size, lowAddress, highAddress, lowValidAddress,
+		                                          highValidAddress);
 	}
 
 	env->getExtensions()->identityHashDataRemoveRange(env, subspace, size, lowAddress, highAddress);
 
 #if defined(OMR_VALGRIND_MEMCHECK)
 	//remove heap range from valgrind
-	valgrindClearRange(env->getExtensions(),(uintptr_t)lowAddress,size);
-	valgrindMakeMemNoaccess((uintptr_t)lowAddress,size);
+	valgrindClearRange(env->getExtensions(), (uintptr_t)lowAddress, size);
+	valgrindMakeMemNoaccess((uintptr_t)lowAddress, size);
 #endif /* defined(OMR_VALGRIND_MEMCHECK) */
 
 	return result;

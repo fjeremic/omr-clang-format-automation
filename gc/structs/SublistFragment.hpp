@@ -28,12 +28,11 @@
 #if !defined(SUBLISTFRAGMENT_HPP_)
 #define SUBLISTFRAGMENT_HPP_
 
+#include "SublistPool.hpp"
+#include "j9nongenerated.h"
+#include "modronbase.h"
 #include "omrcfg.h"
 #include "omrcomp.h"
-#include "modronbase.h"
-#include "j9nongenerated.h"
-
-#include "SublistPool.hpp"
 
 class MM_EnvironmentBase;
 
@@ -45,16 +44,16 @@ class MM_EnvironmentBase;
  */
 class MM_SublistFragment
 {
-	J9VMGC_SublistFragment *_fragment;
+	J9VMGC_SublistFragment* _fragment;
 
 public:
-	void *allocate(MM_EnvironmentBase *env);
-	bool add(MM_EnvironmentBase *env, uintptr_t entry);
-	
+	void* allocate(MM_EnvironmentBase* env);
+	bool add(MM_EnvironmentBase* env, uintptr_t entry);
+
 	/** 
 	 * Update the fragment information to the new location 
 	 */
-	MMINLINE void update(uintptr_t *base, uintptr_t *top)
+	MMINLINE void update(uintptr_t* base, uintptr_t* top)
 	{
 		_fragment->fragmentCurrent = base;
 		_fragment->fragmentTop = top;
@@ -63,10 +62,7 @@ public:
 	/** 
 	 * Return the allocated size of the fragment 
 	 */
-	MMINLINE uintptr_t getFragmentSize()
-	{
-		return _fragment->fragmentSize;
-	}
+	MMINLINE uintptr_t getFragmentSize() { return _fragment->fragmentSize; }
 
 	/**
 	 * Clear the remaining entries in the fragment.
@@ -74,12 +70,12 @@ public:
 	 * require a refresh of the fragment.  Allows the sublist to be manipulated by other routines
 	 * (no cached pointers).
 	 */
-	MMINLINE static void flush(J9VMGC_SublistFragment *sublistFragment)
+	MMINLINE static void flush(J9VMGC_SublistFragment* sublistFragment)
 	{
 		/* Pool count needs to be incremented */
-		((MM_SublistPool *)sublistFragment->parentList)->incrementCount(sublistFragment->count);
+		((MM_SublistPool*)sublistFragment->parentList)->incrementCount(sublistFragment->count);
 		sublistFragment->count = 0;
-		
+
 		sublistFragment->fragmentCurrent = NULL;
 		sublistFragment->fragmentTop = NULL;
 	}
@@ -87,9 +83,7 @@ public:
 	/**
 	 * Create a SublistFragment object.
 	 */
-	MM_SublistFragment(J9VMGC_SublistFragment *fragment) :
-		_fragment(fragment)
-	{};
+	MM_SublistFragment(J9VMGC_SublistFragment* fragment) : _fragment(fragment){};
 };
 
 #endif /* SUBLISTFRAGMENT_HPP_ */

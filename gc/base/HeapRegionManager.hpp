@@ -23,13 +23,12 @@
 #if !defined(HEAPREGIONMANAGER_HPP)
 #define HEAPREGIONMANAGER_HPP
 
-#include "omrcomp.h"
-#include "modronbase.h"
-
 #include "BaseVirtual.hpp"
 #include "HeapRegionDescriptor.hpp"
 #include "LightweightNonReentrantReaderWriterLock.hpp"
 #include "ModronAssertions.h"
+#include "modronbase.h"
+#include "omrcomp.h"
 
 class MM_EnvironmentBase;
 class MM_HeapRegionManager;
@@ -50,7 +49,11 @@ class MM_HeapMemorySnapshot;
  * 
  * @return true if the initialization succeeded, false otherwise 
  */
-typedef bool (*MM_RegionDescriptorInitializer)(MM_EnvironmentBase* env, MM_HeapRegionManager* regionManager, MM_HeapRegionDescriptor* descriptor, void* lowAddress, void* highAddress);
+typedef bool (*MM_RegionDescriptorInitializer)(MM_EnvironmentBase* env,
+                                               MM_HeapRegionManager* regionManager,
+                                               MM_HeapRegionDescriptor* descriptor,
+                                               void* lowAddress,
+                                               void* highAddress);
 
 /**
  * A function pointer used to destroy HRDs on shutdown.
@@ -59,37 +62,55 @@ typedef bool (*MM_RegionDescriptorInitializer)(MM_EnvironmentBase* env, MM_HeapR
  * @param[in] regionManager - the regionManager which owns the descriptor 
  * @param[in] descriptor - the descriptor to be destroyed
  */
-typedef void (*MM_RegionDescriptorDestructor)(MM_EnvironmentBase* env, MM_HeapRegionManager* regionManager, MM_HeapRegionDescriptor* descriptor);
+typedef void (*MM_RegionDescriptorDestructor)(MM_EnvironmentBase* env,
+                                              MM_HeapRegionManager* regionManager,
+                                              MM_HeapRegionDescriptor* descriptor);
 
-class MM_HeapRegionManager : public MM_BaseVirtual {
+class MM_HeapRegionManager : public MM_BaseVirtual
+{
 	friend class GC_HeapRegionIterator;
 
 public:
 protected:
 	friend class MM_InterRegionRememberedSet;
-	MM_LightweightNonReentrantReaderWriterLock _heapRegionListMonitor; /**< monitor that controls modification of the heap region linked list */
-	MM_HeapRegionDescriptor* _auxRegionDescriptorList; /**< address ordered doubly linked list for auxiliary heap regions */
+	MM_LightweightNonReentrantReaderWriterLock
+	        _heapRegionListMonitor; /**< monitor that controls modification of the heap region linked list */
+	MM_HeapRegionDescriptor*
+	        _auxRegionDescriptorList; /**< address ordered doubly linked list for auxiliary heap regions */
 	uintptr_t _auxRegionCount; /**< number of heap regions on the auxiliary list */
 
 	/* Heap Region Table data */
 	uintptr_t _regionSize; /**< the size, in bytes, of a region in the _regionTable */
-	uintptr_t _regionShift; /**< the shift value to use against pointers to determine the corresponding region index */
+	uintptr_t
+	        _regionShift; /**< the shift value to use against pointers to determine the corresponding region index */
 	MM_HeapRegionDescriptor* _regionTable; /**< the raw array of fixed-sized regions for representing a flat heap */
 	uintptr_t _tableRegionCount; /**< number of heap regions on the fixed-sized table (_regionTable) */
 	void* _lowTableEdge; /**< the first (lowest address) byte of heap which is addressable by the table */
 	void* _highTableEdge; /**< the first byte AFTER the heap range which is addressable by the table */
-	uintptr_t _tableDescriptorSize; /**< The size, in bytes, of the HeapRegionDescriptor subclass used by this manager */
-	MM_RegionDescriptorInitializer _regionDescriptorInitializer; /**< A function pointer used to initialize a newly allocated HRD */
-	MM_RegionDescriptorDestructor _regionDescriptorDestructor; /**< A function pointer used to destroy HRDs, or NULL */
+	uintptr_t
+	        _tableDescriptorSize; /**< The size, in bytes, of the HeapRegionDescriptor subclass used by this manager */
+	MM_RegionDescriptorInitializer
+	        _regionDescriptorInitializer; /**< A function pointer used to initialize a newly allocated HRD */
+	MM_RegionDescriptorDestructor
+	        _regionDescriptorDestructor; /**< A function pointer used to destroy HRDs, or NULL */
 
-	uintptr_t _totalHeapSize; /**< The size, in bytes, of all currently active regions on the heap (that is, both table descriptors attached to subspaces and aux descriptors in the list) */
+	uintptr_t
+	        _totalHeapSize; /**< The size, in bytes, of all currently active regions on the heap (that is, both table descriptors attached to subspaces and aux descriptors in the list) */
 
 public:
 	void kill(MM_EnvironmentBase* env);
 
-	MM_HeapRegionManager(MM_EnvironmentBase* env, uintptr_t regionSize, uintptr_t tableDescriptorSize, MM_RegionDescriptorInitializer regionDescriptorInitializer, MM_RegionDescriptorDestructor regionDescriptorDestructor);
+	MM_HeapRegionManager(MM_EnvironmentBase* env,
+	                     uintptr_t regionSize,
+	                     uintptr_t tableDescriptorSize,
+	                     MM_RegionDescriptorInitializer regionDescriptorInitializer,
+	                     MM_RegionDescriptorDestructor regionDescriptorDestructor);
 
-	static MM_HeapRegionManager *newInstance(MM_EnvironmentBase *env, uintptr_t regionSize, uintptr_t tableDescriptorSize, MM_RegionDescriptorInitializer regionDescriptorInitializer, MM_RegionDescriptorDestructor regionDescriptorDestructor);
+	static MM_HeapRegionManager* newInstance(MM_EnvironmentBase* env,
+	                                         uintptr_t regionSize,
+	                                         uintptr_t tableDescriptorSize,
+	                                         MM_RegionDescriptorInitializer regionDescriptorInitializer,
+	                                         MM_RegionDescriptorDestructor regionDescriptorDestructor);
 
 	/**
 	 * Returns the total size of the committed heap (includes both table regions with subspaces and aux regions)
@@ -104,7 +125,10 @@ public:
 	 * @param lowAddress low address of the region
 	 * @param highAddress high bound address of the region
 	 */
-	MM_HeapRegionDescriptor* createAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace, void* lowAddress, void* highAddress);
+	MM_HeapRegionDescriptor* createAuxiliaryRegionDescriptor(MM_EnvironmentBase* env,
+	                                                         MM_MemorySubSpace* subSpace,
+	                                                         void* lowAddress,
+	                                                         void* highAddress);
 
 	/**
 	 * Deregister an auxiliary region with the manager and destroy its descriptor
@@ -113,14 +137,9 @@ public:
 	 */
 	void destroyAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* descriptor);
 
-	MM_HeapRegionDescriptor*
-	getFirstAuxiliaryRegion()
-	{
-		return _auxRegionDescriptorList;
-	}
+	MM_HeapRegionDescriptor* getFirstAuxiliaryRegion() { return _auxRegionDescriptorList; }
 
-	MM_HeapRegionDescriptor*
-	getNextAuxiliaryRegion(MM_HeapRegionDescriptor* heapRegion)
+	MM_HeapRegionDescriptor* getNextAuxiliaryRegion(MM_HeapRegionDescriptor* heapRegion)
 	{
 		return heapRegion->_nextRegion;
 	}
@@ -177,17 +196,15 @@ public:
 	  * Use in heap shutdown (correspondent call with setContiguousHeapRange)
 	  * @param env The environment
 	  */
-	virtual void destroyRegionTable(MM_EnvironmentBase* env)
-	{
-		Assert_MM_unreachable();
-	}
+	virtual void destroyRegionTable(MM_EnvironmentBase* env) { Assert_MM_unreachable(); }
 
 	/**
 	 * Retrieve current Heap snapshot
 	 * free and total memory sizes for all memory pools
 	 * sub class of HeapRegionManager would override this method to provide proper memory pools
 	 */
-	virtual MM_HeapMemorySnapshot* getHeapMemorySnapshot(MM_GCExtensionsBase *extensions, MM_HeapMemorySnapshot* snapshot, bool gcEnd)
+	virtual MM_HeapMemorySnapshot*
+	getHeapMemorySnapshot(MM_GCExtensionsBase* extensions, MM_HeapMemorySnapshot* snapshot, bool gcEnd)
 	{
 		Assert_MM_unreachable();
 		return NULL;
@@ -197,26 +214,11 @@ public:
 	 * @return the size, in bytes, of a single region in the contiguous heap (note that AUX regions are not consulted, and spanning regions will be some multiple
 	 * of this number)
 	 */
-	MMINLINE uintptr_t getRegionSize()
-	{
-		return _regionSize;
-	}
-	MMINLINE uintptr_t getRegionShift()
-	{
-		return _regionShift;
-	}
-	MMINLINE uintptr_t getTableRegionCount() const
-	{
-		return _tableRegionCount;
-	}
-	uintptr_t getHeapSize()
-	{
-		return (uintptr_t)_highTableEdge - (uintptr_t)_lowTableEdge;
-	}
-	uintptr_t getTotalHeapSizeInBytes()
-	{
-		return _totalHeapSize;
-	}
+	MMINLINE uintptr_t getRegionSize() { return _regionSize; }
+	MMINLINE uintptr_t getRegionShift() { return _regionShift; }
+	MMINLINE uintptr_t getTableRegionCount() const { return _tableRegionCount; }
+	uintptr_t getHeapSize() { return (uintptr_t)_highTableEdge - (uintptr_t)_lowTableEdge; }
+	uintptr_t getTotalHeapSizeInBytes() { return _totalHeapSize; }
 
 	/**
 	 * Get the physical table descriptor at the specified index.
@@ -308,11 +310,15 @@ public:
 	/**
 	 * Set the associated subspace of the given region to subSpace.
 	 */
-	void reassociateRegionWithSubSpace(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* region, MM_MemorySubSpace* subSpace);
-
+	void reassociateRegionWithSubSpace(MM_EnvironmentBase* env,
+	                                   MM_HeapRegionDescriptor* region,
+	                                   MM_MemorySubSpace* subSpace);
 
 	MM_HeapRegionDescriptor* auxillaryDescriptorForAddress(const void* address);
-	MMINLINE void resizeAuxillaryRegion(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* region, void* lowAddress, void* highAddress)
+	MMINLINE void resizeAuxillaryRegion(MM_EnvironmentBase* env,
+	                                    MM_HeapRegionDescriptor* region,
+	                                    void* lowAddress,
+	                                    void* highAddress)
 	{
 		writeLock();
 		_totalHeapSize -= region->getSize();
@@ -329,10 +335,7 @@ public:
 	 * 
 	 * @return false if the table failed to be allocated or initialized (this is a fatal error in GC start-up)
 	 */
-	virtual bool enableRegionsInTable(MM_EnvironmentBase* env, MM_MemoryHandle* handle)
-	{
-		return true;
-	}
+	virtual bool enableRegionsInTable(MM_EnvironmentBase* env, MM_MemoryHandle* handle) { return true; }
 
 	/**
 	 * Given an index, return the matching region descriptor.
@@ -362,7 +365,8 @@ protected:
 	 * @param highAddress the byte after the highest byte addressable in the AUX region
 	 * @return an instance of an implementation-defined MM_HeapRegionDescriptor sub-class on success or NULL on failure
 	 */
-	virtual MM_HeapRegionDescriptor* internalAllocateAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, void* lowAddress, void* highAddress);
+	virtual MM_HeapRegionDescriptor*
+	internalAllocateAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, void* lowAddress, void* highAddress);
 
 	/**
 	 * Implemented by sub-classes to free (and otherwise dispose of) a single AUX region descriptor (region).  This is required since the sub-class is
@@ -383,7 +387,8 @@ protected:
 	 * @param highHeapEdge the byte after the highest byte addressable in the contiguous heap
 	 * @return an instance of an implementation-defined MM_HeapRegionDescriptor sub-class on success or NULL on failure
 	 */
-	virtual MM_HeapRegionDescriptor* internalAllocateAndInitializeRegionTable(MM_EnvironmentBase* env, void* lowHeapEdge, void* highHeapEdge);
+	virtual MM_HeapRegionDescriptor*
+	internalAllocateAndInitializeRegionTable(MM_EnvironmentBase* env, void* lowHeapEdge, void* highHeapEdge);
 
 	/**
 	 * Implemented by sub-classes to free (and otherwise dispose of) the contiguous region descriptor table starting at tableBase.  This is required since the
@@ -394,7 +399,9 @@ protected:
 	 * @param tableBase The base of the region table to be freed by the implementor (previously returned by allocateAndInitializeRegionTable)
 	 * @param tableElementCount The number of contiguous descriptor elements in the table
 	 */
-	virtual void internalFreeRegionTable(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* tableBase, uintptr_t tableElementCount);
+	virtual void internalFreeRegionTable(MM_EnvironmentBase* env,
+	                                     MM_HeapRegionDescriptor* tableBase,
+	                                     uintptr_t tableElementCount);
 
 private:
 	/**Insert a MM_HeapRegionDescriptor in the address ordered list
@@ -412,7 +419,10 @@ private:
 	/**
 	 * The actual implementation of createAuxiliaryRegionDescriptor (called through the listener chain)
 	 */
-	MM_HeapRegionDescriptor* internalCreateAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace, void* lowAddress, void* highAddress);
+	MM_HeapRegionDescriptor* internalCreateAuxiliaryRegionDescriptor(MM_EnvironmentBase* env,
+	                                                                 MM_MemorySubSpace* subSpace,
+	                                                                 void* lowAddress,
+	                                                                 void* highAddress);
 
 	/**
 	 * The actual implementation of destroyAuxiliaryRegionDescriptor (called through the listener chain)

@@ -20,24 +20,38 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "omrcfg.h"
-
 #include "HeapRegionManagerStandard.hpp"
 
-MM_HeapRegionManagerStandard::MM_HeapRegionManagerStandard(MM_EnvironmentBase *env, uintptr_t regionSize, uintptr_t tableDescriptorSize, MM_RegionDescriptorInitializer regionDescriptorInitializer, MM_RegionDescriptorDestructor regionDescriptorDestructor)
-	: MM_HeapRegionManager(env, regionSize, tableDescriptorSize, regionDescriptorInitializer, regionDescriptorDestructor)
-	,_lowHeapAddress(NULL)
-	,_highHeapAddress(NULL)
+#include "omrcfg.h"
+
+MM_HeapRegionManagerStandard::MM_HeapRegionManagerStandard(MM_EnvironmentBase* env,
+                                                           uintptr_t regionSize,
+                                                           uintptr_t tableDescriptorSize,
+                                                           MM_RegionDescriptorInitializer regionDescriptorInitializer,
+                                                           MM_RegionDescriptorDestructor regionDescriptorDestructor)
+        : MM_HeapRegionManager(env,
+                               regionSize,
+                               tableDescriptorSize,
+                               regionDescriptorInitializer,
+                               regionDescriptorDestructor),
+          _lowHeapAddress(NULL),
+          _highHeapAddress(NULL)
 {
 	_typeId = __FUNCTION__;
 }
 
-MM_HeapRegionManagerStandard *
-MM_HeapRegionManagerStandard::newInstance(MM_EnvironmentBase *env, uintptr_t regionSize, uintptr_t tableDescriptorSize, MM_RegionDescriptorInitializer regionDescriptorInitializer, MM_RegionDescriptorDestructor regionDescriptorDestructor)
+MM_HeapRegionManagerStandard*
+MM_HeapRegionManagerStandard::newInstance(MM_EnvironmentBase* env,
+                                          uintptr_t regionSize,
+                                          uintptr_t tableDescriptorSize,
+                                          MM_RegionDescriptorInitializer regionDescriptorInitializer,
+                                          MM_RegionDescriptorDestructor regionDescriptorDestructor)
 {
-	MM_HeapRegionManagerStandard *regionManager = (MM_HeapRegionManagerStandard *)env->getForge()->allocate(sizeof(MM_HeapRegionManagerStandard), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_HeapRegionManagerStandard* regionManager = (MM_HeapRegionManagerStandard*)env->getForge()->allocate(
+	        sizeof(MM_HeapRegionManagerStandard), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (regionManager) {
-		new(regionManager) MM_HeapRegionManagerStandard(env, regionSize, tableDescriptorSize, regionDescriptorInitializer, regionDescriptorDestructor);
+		new (regionManager) MM_HeapRegionManagerStandard(
+		        env, regionSize, tableDescriptorSize, regionDescriptorInitializer, regionDescriptorDestructor);
 		if (!regionManager->initialize(env)) {
 			regionManager->kill(env);
 			regionManager = NULL;
@@ -47,19 +61,19 @@ MM_HeapRegionManagerStandard::newInstance(MM_EnvironmentBase *env, uintptr_t reg
 }
 
 bool
-MM_HeapRegionManagerStandard::initialize(MM_EnvironmentBase *env)
+MM_HeapRegionManagerStandard::initialize(MM_EnvironmentBase* env)
 {
 	return MM_HeapRegionManager::initialize(env);
 }
 
 void
-MM_HeapRegionManagerStandard::tearDown(MM_EnvironmentBase *env)
+MM_HeapRegionManagerStandard::tearDown(MM_EnvironmentBase* env)
 {
 	MM_HeapRegionManager::tearDown(env);
 }
 
 bool
-MM_HeapRegionManagerStandard::setContiguousHeapRange(MM_EnvironmentBase *env, void *lowHeapEdge, void *highHeapEdge)
+MM_HeapRegionManagerStandard::setContiguousHeapRange(MM_EnvironmentBase* env, void* lowHeapEdge, void* highHeapEdge)
 {
 	writeLock();
 	/* ensure that this manager was configured with a valid region size */
@@ -79,20 +93,21 @@ MM_HeapRegionManagerStandard::setContiguousHeapRange(MM_EnvironmentBase *env, vo
 }
 
 void
-MM_HeapRegionManagerStandard::destroyRegionTable(MM_EnvironmentBase *env)
-{
-}
+MM_HeapRegionManagerStandard::destroyRegionTable(MM_EnvironmentBase* env)
+{}
 
 bool
-MM_HeapRegionManagerStandard::enableRegionsInTable(MM_EnvironmentBase *env, MM_MemoryHandle *handle)
+MM_HeapRegionManagerStandard::enableRegionsInTable(MM_EnvironmentBase* env, MM_MemoryHandle* handle)
 {
 	return true;
 }
 
 MM_HeapMemorySnapshot*
-MM_HeapRegionManagerStandard::getHeapMemorySnapshot(MM_GCExtensionsBase *extensions, MM_HeapMemorySnapshot* snapshot, bool gcEnd)
+MM_HeapRegionManagerStandard::getHeapMemorySnapshot(MM_GCExtensionsBase* extensions,
+                                                    MM_HeapMemorySnapshot* snapshot,
+                                                    bool gcEnd)
 {
-	MM_Heap *heap = extensions->getHeap();
+	MM_Heap* heap = extensions->getHeap();
 	snapshot->_totalHeapSize = heap->getActiveMemorySize();
 	snapshot->_freeHeapSize = heap->getApproximateFreeMemorySize();
 
@@ -107,7 +122,8 @@ MM_HeapRegionManagerStandard::getHeapMemorySnapshot(MM_GCExtensionsBase *extensi
 	}
 #if defined(OMR_GC_MODRON_SCAVENGER)
 	if (extensions->scavengerEnabled) {
-		snapshot->_totalNurseryAllocateSize = heap->getActiveMemorySize(MEMORY_TYPE_NEW) - heap->getActiveSurvivorMemorySize(MEMORY_TYPE_NEW);
+		snapshot->_totalNurseryAllocateSize = heap->getActiveMemorySize(MEMORY_TYPE_NEW)
+		        - heap->getActiveSurvivorMemorySize(MEMORY_TYPE_NEW);
 		snapshot->_freeNurseryAllocateSize = heap->getApproximateActiveFreeMemorySize(MEMORY_TYPE_NEW);
 		snapshot->_totalNurserySurvivorSize = heap->getActiveSurvivorMemorySize(MEMORY_TYPE_NEW);
 		snapshot->_freeNurserySurvivorSize = 0;

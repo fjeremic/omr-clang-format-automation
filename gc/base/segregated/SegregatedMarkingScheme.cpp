@@ -20,9 +20,9 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "EnvironmentBase.hpp"
-
 #include "SegregatedMarkingScheme.hpp"
+
+#include "EnvironmentBase.hpp"
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
 
@@ -30,15 +30,16 @@
  * Allocate and initialize a new instance of the receiver.
  * @return a new instance of the receiver, or NULL on failure.
  */
-MM_SegregatedMarkingScheme *
-MM_SegregatedMarkingScheme::newInstance(MM_EnvironmentBase *env)
+MM_SegregatedMarkingScheme*
+MM_SegregatedMarkingScheme::newInstance(MM_EnvironmentBase* env)
 {
-	MM_SegregatedMarkingScheme *instance;
-	
-	instance = (MM_SegregatedMarkingScheme *)env->getForge()->allocate(sizeof(MM_SegregatedMarkingScheme), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_SegregatedMarkingScheme* instance;
+
+	instance = (MM_SegregatedMarkingScheme*)env->getForge()->allocate(
+	        sizeof(MM_SegregatedMarkingScheme), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (instance) {
-		new(instance) MM_SegregatedMarkingScheme(env);
-		if (!instance->initialize(env)) { 
+		new (instance) MM_SegregatedMarkingScheme(env);
+		if (!instance->initialize(env)) {
 			instance->kill(env);
 			instance = NULL;
 		}
@@ -51,9 +52,9 @@ MM_SegregatedMarkingScheme::newInstance(MM_EnvironmentBase *env)
  * Free the receiver and all associated resources.
  */
 void
-MM_SegregatedMarkingScheme::kill(MM_EnvironmentBase *env)
+MM_SegregatedMarkingScheme::kill(MM_EnvironmentBase* env)
 {
-	tearDown(env); 
+	tearDown(env);
 	env->getForge()->free(this);
 }
 

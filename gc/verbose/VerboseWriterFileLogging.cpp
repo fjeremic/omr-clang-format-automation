@@ -20,28 +20,30 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "modronapicore.hpp"
-#include "VerboseManager.hpp"
 #include "VerboseWriterFileLogging.hpp"
 
-#include "GCExtensionsBase.hpp"
 #include "EnvironmentBase.hpp"
-
+#include "GCExtensionsBase.hpp"
+#include "VerboseManager.hpp"
+#include "modronapicore.hpp"
 #include <string.h>
 
-enum {
+enum
+{
 	single_file = 0,
 	rotating_files
 };
 
-MM_VerboseWriterFileLogging::MM_VerboseWriterFileLogging(MM_EnvironmentBase *env, MM_VerboseManager *manager, WriterType type)
-	:MM_VerboseWriter(type)
-	,_filename(NULL)
-	,_mode(single_file)
-	,_currentFile(0)
-	,_currentCycle(0)
-	,_tokens(NULL)
- 	,_manager(manager)
+MM_VerboseWriterFileLogging::MM_VerboseWriterFileLogging(MM_EnvironmentBase* env,
+                                                         MM_VerboseManager* manager,
+                                                         WriterType type)
+        : MM_VerboseWriter(type),
+          _filename(NULL),
+          _mode(single_file),
+          _currentFile(0),
+          _currentCycle(0),
+          _tokens(NULL),
+          _manager(manager)
 {
 	/* No implementation */
 }
@@ -51,37 +53,40 @@ MM_VerboseWriterFileLogging::MM_VerboseWriterFileLogging(MM_EnvironmentBase *env
  * @return true on success, false otherwise
  */
 bool
-MM_VerboseWriterFileLogging::initialize(MM_EnvironmentBase *env, const char *filename, uintptr_t numFiles, uintptr_t numCycles)
+MM_VerboseWriterFileLogging::initialize(MM_EnvironmentBase* env,
+                                        const char* filename,
+                                        uintptr_t numFiles,
+                                        uintptr_t numCycles)
 {
 	MM_VerboseWriter::initialize(env);
 
 	_numFiles = numFiles;
 	_numCycles = numCycles;
-	
-	if((_numFiles > 0) && (_numCycles > 0)) {
+
+	if ((_numFiles > 0) && (_numCycles > 0)) {
 		_mode = rotating_files;
 	} else {
 		_mode = single_file;
 	}
-	
+
 	if (!initializeTokens(env)) {
 		return false;
 	}
-	
+
 	if (!initializeFilename(env, filename)) {
 		return false;
 	}
-	
+
 	intptr_t initialFile = findInitialFile(env);
 	if (initialFile < 0) {
 		return false;
 	}
 	_currentFile = initialFile;
-	
-	if(!openFile(env)) {
+
+	if (!openFile(env)) {
 		return false;
 	}
-		
+
 	return true;
 }
 
@@ -90,10 +95,10 @@ MM_VerboseWriterFileLogging::initialize(MM_EnvironmentBase *env, const char *fil
  * Tears down the verbose buffer.
  */
 void
-MM_VerboseWriterFileLogging::tearDown(MM_EnvironmentBase *env)
+MM_VerboseWriterFileLogging::tearDown(MM_EnvironmentBase* env)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
 
 	omrstr_free_tokens(_tokens);
 	_tokens = NULL;
@@ -107,25 +112,25 @@ MM_VerboseWriterFileLogging::tearDown(MM_EnvironmentBase *env)
  * Initialize the _tokens field.
  * JTCJAZZ 36600 alias %p to be the same as %pid
  */
-bool 
-MM_VerboseWriterFileLogging::initializeTokens(MM_EnvironmentBase *env)
+bool
+MM_VerboseWriterFileLogging::initializeTokens(MM_EnvironmentBase* env)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 	char pidBuffer[64];
-	
+
 	_tokens = omrstr_create_tokens(omrtime_current_time_millis());
 	if (_tokens == NULL) {
 		return false;
 	}
-	
+
 	if (sizeof(pidBuffer) < omrstr_subst_tokens(pidBuffer, sizeof(pidBuffer), "%pid", _tokens)) {
 		return false;
 	}
-	
+
 	if (omrstr_set_token(_tokens, "p", "%s", pidBuffer)) {
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -150,11 +155,11 @@ MM_VerboseWriterFileLogging::initializeTokens(MM_EnvironmentBase *env)
  * 
  * @return true on success, false on failure
  */
-bool 
-MM_VerboseWriterFileLogging::initializeFilename(MM_EnvironmentBase *env, const char *filename)
+bool
+MM_VerboseWriterFileLogging::initializeFilename(MM_EnvironmentBase* env, const char* filename)
 {
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
-	
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
+
 	if (_mode == rotating_files) {
 		const char* read = filename;
 
@@ -165,8 +170,8 @@ MM_VerboseWriterFileLogging::initializeFilename(MM_EnvironmentBase *env, const c
 				hashCount++;
 			}
 		}
-		
-		/* allocate memory for the copied template filename */ 
+
+		/* allocate memory for the copied template filename */
 		uintptr_t nameLen = strlen(filename) + 1;
 		if (hashCount > 0) {
 			/* each # expands into %seq, so for each # add 3 to len */
@@ -176,11 +181,12 @@ MM_VerboseWriterFileLogging::initializeFilename(MM_EnvironmentBase *env, const c
 			nameLen += sizeof(".%seq") - 1;
 		}
 
-		_filename = (char*)extensions->getForge()->allocate(nameLen, OMR::GC::AllocationCategory::DIAGNOSTIC, OMR_GET_CALLSITE());
+		_filename = (char*)extensions->getForge()->allocate(nameLen, OMR::GC::AllocationCategory::DIAGNOSTIC,
+		                                                    OMR_GET_CALLSITE());
 		if (NULL == _filename) {
 			return false;
 		}
-		
+
 		/* copy the original filename into the allocated memory, expanding #s to %seq */
 		bool foundSeq = false;
 		bool oddPercents = false;
@@ -201,12 +207,13 @@ MM_VerboseWriterFileLogging::initializeFilename(MM_EnvironmentBase *env, const c
 		}
 
 		*write = '\0';
-		
-		if ( (false == foundSeq) && (0 == hashCount) ) {
+
+		if ((false == foundSeq) && (0 == hashCount)) {
 			strcpy(write, ".%seq");
 		}
 	} else {
-		_filename = (char*)extensions->getForge()->allocate(strlen(filename) + 1, OMR::GC::AllocationCategory::DIAGNOSTIC, OMR_GET_CALLSITE());
+		_filename = (char*)extensions->getForge()->allocate(
+		        strlen(filename) + 1, OMR::GC::AllocationCategory::DIAGNOSTIC, OMR_GET_CALLSITE());
 		if (NULL == _filename) {
 			return false;
 		}
@@ -225,23 +232,24 @@ MM_VerboseWriterFileLogging::initializeFilename(MM_EnvironmentBase *env, const c
  * 
  * @return NULL on failure, allocated memory on success 
  */
-char* 
-MM_VerboseWriterFileLogging::expandFilename(MM_EnvironmentBase *env, uintptr_t currentFile)
+char*
+MM_VerboseWriterFileLogging::expandFilename(MM_EnvironmentBase* env, uintptr_t currentFile)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
 
 	if (_mode == rotating_files) {
-		omrstr_set_token(_tokens, "seq", "%03zu", currentFile + 1); /* plus one so the filenames start from .001 instead of .000 */
+		omrstr_set_token(_tokens, "seq", "%03zu",
+		                 currentFile + 1); /* plus one so the filenames start from .001 instead of .000 */
 	}
-	
+
 	uintptr_t len = omrstr_subst_tokens(NULL, 0, _filename, _tokens);
-	char *filenameToOpen = (char*)extensions->getForge()->allocate(len, OMR::GC::AllocationCategory::DIAGNOSTIC, OMR_GET_CALLSITE());
+	char* filenameToOpen = (char*)extensions->getForge()->allocate(len, OMR::GC::AllocationCategory::DIAGNOSTIC,
+	                                                               OMR_GET_CALLSITE());
 	if (NULL != filenameToOpen) {
 		omrstr_subst_tokens(filenameToOpen, len, _filename, _tokens);
 	}
 	return filenameToOpen;
-	
 }
 
 /**
@@ -250,11 +258,11 @@ MM_VerboseWriterFileLogging::expandFilename(MM_EnvironmentBase *env, uintptr_t c
  * file if all numbers are used.
  * @return the first file number to use (starting at 0), or -1 on failure
  */
-intptr_t 
-MM_VerboseWriterFileLogging::findInitialFile(MM_EnvironmentBase *env)
+intptr_t
+MM_VerboseWriterFileLogging::findInitialFile(MM_EnvironmentBase* env)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
 	int64_t oldestTime = J9CONST64(0x7FFFFFFFFFFFFFFF); /* the highest possible time. */
 	intptr_t oldestFile = 0;
 
@@ -264,14 +272,14 @@ MM_VerboseWriterFileLogging::findInitialFile(MM_EnvironmentBase *env)
 	}
 
 	for (uintptr_t currentFile = 0; currentFile < _numFiles; currentFile++) {
-		char *filenameToOpen = expandFilename(env, currentFile);
+		char* filenameToOpen = expandFilename(env, currentFile);
 		if (NULL == filenameToOpen) {
 			return -1;
 		}
 
 		int64_t thisTime = omrfile_lastmod(filenameToOpen);
 		extensions->getForge()->free(filenameToOpen);
-		
+
 		if (thisTime < 0) {
 			/* file doesn't exist, or some other problem reading the file */
 			oldestFile = currentFile;
@@ -281,15 +289,15 @@ MM_VerboseWriterFileLogging::findInitialFile(MM_EnvironmentBase *env)
 			oldestFile = currentFile;
 		}
 	}
-	
-	return oldestFile; 
+
+	return oldestFile;
 }
 
 /**
  * Closes the agent's output stream.
  */
 void
-MM_VerboseWriterFileLogging::closeStream(MM_EnvironmentBase *env)
+MM_VerboseWriterFileLogging::closeStream(MM_EnvironmentBase* env)
 {
 	closeFile(env);
 }
@@ -299,11 +307,11 @@ MM_VerboseWriterFileLogging::closeStream(MM_EnvironmentBase *env)
  * Also cycles the output files if necessary.
  */
 void
-MM_VerboseWriterFileLogging::endOfCycle(MM_EnvironmentBase *env)
+MM_VerboseWriterFileLogging::endOfCycle(MM_EnvironmentBase* env)
 {
-	if(rotating_files == _mode) {
+	if (rotating_files == _mode) {
 		_currentCycle = (_currentCycle + 1) % _numCycles;
-		if(0 == _currentCycle) {
+		if (0 == _currentCycle) {
 			closeFile(env);
 			_currentFile = (_currentFile + 1) % _numFiles;
 		}
@@ -318,9 +326,11 @@ MM_VerboseWriterFileLogging::endOfCycle(MM_EnvironmentBase *env)
  * @param iterations The number of gc cycles to log to each file.
  */
 bool
-MM_VerboseWriterFileLogging::reconfigure(MM_EnvironmentBase *env, const char *filename, uintptr_t numFiles, uintptr_t numCycles)
+MM_VerboseWriterFileLogging::reconfigure(MM_EnvironmentBase* env,
+                                         const char* filename,
+                                         uintptr_t numFiles,
+                                         uintptr_t numCycles)
 {
 	closeFile(env);
 	return initialize(env, filename, numFiles, numCycles);
 }
-

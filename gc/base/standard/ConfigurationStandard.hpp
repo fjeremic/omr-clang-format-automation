@@ -28,10 +28,9 @@
 #if !defined(CONFIGURATIONSTANDARD_HPP_)
 #define CONFIGURATIONSTANDARD_HPP_
 
-#include "omrcfg.h"
-
 #include "Configuration.hpp"
 #include "EnvironmentBase.hpp"
+#include "omrcfg.h"
 
 #if defined(OMR_GC_MODRON_STANDARD)
 
@@ -39,7 +38,8 @@ class MM_GlobalCollector;
 class MM_Heap;
 class MM_MemoryPool;
 
-class MM_ConfigurationStandard : public MM_Configuration {
+class MM_ConfigurationStandard : public MM_Configuration
+{
 	/* Data members / Types */
 public:
 protected:
@@ -57,16 +57,23 @@ protected:
 	static const uintptr_t STANDARD_ARRAYLET_LEAF_SIZE_BYTES = UDATA_MAX;
 
 private:
-
 	/* Methods */
 public:
 	virtual MM_GlobalCollector* createGlobalCollector(MM_EnvironmentBase* env);
-	virtual MM_Heap* createHeapWithManager(MM_EnvironmentBase* env, uintptr_t heapBytesRequested, MM_HeapRegionManager* regionManager);
+	virtual MM_Heap* createHeapWithManager(MM_EnvironmentBase* env,
+	                                       uintptr_t heapBytesRequested,
+	                                       MM_HeapRegionManager* regionManager);
 	virtual MM_HeapRegionManager* createHeapRegionManager(MM_EnvironmentBase* env);
 	virtual J9Pool* createEnvironmentPool(MM_EnvironmentBase* env);
 
 	MM_ConfigurationStandard(MM_EnvironmentBase* env, MM_GCPolicy gcPolicy, uintptr_t regionSize)
-		: MM_Configuration(env, gcPolicy, mm_regionAlignment, regionSize, STANDARD_ARRAYLET_LEAF_SIZE_BYTES, getWriteBarrierType(env), gc_modron_allocation_type_tlh)
+	        : MM_Configuration(env,
+	                           gcPolicy,
+	                           mm_regionAlignment,
+	                           regionSize,
+	                           STANDARD_ARRAYLET_LEAF_SIZE_BYTES,
+	                           getWriteBarrierType(env),
+	                           gc_modron_allocation_type_tlh)
 	{
 		_typeId = __FUNCTION__;
 	};
@@ -74,7 +81,7 @@ public:
 protected:
 	virtual bool initialize(MM_EnvironmentBase* env);
 	virtual MM_EnvironmentBase* allocateNewEnvironment(MM_GCExtensionsBase* extensions, OMR_VMThread* omrVMThread);
-	
+
 	/**
 	 * Sets the number of gc threads
 	 *
@@ -106,7 +113,6 @@ private:
 		}
 		return writeBarrierType;
 	}
-
 };
 
 #endif /* OMR_GC_MODRON_STANDARD */

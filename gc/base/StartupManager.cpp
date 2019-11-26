@@ -20,13 +20,12 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include "StartupManager.hpp"
 
 #include <string.h>
-
-#include "StartupManager.hpp"
 #if defined(OMR_GC)
-#include "GCExtensionsBase.hpp"
 #include "ConfigurationFlat.hpp"
+#include "GCExtensionsBase.hpp"
 #endif /* OMR_GC */
 
 #define OMR_GC_BUFFER_SIZE 256
@@ -52,7 +51,7 @@
 #define OMR_XGCTHREADS_LENGTH 11
 
 uintptr_t
-MM_StartupManager::getUDATAValue(char *option, uintptr_t *outputValue)
+MM_StartupManager::getUDATAValue(char* option, uintptr_t* outputValue)
 {
 	char buffer[OMR_GC_BUFFER_SIZE];
 	int count = 0;
@@ -74,13 +73,13 @@ MM_StartupManager::getUDATAValue(char *option, uintptr_t *outputValue)
 	}
 	buffer[count] = '\0';
 
-	*outputValue = (uintptr_t) atoi(buffer);
+	*outputValue = (uintptr_t)atoi(buffer);
 
 	return count;
 }
 
 bool
-MM_StartupManager::getUDATAMemoryValue(char *option, uintptr_t *convertedValue)
+MM_StartupManager::getUDATAMemoryValue(char* option, uintptr_t* convertedValue)
 {
 	size_t count = 0;
 	size_t optionLength = strlen(option);
@@ -116,8 +115,7 @@ MM_StartupManager::getUDATAMemoryValue(char *option, uintptr_t *convertedValue)
 	case 'B':
 		/* nothing */
 		break;
-	default:
-		return false;
+	default: return false;
 	}
 
 	*convertedValue = actualValue;
@@ -125,18 +123,18 @@ MM_StartupManager::getUDATAMemoryValue(char *option, uintptr_t *convertedValue)
 }
 
 bool
-MM_StartupManager::parseGcOptions(MM_GCExtensionsBase *extensions)
+MM_StartupManager::parseGcOptions(MM_GCExtensionsBase* extensions)
 {
 	OMRPORT_ACCESS_FROM_OMRVM(extensions->getOmrVM());
-	char *gcOptions = getOptions();
+	char* gcOptions = getOptions();
 	bool result = true;
 	if (NULL != gcOptions) {
 		size_t end = 0;
-		char *options = gcOptions;
+		char* options = gcOptions;
 
 		do {
 			char option[OMR_GC_BUFFER_SIZE];
-			char *nextSpace = strchr(options, ' ');
+			char* nextSpace = strchr(options, ' ');
 			if (NULL == nextSpace) {
 				/* handle last option */
 				end = strlen(options);
@@ -159,7 +157,7 @@ MM_StartupManager::parseGcOptions(MM_GCExtensionsBase *extensions)
 			}
 			strncpy(option, options, end);
 			option[end] = '\0';
-			if(!handleOption(extensions, option)) {
+			if (!handleOption(extensions, option)) {
 				omrtty_printf("Error parsing OMR GC options: '%s'\n", gcOptions);
 				result = false;
 				break;
@@ -182,7 +180,7 @@ MM_StartupManager::parseGcOptions(MM_GCExtensionsBase *extensions)
 }
 
 bool
-MM_StartupManager::loadGcOptions(MM_GCExtensionsBase *extensions)
+MM_StartupManager::loadGcOptions(MM_GCExtensionsBase* extensions)
 {
 	OMRPORT_ACCESS_FROM_OMRVM(extensions->getOmrVM());
 
@@ -194,8 +192,8 @@ MM_StartupManager::loadGcOptions(MM_GCExtensionsBase *extensions)
 	extensions->compactOnSystemGC = 0;
 #endif /* OMR_GC_MODRON_COMPACTION */
 
-	uintptr_t *pageSizes = omrvmem_supported_page_sizes();
-	uintptr_t *pageFlags = omrvmem_supported_page_flags();
+	uintptr_t* pageSizes = omrvmem_supported_page_sizes();
+	uintptr_t* pageFlags = omrvmem_supported_page_flags();
 
 	extensions->requestedPageSize = pageSizes[0];
 	extensions->requestedPageFlags = pageFlags[0];
@@ -234,7 +232,7 @@ MM_StartupManager::loadGcOptions(MM_GCExtensionsBase *extensions)
 }
 
 bool
-MM_StartupManager::handleOption(MM_GCExtensionsBase *extensions, char *option)
+MM_StartupManager::handleOption(MM_GCExtensionsBase* extensions, char* option)
 {
 	OMRPORT_ACCESS_FROM_OMRVM(extensions->getOmrVM());
 	bool result = true;
@@ -266,19 +264,19 @@ MM_StartupManager::handleOption(MM_GCExtensionsBase *extensions, char *option)
 	}
 #endif /* OMR_GC_MODRON_COMPACTION */
 	else if (0 == strncmp(option, OMR_XVERBOSEGCLOG, OMR_XVERBOSEGCLOG_LENGTH)) {
-		verboseFileName = (char *) omrmem_allocate_memory(strlen(option+OMR_XVERBOSEGCLOG_LENGTH)+1, OMRMEM_CATEGORY_MM);
+		verboseFileName = (char*)omrmem_allocate_memory(strlen(option + OMR_XVERBOSEGCLOG_LENGTH) + 1,
+		                                                OMRMEM_CATEGORY_MM);
 		if (NULL == verboseFileName) {
 			result = false;
 		} else {
 			strcpy(verboseFileName, option + OMR_XVERBOSEGCLOG_LENGTH);
 		}
-	}
-	else if (0 == strncmp(option, OMR_XGCBUFFERED_LOGGING, OMR_XGCBUFFERED_LOGGING_LENGTH)) {
+	} else if (0 == strncmp(option, OMR_XGCBUFFERED_LOGGING, OMR_XGCBUFFERED_LOGGING_LENGTH)) {
 		extensions->bufferedLogging = true;
 	}
 #if defined(OMR_GC_MORDON_SCAVENGER)
 	else if (0 == strncmp(option, OMR_XGCPOLICY, OMR_XGCPOLICY_LENGTH)) {
-		char *gcpolicy = option + OMR_XGCPOLICY_LENGTH;
+		char* gcpolicy = option + OMR_XGCPOLICY_LENGTH;
 		if (0 == strncmp(gcpolicy, OMR_GCPOLICY_GENCON, OMR_GCPOLICY_GENCON_LENGTH)) {
 			/* this is disabled by default -- enable scavenger here */
 			extensions->scavengerEnabled = true;
@@ -319,14 +317,14 @@ MM_StartupManager::isVerboseEnabled(void)
 	return (NULL != verboseFileName);
 }
 
-char *
+char*
 MM_StartupManager::getVerboseFileName(void)
 {
 	return verboseFileName;
 }
 
-MM_Configuration *
-MM_StartupManager::createConfiguration(MM_EnvironmentBase *env)
+MM_Configuration*
+MM_StartupManager::createConfiguration(MM_EnvironmentBase* env)
 {
 	/* When multiple configurations are supported, this call can return different
 	 * concrete implementations based on arguments previously parsed by handleOption().

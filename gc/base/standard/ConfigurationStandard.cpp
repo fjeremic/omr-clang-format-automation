@@ -24,10 +24,10 @@
  * @file
  * @ingroup GC_Modron_Standard
  */
- 
-#include "omrcfg.h"
 
 #include "ConfigurationStandard.hpp"
+
+#include "omrcfg.h"
 
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
 #include "ConcurrentGCIncrementalUpdate.hpp"
@@ -37,20 +37,20 @@
 #include "ConcurrentSweepGC.hpp"
 #endif /* OMR_GC_CONCURRENT_SWEEP */
 #include "EnvironmentStandard.hpp"
-#include "GlobalCollector.hpp"
 #include "GCExtensionsBase.hpp"
-#include "HeapRegionManagerStandard.hpp"
+#include "GlobalCollector.hpp"
 #include "HeapRegionDescriptorStandard.hpp"
+#include "HeapRegionManagerStandard.hpp"
 #include "HeapVirtualMemory.hpp"
 #include "MemoryPoolAddressOrderedList.hpp"
 #include "MemoryPoolAddressOrderedListBase.hpp"
-#include "MemoryPoolSplitAddressOrderedList.hpp"
 #include "MemoryPoolHybrid.hpp"
 #include "MemoryPoolLargeObjects.hpp"
+#include "MemoryPoolSplitAddressOrderedList.hpp"
 #include "ParallelGlobalGC.hpp"
 #include "SweepPoolManagerAddressOrderedList.hpp"
-#include "SweepPoolManagerSplitAddressOrderedList.hpp"
 #include "SweepPoolManagerHybrid.hpp"
+#include "SweepPoolManagerSplitAddressOrderedList.hpp"
 
 /**
  * Tear down Standard Configuration
@@ -81,13 +81,13 @@ MM_ConfigurationStandard::initialize(MM_EnvironmentBase* env)
 	MM_GCExtensionsBase* extensions = env->getExtensions();
 	bool result = MM_Configuration::initialize(env);
 	if (result) {
-		extensions->payAllocationTax = extensions->isConcurrentMarkEnabled() || extensions->isConcurrentSweepEnabled();
+		extensions->payAllocationTax = extensions->isConcurrentMarkEnabled()
+		        || extensions->isConcurrentSweepEnabled();
 		extensions->setStandardGC(true);
 	}
 
 	return result;
 }
-
 
 void
 MM_ConfigurationStandard::initializeGCThreadCount(MM_EnvironmentBase* env)
@@ -107,7 +107,6 @@ MM_ConfigurationStandard::initializeGCThreadCount(MM_EnvironmentBase* env)
 #endif
 }
 
-
 /**
  * Create the global collector for a Standard configuration
  */
@@ -115,7 +114,7 @@ MM_GlobalCollector*
 MM_ConfigurationStandard::createGlobalCollector(MM_EnvironmentBase* env)
 {
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK) || defined(OMR_GC_MODRON_CONCCURENT_SWEEP)
-	MM_GCExtensionsBase *extensions = env->getExtensions();
+	MM_GCExtensionsBase* extensions = env->getExtensions();
 #endif /* OMR_GC_MODRON_CONCURRENT_MARK || OMR_GC_CONCURRENT_SWEEP */
 
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
@@ -139,9 +138,12 @@ MM_ConfigurationStandard::createGlobalCollector(MM_EnvironmentBase* env)
  * Create the heap for a Standard configuration
  */
 MM_Heap*
-MM_ConfigurationStandard::createHeapWithManager(MM_EnvironmentBase* env, uintptr_t heapBytesRequested, MM_HeapRegionManager* regionManager)
+MM_ConfigurationStandard::createHeapWithManager(MM_EnvironmentBase* env,
+                                                uintptr_t heapBytesRequested,
+                                                MM_HeapRegionManager* regionManager)
 {
-	return MM_HeapVirtualMemory::newInstance(env, env->getExtensions()->heapAlignment, heapBytesRequested, regionManager);
+	return MM_HeapVirtualMemory::newInstance(env, env->getExtensions()->heapAlignment, heapBytesRequested,
+	                                         regionManager);
 }
 
 /**
@@ -169,8 +171,10 @@ MM_ConfigurationStandard::createMemoryPool(MM_EnvironmentBase* env, bool appendC
 	}
 #endif /* OMR_GC_CONCURRENT_SWEEP */
 
-	if ((UDATA_MAX == extensions->largeObjectAllocationProfilingVeryLargeObjectThreshold) && extensions->processLargeAllocateStats) {
-		extensions->largeObjectAllocationProfilingVeryLargeObjectThreshold = OMR_MAX(10*1024*1024, extensions->memoryMax/100);
+	if ((UDATA_MAX == extensions->largeObjectAllocationProfilingVeryLargeObjectThreshold)
+	    && extensions->processLargeAllocateStats) {
+		extensions->largeObjectAllocationProfilingVeryLargeObjectThreshold =
+		        OMR_MAX(10 * 1024 * 1024, extensions->memoryMax / 100);
 	}
 
 	/* Create Sweep Pool Manager for Tenure */
@@ -179,8 +183,7 @@ MM_ConfigurationStandard::createMemoryPool(MM_EnvironmentBase* env, bool appendC
 			if (!createSweepPoolManagerHybrid(env)) {
 				return NULL;
 			}
-		}
-		else {
+		} else {
 			if (!createSweepPoolManagerSplitAddressOrderedList(env)) {
 				return NULL;
 			}
@@ -203,16 +206,19 @@ MM_ConfigurationStandard::createMemoryPool(MM_EnvironmentBase* env, bool appendC
 
 		/* create memory pools for SOA and LOA */
 		if (doSplit) {
-			memoryPoolSmallObjects = MM_MemoryPoolSplitAddressOrderedList::newInstance(env, minimumFreeEntrySize, extensions->splitFreeListSplitAmount, "SOA");
+			memoryPoolSmallObjects = MM_MemoryPoolSplitAddressOrderedList::newInstance(
+			        env, minimumFreeEntrySize, extensions->splitFreeListSplitAmount, "SOA");
 		} else {
-			memoryPoolSmallObjects = MM_MemoryPoolAddressOrderedList::newInstance(env, minimumFreeEntrySize, "SOA");
+			memoryPoolSmallObjects =
+			        MM_MemoryPoolAddressOrderedList::newInstance(env, minimumFreeEntrySize, "SOA");
 		}
 
 		if (NULL == memoryPoolSmallObjects) {
 			return NULL;
 		}
 
-		memoryPoolLargeObjects = MM_MemoryPoolAddressOrderedList::newInstance(env, extensions->largeObjectMinimumSize, "LOA");
+		memoryPoolLargeObjects =
+		        MM_MemoryPoolAddressOrderedList::newInstance(env, extensions->largeObjectMinimumSize, "LOA");
 		if (NULL == memoryPoolLargeObjects) {
 			memoryPoolSmallObjects->kill(env);
 			return NULL;
@@ -223,7 +229,10 @@ MM_ConfigurationStandard::createMemoryPool(MM_EnvironmentBase* env, bool appendC
 			memoryPoolSmallObjects->appendCollectorLargeAllocateStats();
 		}
 
-		if (!extensions->freeEntrySizeClassStatsSimulated.initialize(env, (uint16_t)extensions->largeObjectAllocationProfilingTopK, extensions->freeMemoryProfileMaxSizeClasses, extensions->largeObjectAllocationProfilingVeryLargeObjectThreshold, 1, true)) {
+		if (!extensions->freeEntrySizeClassStatsSimulated.initialize(
+		            env, (uint16_t)extensions->largeObjectAllocationProfilingTopK,
+		            extensions->freeMemoryProfileMaxSizeClasses,
+		            extensions->largeObjectAllocationProfilingVeryLargeObjectThreshold, 1, true)) {
 			memoryPoolSmallObjects->kill(env);
 			memoryPoolLargeObjects->kill(env);
 			return NULL;
@@ -235,7 +244,8 @@ MM_ConfigurationStandard::createMemoryPool(MM_EnvironmentBase* env, bool appendC
 		MM_MemoryPool* memoryPool = NULL;
 
 		if (doSplit) {
-			memoryPool = MM_MemoryPoolSplitAddressOrderedList::newInstance(env, minimumFreeEntrySize, extensions->splitFreeListSplitAmount, "Tenure");
+			memoryPool = MM_MemoryPoolSplitAddressOrderedList::newInstance(
+			        env, minimumFreeEntrySize, extensions->splitFreeListSplitAmount, "Tenure");
 		} else {
 			memoryPool = MM_MemoryPoolAddressOrderedList::newInstance(env, minimumFreeEntrySize, "Tenure");
 		}
@@ -248,7 +258,10 @@ MM_ConfigurationStandard::createMemoryPool(MM_EnvironmentBase* env, bool appendC
 			memoryPool->appendCollectorLargeAllocateStats();
 		}
 
-		if (!extensions->freeEntrySizeClassStatsSimulated.initialize(env, (uint16_t)extensions->largeObjectAllocationProfilingTopK, extensions->freeMemoryProfileMaxSizeClasses, extensions->largeObjectAllocationProfilingVeryLargeObjectThreshold, 1, true)) {
+		if (!extensions->freeEntrySizeClassStatsSimulated.initialize(
+		            env, (uint16_t)extensions->largeObjectAllocationProfilingTopK,
+		            extensions->freeMemoryProfileMaxSizeClasses,
+		            extensions->largeObjectAllocationProfilingVeryLargeObjectThreshold, 1, true)) {
 			memoryPool->kill(env);
 			return NULL;
 		}
@@ -270,7 +283,8 @@ MM_ConfigurationStandard::createEnvironmentPool(MM_EnvironmentBase* env)
 
 	uintptr_t numberOfElements = getConfigurationDelegate()->getInitialNumberOfPooledEnvironments(env);
 	/* number of elements, pool flags = 0, 0 selects default pool configuration (at least 1 element, puddle size rounded to OS page size) */
-	return pool_new(sizeof(MM_EnvironmentStandard), numberOfElements, sizeof(uint64_t), 0, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_MM, POOL_FOR_PORT(OMRPORTLIB));
+	return pool_new(sizeof(MM_EnvironmentStandard), numberOfElements, sizeof(uint64_t), 0, OMR_GET_CALLSITE(),
+	                OMRMEM_CATEGORY_MM, POOL_FOR_PORT(OMRPORTLIB));
 }
 
 /**
@@ -283,7 +297,8 @@ MM_ConfigurationStandard::createSweepPoolManagerAddressOrderedList(MM_Environmen
 
 	/* Create Sweep Pool Manager for MPAOL if it is not created yet */
 	if (NULL == extensions->sweepPoolManagerAddressOrderedList) {
-		extensions->sweepPoolManagerAddressOrderedList = MM_SweepPoolManagerAddressOrderedList::newInstance(env);
+		extensions->sweepPoolManagerAddressOrderedList =
+		        MM_SweepPoolManagerAddressOrderedList::newInstance(env);
 		if (NULL == extensions->sweepPoolManagerAddressOrderedList) {
 			return false;
 		}
@@ -302,7 +317,8 @@ MM_ConfigurationStandard::createSweepPoolManagerSplitAddressOrderedList(MM_Envir
 
 	/* Create Sweep Pool Manager for MPSAOL if it is not created yet */
 	if (NULL == extensions->sweepPoolManagerSmallObjectArea) {
-		extensions->sweepPoolManagerSmallObjectArea = MM_SweepPoolManagerSplitAddressOrderedList::newInstance(env);
+		extensions->sweepPoolManagerSmallObjectArea =
+		        MM_SweepPoolManagerSplitAddressOrderedList::newInstance(env);
 		if (NULL == extensions->sweepPoolManagerSmallObjectArea) {
 			return false;
 		}
@@ -334,7 +350,9 @@ MM_HeapRegionManager*
 MM_ConfigurationStandard::createHeapRegionManager(MM_EnvironmentBase* env)
 {
 	MM_GCExtensionsBase* extensions = env->getExtensions();
-	MM_HeapRegionManager* heapRegionManager = MM_HeapRegionManagerStandard::newInstance(env, extensions->regionSize, sizeof(MM_HeapRegionDescriptorStandard), MM_HeapRegionDescriptorStandard::initializer, MM_HeapRegionDescriptorStandard::destructor);
+	MM_HeapRegionManager* heapRegionManager = MM_HeapRegionManagerStandard::newInstance(
+	        env, extensions->regionSize, sizeof(MM_HeapRegionDescriptorStandard),
+	        MM_HeapRegionDescriptorStandard::initializer, MM_HeapRegionDescriptorStandard::destructor);
 
 	return heapRegionManager;
 }

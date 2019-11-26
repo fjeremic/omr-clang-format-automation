@@ -22,42 +22,50 @@
 
 #include "HeapRegionManager.hpp"
 
-#include <string.h>
-
+#include "Bits.hpp"
+#include "EnvironmentBase.hpp"
+#include "Forge.hpp"
+#include "HeapRegionDescriptor.hpp"
 #include "omrlinkedlist.h"
 #include "omrport.h"
-
-#include "Bits.hpp"
-#include "Forge.hpp"
-#include "EnvironmentBase.hpp"
-#include "HeapRegionDescriptor.hpp"
+#include <string.h>
 
 class MemorySubSpace;
 
-MM_HeapRegionManager::MM_HeapRegionManager(MM_EnvironmentBase* env, uintptr_t regionSize, uintptr_t tableDescriptorSize, MM_RegionDescriptorInitializer regionDescriptorInitializer, MM_RegionDescriptorDestructor regionDescriptorDestructor)
-	: MM_BaseVirtual()
-	, _auxRegionDescriptorList(NULL)
-	, _auxRegionCount(0)
-	, _regionSize(regionSize)
-	, _regionShift(0)
-	, _regionTable(NULL)
-	, _tableRegionCount(0)
-	, _lowTableEdge(NULL)
-	, _highTableEdge(NULL)
-	, _tableDescriptorSize(tableDescriptorSize)
-	, _regionDescriptorInitializer(regionDescriptorInitializer)
-	, _regionDescriptorDestructor(regionDescriptorDestructor)
-	, _totalHeapSize(0)
+MM_HeapRegionManager::MM_HeapRegionManager(MM_EnvironmentBase* env,
+                                           uintptr_t regionSize,
+                                           uintptr_t tableDescriptorSize,
+                                           MM_RegionDescriptorInitializer regionDescriptorInitializer,
+                                           MM_RegionDescriptorDestructor regionDescriptorDestructor)
+        : MM_BaseVirtual(),
+          _auxRegionDescriptorList(NULL),
+          _auxRegionCount(0),
+          _regionSize(regionSize),
+          _regionShift(0),
+          _regionTable(NULL),
+          _tableRegionCount(0),
+          _lowTableEdge(NULL),
+          _highTableEdge(NULL),
+          _tableDescriptorSize(tableDescriptorSize),
+          _regionDescriptorInitializer(regionDescriptorInitializer),
+          _regionDescriptorDestructor(regionDescriptorDestructor),
+          _totalHeapSize(0)
 {
 	_typeId = __FUNCTION__;
 }
 
 MM_HeapRegionManager*
-MM_HeapRegionManager::newInstance(MM_EnvironmentBase* env, uintptr_t regionSize, uintptr_t tableDescriptorSize, MM_RegionDescriptorInitializer regionDescriptorInitializer, MM_RegionDescriptorDestructor regionDescriptorDestructor)
+MM_HeapRegionManager::newInstance(MM_EnvironmentBase* env,
+                                  uintptr_t regionSize,
+                                  uintptr_t tableDescriptorSize,
+                                  MM_RegionDescriptorInitializer regionDescriptorInitializer,
+                                  MM_RegionDescriptorDestructor regionDescriptorDestructor)
 {
-	MM_HeapRegionManager *regionManager = (MM_HeapRegionManager *)env->getForge()->allocate(sizeof(MM_HeapRegionManager), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_HeapRegionManager* regionManager = (MM_HeapRegionManager*)env->getForge()->allocate(
+	        sizeof(MM_HeapRegionManager), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (regionManager) {
-		new(regionManager) MM_HeapRegionManager(env, regionSize, tableDescriptorSize, regionDescriptorInitializer, regionDescriptorDestructor);
+		new (regionManager) MM_HeapRegionManager(env, regionSize, tableDescriptorSize,
+		                                         regionDescriptorInitializer, regionDescriptorDestructor);
 		if (!regionManager->initialize(env)) {
 			regionManager->kill(env);
 			regionManager = NULL;
@@ -111,14 +119,17 @@ MM_HeapRegionManager::insertHeapRegion(MM_EnvironmentBase* env, MM_HeapRegionDes
 	}
 
 	if (nextHeapRegion) {
-		J9_LINEAR_LINKED_LIST_ADD_BEFORE(_nextRegion, _previousRegion,
-										 _auxRegionDescriptorList, (MM_HeapRegionDescriptor*)nextHeapRegion, (MM_HeapRegionDescriptor*)heapRegion);
+		J9_LINEAR_LINKED_LIST_ADD_BEFORE(_nextRegion, _previousRegion, _auxRegionDescriptorList,
+		                                 (MM_HeapRegionDescriptor*)nextHeapRegion,
+		                                 (MM_HeapRegionDescriptor*)heapRegion);
 	} else {
 		if (J9_LINEAR_LINKED_LIST_IS_EMPTY(_auxRegionDescriptorList)) {
-			J9_LINEAR_LINKED_LIST_ADD(_nextRegion, _previousRegion, _auxRegionDescriptorList, (MM_HeapRegionDescriptor*)heapRegion);
+			J9_LINEAR_LINKED_LIST_ADD(_nextRegion, _previousRegion, _auxRegionDescriptorList,
+			                          (MM_HeapRegionDescriptor*)heapRegion);
 		} else {
-			J9_LINEAR_LINKED_LIST_ADD_AFTER(_nextRegion, _previousRegion,
-											_auxRegionDescriptorList, (MM_HeapRegionDescriptor*)lastHeapRegion, (MM_HeapRegionDescriptor*)heapRegion);
+			J9_LINEAR_LINKED_LIST_ADD_AFTER(_nextRegion, _previousRegion, _auxRegionDescriptorList,
+			                                (MM_HeapRegionDescriptor*)lastHeapRegion,
+			                                (MM_HeapRegionDescriptor*)heapRegion);
 		}
 	}
 
@@ -144,7 +155,10 @@ MM_HeapRegionManager::getTotalHeapSize()
 }
 
 MM_HeapRegionDescriptor*
-MM_HeapRegionManager::createAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace, void* lowAddress, void* highAddress)
+MM_HeapRegionManager::createAuxiliaryRegionDescriptor(MM_EnvironmentBase* env,
+                                                      MM_MemorySubSpace* subSpace,
+                                                      void* lowAddress,
+                                                      void* highAddress)
 {
 	writeLock();
 	MM_HeapRegionDescriptor* toReturn = NULL;
@@ -154,7 +168,10 @@ MM_HeapRegionManager::createAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, M
 }
 
 MM_HeapRegionDescriptor*
-MM_HeapRegionManager::internalCreateAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace, void* lowAddress, void* highAddress)
+MM_HeapRegionManager::internalCreateAuxiliaryRegionDescriptor(MM_EnvironmentBase* env,
+                                                              MM_MemorySubSpace* subSpace,
+                                                              void* lowAddress,
+                                                              void* highAddress)
 {
 	MM_HeapRegionDescriptor* desc = NULL;
 
@@ -177,9 +194,9 @@ MM_HeapRegionManager::destroyAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, 
 	Trc_MM_HeapRegionManager_destroyAuxiliaryRegionDescriptor_Exit(env->getLanguageVMThread());
 }
 
-
 void
-MM_HeapRegionManager::internalDestroyAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* descriptor)
+MM_HeapRegionManager::internalDestroyAuxiliaryRegionDescriptor(MM_EnvironmentBase* env,
+                                                               MM_HeapRegionDescriptor* descriptor)
 {
 	removeHeapRegion(env, descriptor);
 	internalFreeAuxiliaryRegionDescriptor(env, descriptor);
@@ -198,7 +215,9 @@ MM_HeapRegionManager::unlock()
 }
 
 void
-MM_HeapRegionManager::reassociateRegionWithSubSpace(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* region, MM_MemorySubSpace* subSpace)
+MM_HeapRegionManager::reassociateRegionWithSubSpace(MM_EnvironmentBase* env,
+                                                    MM_HeapRegionDescriptor* region,
+                                                    MM_MemorySubSpace* subSpace)
 {
 	writeLock();
 
@@ -217,13 +236,15 @@ MM_HeapRegionManager::getFirstTableRegion()
 MM_HeapRegionDescriptor*
 MM_HeapRegionManager::getNextTableRegion(MM_HeapRegionDescriptor* heapRegion)
 {
-	return findFirstUsedRegion((MM_HeapRegionDescriptor*)((uintptr_t)heapRegion + (_tableDescriptorSize * heapRegion->_regionsInSpan)));
+	return findFirstUsedRegion((MM_HeapRegionDescriptor*)((uintptr_t)heapRegion
+	                                                      + (_tableDescriptorSize * heapRegion->_regionsInSpan)));
 }
 
 MM_HeapRegionDescriptor*
 MM_HeapRegionManager::findFirstUsedRegion(MM_HeapRegionDescriptor* start)
 {
-	MM_HeapRegionDescriptor* top = (MM_HeapRegionDescriptor*)((uintptr_t)_regionTable + (_tableDescriptorSize * _tableRegionCount));
+	MM_HeapRegionDescriptor* top =
+	        (MM_HeapRegionDescriptor*)((uintptr_t)_regionTable + (_tableDescriptorSize * _tableRegionCount));
 	MM_HeapRegionDescriptor* usedRegion = NULL;
 	MM_HeapRegionDescriptor* current = start;
 
@@ -231,16 +252,20 @@ MM_HeapRegionManager::findFirstUsedRegion(MM_HeapRegionDescriptor* start)
 		if (current->_isAllocated) {
 			usedRegion = current;
 		} else {
-			current = (MM_HeapRegionDescriptor*)((uintptr_t)current + (_tableDescriptorSize * current->_regionsInSpan));
+			current = (MM_HeapRegionDescriptor*)((uintptr_t)current
+			                                     + (_tableDescriptorSize * current->_regionsInSpan));
 		}
 	}
 	return usedRegion;
 }
 
 MM_HeapRegionDescriptor*
-MM_HeapRegionManager::internalAllocateAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, void* lowAddress, void* highAddress)
+MM_HeapRegionManager::internalAllocateAuxiliaryRegionDescriptor(MM_EnvironmentBase* env,
+                                                                void* lowAddress,
+                                                                void* highAddress)
 {
-	MM_HeapRegionDescriptor* desc = (MM_HeapRegionDescriptor*)env->getForge()->allocate(_tableDescriptorSize, OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_HeapRegionDescriptor* desc = (MM_HeapRegionDescriptor*)env->getForge()->allocate(
+	        _tableDescriptorSize, OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (NULL != desc) {
 		if (!_regionDescriptorInitializer(env, this, desc, lowAddress, highAddress)) {
 			desc = NULL;
@@ -250,7 +275,8 @@ MM_HeapRegionManager::internalAllocateAuxiliaryRegionDescriptor(MM_EnvironmentBa
 }
 
 void
-MM_HeapRegionManager::internalFreeAuxiliaryRegionDescriptor(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* descriptor)
+MM_HeapRegionManager::internalFreeAuxiliaryRegionDescriptor(MM_EnvironmentBase* env,
+                                                            MM_HeapRegionDescriptor* descriptor)
 {
 	if (NULL != _regionDescriptorDestructor) {
 		_regionDescriptorDestructor(env, this, descriptor);
@@ -259,13 +285,16 @@ MM_HeapRegionManager::internalFreeAuxiliaryRegionDescriptor(MM_EnvironmentBase* 
 }
 
 MM_HeapRegionDescriptor*
-MM_HeapRegionManager::internalAllocateAndInitializeRegionTable(MM_EnvironmentBase* env, void* lowHeapEdge, void* highHeapEdge)
+MM_HeapRegionManager::internalAllocateAndInitializeRegionTable(MM_EnvironmentBase* env,
+                                                               void* lowHeapEdge,
+                                                               void* highHeapEdge)
 {
 	uintptr_t size = (uintptr_t)highHeapEdge - (uintptr_t)lowHeapEdge;
 	uintptr_t regionSize = getRegionSize();
 	uintptr_t regionCount = size / regionSize;
 	uintptr_t sizeInBytes = regionCount * _tableDescriptorSize;
-	MM_HeapRegionDescriptor* table = (MM_HeapRegionDescriptor*)env->getForge()->allocate(sizeInBytes, OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_HeapRegionDescriptor* table = (MM_HeapRegionDescriptor*)env->getForge()->allocate(
+	        sizeInBytes, OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (NULL != table) {
 		/* the table has been allocated so initialize the descriptors inside it and the meta-data to use the table */
 		memset((void*)table, 0, sizeInBytes);
@@ -285,7 +314,9 @@ MM_HeapRegionManager::internalAllocateAndInitializeRegionTable(MM_EnvironmentBas
 }
 
 void
-MM_HeapRegionManager::internalFreeRegionTable(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* tableBase, uintptr_t tableElementCount)
+MM_HeapRegionManager::internalFreeRegionTable(MM_EnvironmentBase* env,
+                                              MM_HeapRegionDescriptor* tableBase,
+                                              uintptr_t tableElementCount)
 {
 	if (NULL != _regionDescriptorDestructor) {
 		MM_HeapRegionDescriptor* descriptor = tableBase;

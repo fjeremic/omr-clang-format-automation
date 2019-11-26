@@ -20,17 +20,16 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include "ModronAssertions.h"
 #include "omrcfg.h"
 #include "omrmodroncore.h"
 #include "omrthread.h"
-#include "ModronAssertions.h"
 
 #if defined(OMR_GC_CONCURRENT_SWEEP)
 
-#include "ConcurrentSweepScheme.hpp"
-
 #include "AllocateDescription.hpp"
 #include "AtomicOperations.hpp"
+#include "ConcurrentSweepScheme.hpp"
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
 #include "ConcurrentGC.hpp"
 #endif /* OMR_GC_MODRON_CONCURRENT_MARK */
@@ -38,10 +37,10 @@
 #include "EnvironmentStandard.hpp"
 #include "GCExtensionsBase.hpp"
 #include "HeapMemoryPoolIterator.hpp"
+#include "MemoryPoolAddressOrderedList.hpp"
 #include "MemorySubSpace.hpp"
 #include "MemorySubSpaceChildIterator.hpp"
 #include "MemorySubSpacePoolIterator.hpp"
-#include "MemoryPoolAddressOrderedList.hpp"
 #include "ObjectHeapIteratorAddressOrderedList.hpp"
 #include "ObjectModel.hpp"
 #include "ParallelSweepChunk.hpp"
@@ -57,14 +56,13 @@
 #define CONSS_DEBUG_PRINTF(x) omrtty_printf x
 #else /* CONCURRENT_SWEEP_SCHEME_DEBUG */
 #define CONSS_DEBUG_OMRPORT_ACCESS_FROM_OMRPORT(x)
-#define CONSS_DEBUG_PRINTF(x) 
+#define CONSS_DEBUG_PRINTF(x)
 #endif /* CONCURRENT_SWEEP_SCHEME_DEBUG */
 
-
-#define PREVIOUS_FREE_RATIO_INITIAL					((float)0.3)
-#define PREVIOUS_FREE_HISTORY_WEIGHT_STARTUP		((float)0.5)
-#define PREVIOUS_FREE_HISTORY_WEIGHT_RUNNING		((float)0.8)
-#define VM_STARTUP_SWEEP_COUNT 						5
+#define PREVIOUS_FREE_RATIO_INITIAL ((float)0.3)
+#define PREVIOUS_FREE_HISTORY_WEIGHT_STARTUP ((float)0.5)
+#define PREVIOUS_FREE_HISTORY_WEIGHT_RUNNING ((float)0.8)
+#define VM_STARTUP_SWEEP_COUNT 5
 
 /**
  * Sweep state of a given memory pool.
@@ -76,35 +74,37 @@ class MM_ConcurrentSweepPoolState : public MM_SweepPoolState
 	 * Data members
 	 */
 private:
-	UDATA _sweepCount;							/**< Counter of number of sweep cycles */
-	MM_ParallelSweepChunk *_currentSweepChunk;  /**< Next chunk to concurrent sweep in the given memory pool */
-	MM_ParallelSweepChunk *_currentSweepChunkReverse; /**< Next chunk to sweep when sweeping high to low in a given memory pool */
-	MM_LightweightNonReentrantLock _sweepChunkIteratorLock;  /**< Lock for the next chunk to concurrent sweep list */
+	UDATA _sweepCount; /**< Counter of number of sweep cycles */
+	MM_ParallelSweepChunk* _currentSweepChunk; /**< Next chunk to concurrent sweep in the given memory pool */
+	MM_ParallelSweepChunk*
+	        _currentSweepChunkReverse; /**< Next chunk to sweep when sweeping high to low in a given memory pool */
+	MM_LightweightNonReentrantLock _sweepChunkIteratorLock; /**< Lock for the next chunk to concurrent sweep list */
 
-	MM_ParallelSweepChunk *_connectCurrentChunk;  /**< Next chunk to concurrent connect in the given memory pool */
-	MM_HeapLinkedFreeHeader *_connectNextFreeEntry;  /**< Existing free list entry immediately following the connect range */
-	UDATA _connectNextFreeEntrySize;	/**< Existing free list entry size immediately following the connect range */
+	MM_ParallelSweepChunk* _connectCurrentChunk; /**< Next chunk to concurrent connect in the given memory pool */
+	MM_HeapLinkedFreeHeader*
+	        _connectNextFreeEntry; /**< Existing free list entry immediately following the connect range */
+	UDATA _connectNextFreeEntrySize; /**< Existing free list entry size immediately following the connect range */
 
-	MM_ParallelSweepChunk *_currentInitChunk;  /**< Last chunk initialized for concurrent sweep in the given memory pool (used for _next pointer) */
+	MM_ParallelSweepChunk*
+	        _currentInitChunk; /**< Last chunk initialized for concurrent sweep in the given memory pool (used for _next pointer) */
 
-	UDATA _freeMemoryConnected;			/**< Running count of the total free memory connected into the memory pool  since last GC */
-	
-	float _previousFreeRatio; 			/**< Ratio of free memory connected into the pool from previous GC */
-	float _previousFreeHistoryWeight;	/**< Weight to be used when calculating weighted avarage _previousFreeRatio */
+	UDATA _freeMemoryConnected; /**< Running count of the total free memory connected into the memory pool  since last GC */
 
-	UDATA _heapSizeToConnect;			/**< Total heap size to be connected in this pool */
-	UDATA _heapSizeConnected;			/**< Heap size connected into the pool */
+	float _previousFreeRatio; /**< Ratio of free memory connected into the pool from previous GC */
+	float _previousFreeHistoryWeight; /**< Weight to be used when calculating weighted avarage _previousFreeRatio */
 
-	bool _finalFlushed;					/**< Has the pool had its final chunk flushed this cycle */
+	UDATA _heapSizeToConnect; /**< Total heap size to be connected in this pool */
+	UDATA _heapSizeConnected; /**< Heap size connected into the pool */
+
+	bool _finalFlushed; /**< Has the pool had its final chunk flushed this cycle */
 
 protected:
 public:
-	
 	/*
 	 * Function members
 	 */
 private:
-	virtual bool initialize(MM_EnvironmentBase *env);
+	virtual bool initialize(MM_EnvironmentBase* env);
 
 protected:
 public:
@@ -113,7 +113,7 @@ public:
 	 * @param pool J9Pool used for allocation 
 	 * @param mutex mutex to protect J9Pool operations
 	 */
-	void kill(MM_EnvironmentBase *env,  J9Pool *pool, omrthread_monitor_t mutex)
+	void kill(MM_EnvironmentBase* env, J9Pool* pool, omrthread_monitor_t mutex)
 	{
 		tearDown(env);
 
@@ -129,20 +129,21 @@ public:
 	 * @param memoryPool memory pool this sweepPoolState should be associated with
 	 * @return a new instance of the receiver, or NULL on failure.
 	 */
-	static MM_ConcurrentSweepPoolState *newInstance(MM_EnvironmentBase *env, J9Pool *pool, omrthread_monitor_t mutex, MM_MemoryPool *memoryPool)
+	static MM_ConcurrentSweepPoolState*
+	newInstance(MM_EnvironmentBase* env, J9Pool* pool, omrthread_monitor_t mutex, MM_MemoryPool* memoryPool)
 	{
-		MM_ConcurrentSweepPoolState *sweepPoolState;
-		
+		MM_ConcurrentSweepPoolState* sweepPoolState;
+
 		omrthread_monitor_enter(mutex);
-		sweepPoolState = (MM_ConcurrentSweepPoolState *)pool_newElement(pool);
+		sweepPoolState = (MM_ConcurrentSweepPoolState*)pool_newElement(pool);
 		omrthread_monitor_exit(mutex);
 
 		if (sweepPoolState) {
-			new(sweepPoolState) MM_ConcurrentSweepPoolState(memoryPool);
-			if (!sweepPoolState->initialize(env)) { 
-				sweepPoolState->kill(env, pool, mutex);        
-				sweepPoolState = NULL;            
-			}                                       
+			new (sweepPoolState) MM_ConcurrentSweepPoolState(memoryPool);
+			if (!sweepPoolState->initialize(env)) {
+				sweepPoolState->kill(env, pool, mutex);
+				sweepPoolState = NULL;
+			}
 		}
 
 		return sweepPoolState;
@@ -152,32 +153,33 @@ public:
 	 * Build a MM_ConcurrentSweepPoolState object within the memory supplied
 	 * @param memPtr pointer to the memory to build the object within
 	 */
-	static void create(MM_EnvironmentBase *env, void *memPtr, MM_MemoryPool *memoryPool) {
-		MM_ConcurrentSweepPoolState *poolState = (MM_ConcurrentSweepPoolState *) memPtr;
-		new(poolState) MM_ConcurrentSweepPoolState(memoryPool);
+	static void create(MM_EnvironmentBase* env, void* memPtr, MM_MemoryPool* memoryPool)
+	{
+		MM_ConcurrentSweepPoolState* poolState = (MM_ConcurrentSweepPoolState*)memPtr;
+		new (poolState) MM_ConcurrentSweepPoolState(memoryPool);
 		poolState->initialize(env);
 	}
-	
-	virtual void tearDown(MM_EnvironmentBase *env);
 
-	virtual void initializeForSweep(MM_EnvironmentBase *env);
+	virtual void tearDown(MM_EnvironmentBase* env);
 
-	MM_ConcurrentSweepPoolState(MM_MemoryPool *memoryPool) :
-		MM_SweepPoolState(memoryPool),
-		_sweepCount(0),
-		_currentSweepChunk(NULL),
-		_currentSweepChunkReverse(NULL),
-		_sweepChunkIteratorLock(),
-		_connectCurrentChunk(NULL),
-		_connectNextFreeEntry(NULL),
-		_connectNextFreeEntrySize(0),
-		_currentInitChunk(NULL),
-		_freeMemoryConnected(0),
-		_previousFreeRatio(PREVIOUS_FREE_RATIO_INITIAL),
-		_previousFreeHistoryWeight(PREVIOUS_FREE_HISTORY_WEIGHT_STARTUP),
-		_heapSizeToConnect(0),
-		_heapSizeConnected(0),
-		_finalFlushed(false)
+	virtual void initializeForSweep(MM_EnvironmentBase* env);
+
+	MM_ConcurrentSweepPoolState(MM_MemoryPool* memoryPool)
+	        : MM_SweepPoolState(memoryPool),
+	          _sweepCount(0),
+	          _currentSweepChunk(NULL),
+	          _currentSweepChunkReverse(NULL),
+	          _sweepChunkIteratorLock(),
+	          _connectCurrentChunk(NULL),
+	          _connectNextFreeEntry(NULL),
+	          _connectNextFreeEntrySize(0),
+	          _currentInitChunk(NULL),
+	          _freeMemoryConnected(0),
+	          _previousFreeRatio(PREVIOUS_FREE_RATIO_INITIAL),
+	          _previousFreeHistoryWeight(PREVIOUS_FREE_HISTORY_WEIGHT_STARTUP),
+	          _heapSizeToConnect(0),
+	          _heapSizeConnected(0),
+	          _finalFlushed(false)
 	{}
 
 	/*
@@ -191,15 +193,16 @@ public:
  * @return true on success, false on failure.
  */
 bool
-MM_ConcurrentSweepPoolState::initialize(MM_EnvironmentBase *env)
+MM_ConcurrentSweepPoolState::initialize(MM_EnvironmentBase* env)
 {
-	MM_GCExtensionsBase *extensions = env->getExtensions();
+	MM_GCExtensionsBase* extensions = env->getExtensions();
 
 	if (!MM_SweepPoolState::initialize(env)) {
 		return false;
 	}
 
-	_sweepChunkIteratorLock.initialize(env, &extensions->lnrlOptions, "MM_ConcurrentSweepPoolState:_sweepChunkIteratorLock");
+	_sweepChunkIteratorLock.initialize(env, &extensions->lnrlOptions,
+	                                   "MM_ConcurrentSweepPoolState:_sweepChunkIteratorLock");
 
 	return true;
 }
@@ -208,9 +211,9 @@ MM_ConcurrentSweepPoolState::initialize(MM_EnvironmentBase *env)
  * Free any structures or resources associated to the receiver.
  */
 void
-MM_ConcurrentSweepPoolState::tearDown(MM_EnvironmentBase *env)
+MM_ConcurrentSweepPoolState::tearDown(MM_EnvironmentBase* env)
 {
-	_sweepChunkIteratorLock.tearDown();	
+	_sweepChunkIteratorLock.tearDown();
 }
 
 /**
@@ -218,24 +221,26 @@ MM_ConcurrentSweepPoolState::tearDown(MM_EnvironmentBase *env)
  * @todo The approximation code needs to be fixed
  */
 void
-MM_ConcurrentSweepPoolState::initializeForSweep(MM_EnvironmentBase *env)
+MM_ConcurrentSweepPoolState::initializeForSweep(MM_EnvironmentBase* env)
 {
 	MM_SweepPoolState::initializeForSweep(env);
-	
+
 	/* Record the free to total free memory ratio for the previous cycle 
 	 * (used for approximation of free memory remaining). Can't do this on
 	 * very first cycle as required statistics not available.
 	 */
-	 if (++_sweepCount > 1) {
-		if (_sweepCount == VM_STARTUP_SWEEP_COUNT ) { 
+	if (++_sweepCount > 1) {
+		if (_sweepCount == VM_STARTUP_SWEEP_COUNT) {
 			/* Adjust weight now we have had a few collections worth of sweeps */
 			_previousFreeHistoryWeight = PREVIOUS_FREE_HISTORY_WEIGHT_RUNNING;
-		}	
-		
-	 	float newFreeRatio =  _freeMemoryConnected == 0 ? 0: (float)_freeMemoryConnected / (float)_heapSizeConnected;
-		_previousFreeRatio = MM_Math::weightedAverage(_previousFreeRatio,  newFreeRatio, _previousFreeHistoryWeight);
-	 }	 
-	 
+		}
+
+		float newFreeRatio =
+		        _freeMemoryConnected == 0 ? 0 : (float)_freeMemoryConnected / (float)_heapSizeConnected;
+		_previousFreeRatio =
+		        MM_Math::weightedAverage(_previousFreeRatio, newFreeRatio, _previousFreeHistoryWeight);
+	}
+
 	_currentSweepChunk = NULL;
 	_connectPreviousChunk = NULL;
 	_connectCurrentChunk = NULL;
@@ -261,11 +266,13 @@ private:
 protected:
 public:
 	virtual UDATA getVMStateID() { return OMRVMSTATE_GC_CONCURRENT_SWEEP_COMPLETE_SWEEP; };
-	
-	virtual void run(MM_EnvironmentBase *env);
 
-	MM_ConcurrentSweepCompleteSweepTask(MM_EnvironmentBase *env, MM_Dispatcher *dispatcher, MM_ConcurrentSweepScheme *concurrentSweepScheme) :
-		MM_ParallelSweepTask(env, dispatcher, concurrentSweepScheme)
+	virtual void run(MM_EnvironmentBase* env);
+
+	MM_ConcurrentSweepCompleteSweepTask(MM_EnvironmentBase* env,
+	                                    MM_Dispatcher* dispatcher,
+	                                    MM_ConcurrentSweepScheme* concurrentSweepScheme)
+	        : MM_ParallelSweepTask(env, dispatcher, concurrentSweepScheme)
 	{}
 };
 
@@ -274,9 +281,9 @@ public:
  * Callback to the sweeper to complete sweep work.  No true functionality.
  */
 void
-MM_ConcurrentSweepCompleteSweepTask::run(MM_EnvironmentBase *env)
+MM_ConcurrentSweepCompleteSweepTask::run(MM_EnvironmentBase* env)
 {
-	((MM_ConcurrentSweepScheme *)_sweepScheme)->workThreadCompleteSweep(env);
+	((MM_ConcurrentSweepScheme*)_sweepScheme)->workThreadCompleteSweep(env);
 }
 
 /**
@@ -291,8 +298,8 @@ class MM_ConcurrentSweepFindMinimumSizeFreeTask : public MM_ParallelSweepTask
 	 * Data members
 	 */
 private:
-	MM_MemorySubSpace *_memorySubSpace;  /**< Memory subspace to find minimum free sized entry in */
-	UDATA _minimumFreeSize;  /**< The minimum sized free entry to find */
+	MM_MemorySubSpace* _memorySubSpace; /**< Memory subspace to find minimum free sized entry in */
+	UDATA _minimumFreeSize; /**< The minimum sized free entry to find */
 
 protected:
 public:
@@ -306,44 +313,50 @@ private:
 protected:
 public:
 	virtual UDATA getVMStateID() { return OMRVMSTATE_GC_CONCURRENT_SWEEP_FIND_MINIMUM_SIZE_FREE; }
-	
-	virtual void run(MM_EnvironmentBase *env);
 
-	MM_ConcurrentSweepFindMinimumSizeFreeTask(MM_EnvironmentBase *env, MM_Dispatcher *dispatcher, MM_ConcurrentSweepScheme *concurrentSweepScheme, MM_MemorySubSpace *memorySubSpace, UDATA minimumFreeSize)
-		: MM_ParallelSweepTask(env, dispatcher, concurrentSweepScheme)
-		, _memorySubSpace(memorySubSpace)
-		, _minimumFreeSize(minimumFreeSize)
-		, _foundMinimumSizeFreeEntry(false)
-		, _foundLiveObject(false)
-		{}
-};		
+	virtual void run(MM_EnvironmentBase* env);
+
+	MM_ConcurrentSweepFindMinimumSizeFreeTask(MM_EnvironmentBase* env,
+	                                          MM_Dispatcher* dispatcher,
+	                                          MM_ConcurrentSweepScheme* concurrentSweepScheme,
+	                                          MM_MemorySubSpace* memorySubSpace,
+	                                          UDATA minimumFreeSize)
+	        : MM_ParallelSweepTask(env, dispatcher, concurrentSweepScheme),
+	          _memorySubSpace(memorySubSpace),
+	          _minimumFreeSize(minimumFreeSize),
+	          _foundMinimumSizeFreeEntry(false),
+	          _foundLiveObject(false)
+	{}
+};
 
 /**
  * Sweep sufficient data to find a free entry of minimum size.
  * Callback to the sweeper to find the free entry.  No true functionality.
  */
 void
-MM_ConcurrentSweepFindMinimumSizeFreeTask::run(MM_EnvironmentBase *env)
+MM_ConcurrentSweepFindMinimumSizeFreeTask::run(MM_EnvironmentBase* env)
 {
-	((MM_ConcurrentSweepScheme *)_sweepScheme)->workThreadFindMinimumSizeFreeEntry(env, _memorySubSpace, _minimumFreeSize);
+	((MM_ConcurrentSweepScheme*)_sweepScheme)
+	        ->workThreadFindMinimumSizeFreeEntry(env, _memorySubSpace, _minimumFreeSize);
 }
 
 /**
  * Allocate and initialize a new instance of the receiver.
  * @return a new instance of the receiver, or NULL on failure.
  */
-MM_ConcurrentSweepScheme *
-MM_ConcurrentSweepScheme::newInstance(MM_EnvironmentBase *env, MM_GlobalCollector *collector)
+MM_ConcurrentSweepScheme*
+MM_ConcurrentSweepScheme::newInstance(MM_EnvironmentBase* env, MM_GlobalCollector* collector)
 {
-	MM_ConcurrentSweepScheme *sweepScheme;
-	
-	sweepScheme = (MM_ConcurrentSweepScheme *)env->getForge()->allocate(sizeof(MM_ConcurrentSweepScheme), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_ConcurrentSweepScheme* sweepScheme;
+
+	sweepScheme = (MM_ConcurrentSweepScheme*)env->getForge()->allocate(
+	        sizeof(MM_ConcurrentSweepScheme), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (sweepScheme) {
-		new(sweepScheme) MM_ConcurrentSweepScheme(env, collector);
-		if (!sweepScheme->initialize(env)) { 
-        	sweepScheme->kill(env);        
-        	sweepScheme = NULL;            
-		}                                       
+		new (sweepScheme) MM_ConcurrentSweepScheme(env, collector);
+		if (!sweepScheme->initialize(env)) {
+			sweepScheme->kill(env);
+			sweepScheme = NULL;
+		}
 	}
 
 	return sweepScheme;
@@ -354,13 +367,14 @@ MM_ConcurrentSweepScheme::newInstance(MM_EnvironmentBase *env, MM_GlobalCollecto
  * @return true if initialization is successful, false otherwise.
  */
 bool
-MM_ConcurrentSweepScheme::initialize(MM_EnvironmentBase *env)
+MM_ConcurrentSweepScheme::initialize(MM_EnvironmentBase* env)
 {
-	if(!MM_ParallelSweepScheme::initialize(env)) {
+	if (!MM_ParallelSweepScheme::initialize(env)) {
 		return false;
 	}
 
-	if(omrthread_monitor_init_with_name(&_completeSweepingConcurrentlyLock, 0, "MM_ConcurrentSweepScheme::completeSweepingConcurrentlyLock")) {
+	if (omrthread_monitor_init_with_name(&_completeSweepingConcurrentlyLock, 0,
+	                                     "MM_ConcurrentSweepScheme::completeSweepingConcurrentlyLock")) {
 		return false;
 	}
 
@@ -371,14 +385,14 @@ MM_ConcurrentSweepScheme::initialize(MM_EnvironmentBase *env)
  * Tear down internal structures.
  */
 void
-MM_ConcurrentSweepScheme::tearDown(MM_EnvironmentBase *env)
+MM_ConcurrentSweepScheme::tearDown(MM_EnvironmentBase* env)
 {
 	MM_ParallelSweepScheme::tearDown(env);
 
 	if (NULL != _completeSweepingConcurrentlyLock) {
 		omrthread_monitor_destroy(_completeSweepingConcurrentlyLock);
 		_completeSweepingConcurrentlyLock = NULL;
-	}	
+	}
 }
 
 /**
@@ -386,21 +400,22 @@ MM_ConcurrentSweepScheme::tearDown(MM_EnvironmentBase *env)
  * @param  memoryPool memory pool to attach sweep state to
  * @return pointer to created class
  */
-void *
-MM_ConcurrentSweepScheme::createSweepPoolState(MM_EnvironmentBase *env, MM_MemoryPool *memoryPool)
+void*
+MM_ConcurrentSweepScheme::createSweepPoolState(MM_EnvironmentBase* env, MM_MemoryPool* memoryPool)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
 	omrthread_monitor_enter(_mutexSweepPoolState);
 	if (NULL == _poolSweepPoolState) {
-		_poolSweepPoolState = pool_new(sizeof(MM_ConcurrentSweepPoolState), 0, 2 * sizeof(UDATA), 0, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_MM, POOL_FOR_PORT(OMRPORTLIB));
+		_poolSweepPoolState = pool_new(sizeof(MM_ConcurrentSweepPoolState), 0, 2 * sizeof(UDATA), 0,
+		                               OMR_GET_CALLSITE(), OMRMEM_CATEGORY_MM, POOL_FOR_PORT(OMRPORTLIB));
 		if (NULL == _poolSweepPoolState) {
 			omrthread_monitor_exit(_mutexSweepPoolState);
 			return NULL;
 		}
 	}
 	omrthread_monitor_exit(_mutexSweepPoolState);
-	
+
 	return MM_ConcurrentSweepPoolState::newInstance(env, _poolSweepPoolState, _mutexSweepPoolState, memoryPool);
 }
 
@@ -408,39 +423,37 @@ MM_ConcurrentSweepScheme::createSweepPoolState(MM_EnvironmentBase *env, MM_Memor
  * Report that the sweep phase has been completed concurrently (not the connect phase).
  */
 void
-MM_ConcurrentSweepScheme::reportConcurrentlyCompletedSweepPhase(MM_EnvironmentBase *env)
+MM_ConcurrentSweepScheme::reportConcurrentlyCompletedSweepPhase(MM_EnvironmentBase* env)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-	
+
 	Trc_MM_ConcurrentlyCompletedSweepPhase(env->getLanguageVMThread(), _stats._concurrentCompleteSweepBytesSwept);
 	TRIGGER_J9HOOK_MM_PRIVATE_CONCURRENTLY_COMPLETED_SWEEP_PHASE(
-		_extensions->privateHookInterface,
-		env->getOmrVMThread(),
-		omrtime_hires_clock(),
-		J9HOOK_MM_PRIVATE_CONCURRENTLY_COMPLETED_SWEEP_PHASE,
-		omrtime_hires_delta(_stats._concurrentCompleteSweepTimeStart, _stats._concurrentCompleteSweepTimeEnd, OMRPORT_TIME_DELTA_IN_MICROSECONDS),
-		_stats._concurrentCompleteSweepBytesSwept);
+	        _extensions->privateHookInterface, env->getOmrVMThread(), omrtime_hires_clock(),
+	        J9HOOK_MM_PRIVATE_CONCURRENTLY_COMPLETED_SWEEP_PHASE,
+	        omrtime_hires_delta(_stats._concurrentCompleteSweepTimeStart, _stats._concurrentCompleteSweepTimeEnd,
+	                            OMRPORT_TIME_DELTA_IN_MICROSECONDS),
+	        _stats._concurrentCompleteSweepBytesSwept);
 }
 
 /**
  * Report that the entire sweep has been completed (sweep + connect).
  */
 void
-MM_ConcurrentSweepScheme::reportCompletedConcurrentSweep(MM_EnvironmentBase *env, SweepCompletionReason reason)
+MM_ConcurrentSweepScheme::reportCompletedConcurrentSweep(MM_EnvironmentBase* env, SweepCompletionReason reason)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-	
+
 	Trc_MM_CompletedConcurrentSweep(env->getLanguageVMThread(), _stats._completeConnectPhaseBytesConnected);
 	TRIGGER_J9HOOK_MM_PRIVATE_COMPLETED_CONCURRENT_SWEEP(
-		_extensions->privateHookInterface,
-		env->getOmrVMThread(),
-		omrtime_hires_clock(),
-		J9HOOK_MM_PRIVATE_COMPLETED_CONCURRENT_SWEEP,
-		omrtime_hires_delta(_stats._completeSweepPhaseTimeStart, _stats._completeSweepPhaseTimeEnd, OMRPORT_TIME_DELTA_IN_MICROSECONDS),
-		_stats._completeSweepPhaseBytesSwept,
-		omrtime_hires_delta(_stats._completeConnectPhaseTimeStart, _stats._completeConnectPhaseTimeEnd, OMRPORT_TIME_DELTA_IN_MICROSECONDS),
-		_stats._completeConnectPhaseBytesConnected,
-		reason);
+	        _extensions->privateHookInterface, env->getOmrVMThread(), omrtime_hires_clock(),
+	        J9HOOK_MM_PRIVATE_COMPLETED_CONCURRENT_SWEEP,
+	        omrtime_hires_delta(_stats._completeSweepPhaseTimeStart, _stats._completeSweepPhaseTimeEnd,
+	                            OMRPORT_TIME_DELTA_IN_MICROSECONDS),
+	        _stats._completeSweepPhaseBytesSwept,
+	        omrtime_hires_delta(_stats._completeConnectPhaseTimeStart, _stats._completeConnectPhaseTimeEnd,
+	                            OMRPORT_TIME_DELTA_IN_MICROSECONDS),
+	        _stats._completeConnectPhaseBytesConnected, reason);
 }
 
 /**
@@ -451,13 +464,10 @@ MM_ConcurrentSweepScheme::reportCompletedConcurrentSweep(MM_EnvironmentBase *env
  * @return true if the subspace is a concurrent sweepable candidate, false otherwise.
  */
 MMINLINE bool
-MM_ConcurrentSweepScheme::isConcurrentSweepCandidate(MM_MemorySubSpace *memorySubSpace)
+MM_ConcurrentSweepScheme::isConcurrentSweepCandidate(MM_MemorySubSpace* memorySubSpace)
 {
-	return
-		memorySubSpace->isLeafSubSpace()
-		&& memorySubSpace->isActive()
-		&& (NULL != memorySubSpace->getMemoryPool())
-		&& (MEMORY_TYPE_OLD == memorySubSpace->getTypeFlags());
+	return memorySubSpace->isLeafSubSpace() && memorySubSpace->isActive()
+	        && (NULL != memorySubSpace->getMemoryPool()) && (MEMORY_TYPE_OLD == memorySubSpace->getTypeFlags());
 }
 
 /**
@@ -471,9 +481,9 @@ MM_ConcurrentSweepScheme::isConcurrentSweepCandidate(MM_MemorySubSpace *memorySu
  * main chunk initialization code.
  */
 void
-MM_ConcurrentSweepScheme::initializeChunks(MM_EnvironmentBase *env)
+MM_ConcurrentSweepScheme::initializeChunks(MM_EnvironmentBase* env)
 {
-	MM_ParallelSweepChunk *chunk;
+	MM_ParallelSweepChunk* chunk;
 	UDATA totalChunkCount;
 
 	Assert_MM_true(0 == _stats._totalChunkCount);
@@ -481,7 +491,7 @@ MM_ConcurrentSweepScheme::initializeChunks(MM_EnvironmentBase *env)
 	/* Reset and reassign all chunks to heap memory */
 	totalChunkCount = _sweepHeapSectioning->reassignChunks(env);
 
-	/* Update stats */	
+	/* Update stats */
 	_stats._totalChunkCount = totalChunkCount;
 #if defined(J9MODRON_TGC_PARALLEL_STATISTICS)
 	env->_sweepStats.sweepChunksTotal = _stats._totalChunkCount;
@@ -490,22 +500,24 @@ MM_ConcurrentSweepScheme::initializeChunks(MM_EnvironmentBase *env)
 	/* Concurrent sweep requires some extra linkage and starting data in order to function.  Walk
 	 * the chunk list collecting and building this information.
 	 */
-	MM_SweepHeapSectioningIterator sectioningIterator(_sweepHeapSectioning);	
-	while(0 != totalChunkCount--) {
+	MM_SweepHeapSectioningIterator sectioningIterator(_sweepHeapSectioning);
+	while (0 != totalChunkCount--) {
 		chunk = sectioningIterator.nextChunk();
-		MM_ConcurrentSweepPoolState *sweepState = (MM_ConcurrentSweepPoolState *)getPoolState(chunk->memoryPool); /* sweep state for the current pool */
-		
+		MM_ConcurrentSweepPoolState* sweepState = (MM_ConcurrentSweepPoolState*)getPoolState(
+		        chunk->memoryPool); /* sweep state for the current pool */
+
 		/* Assign the head of the concurrent sweep lists if this is the first chunk for this subspace */
-		if(NULL == sweepState->_currentSweepChunk) {
+		if (NULL == sweepState->_currentSweepChunk) {
 			sweepState->_currentSweepChunk = chunk;
 			sweepState->_connectCurrentChunk = chunk;
 		}
-		
+
 		/* Connect the current chunk into the linked list associated with the memory pool */
-		if(NULL != sweepState->_currentInitChunk) {
+		if (NULL != sweepState->_currentInitChunk) {
 			sweepState->_currentInitChunk->_nextChunk = chunk;
 			Assert_MM_true(sweepState->_currentInitChunk == chunk->_previous);
-			Assert_MM_true(sweepState->_currentInitChunk->_next == sweepState->_currentInitChunk->_nextChunk);
+			Assert_MM_true(sweepState->_currentInitChunk->_next
+			               == sweepState->_currentInitChunk->_nextChunk);
 		}
 		sweepState->_currentInitChunk = chunk;
 
@@ -524,14 +536,15 @@ MM_ConcurrentSweepScheme::initializeChunks(MM_EnvironmentBase *env)
  * entry, etc).
  */
 void
-MM_ConcurrentSweepScheme::preConnectChunk(MM_EnvironmentBase *env, MM_ParallelSweepChunk *chunk)
+MM_ConcurrentSweepScheme::preConnectChunk(MM_EnvironmentBase* env, MM_ParallelSweepChunk* chunk)
 {
 	Assert_MM_true(chunk != NULL);
 
-	MM_ConcurrentSweepPoolState *sweepState = (MM_ConcurrentSweepPoolState *)getPoolState(chunk->memoryPool);
-	
-	Assert_MM_true((void *)sweepState->_connectPreviousFreeEntry < chunk->chunkBase);
-	Assert_MM_true((sweepState->_connectNextFreeEntry == NULL) || ((void *)sweepState->_connectNextFreeEntry >= chunk->chunkTop));
+	MM_ConcurrentSweepPoolState* sweepState = (MM_ConcurrentSweepPoolState*)getPoolState(chunk->memoryPool);
+
+	Assert_MM_true((void*)sweepState->_connectPreviousFreeEntry < chunk->chunkBase);
+	Assert_MM_true((sweepState->_connectNextFreeEntry == NULL)
+	               || ((void*)sweepState->_connectNextFreeEntry >= chunk->chunkTop));
 
 	/* Reset the free stats for the current chunk connection.  The stats from the
 	 * connection will be added to the memory pool afterwards.
@@ -551,14 +564,15 @@ MM_ConcurrentSweepScheme::preConnectChunk(MM_EnvironmentBase *env, MM_ParallelSw
  * @todo Handle the possibility of a "next" free entry (keep it in the sweep state?)
  */
 void
-MM_ConcurrentSweepScheme::postConnectChunk(MM_EnvironmentBase *env, MM_ParallelSweepChunk *chunk)
+MM_ConcurrentSweepScheme::postConnectChunk(MM_EnvironmentBase* env, MM_ParallelSweepChunk* chunk)
 {
 	Assert_MM_true(chunk != NULL);
 
-	MM_MemoryPool *memoryPool = chunk->memoryPool;
-	MM_ConcurrentSweepPoolState *sweepState = (MM_ConcurrentSweepPoolState *)getPoolState(memoryPool);
-	
-	Assert_MM_true((sweepState->_connectNextFreeEntry == NULL) || ((void *)sweepState->_connectNextFreeEntry >= chunk->chunkTop));
+	MM_MemoryPool* memoryPool = chunk->memoryPool;
+	MM_ConcurrentSweepPoolState* sweepState = (MM_ConcurrentSweepPoolState*)getPoolState(memoryPool);
+
+	Assert_MM_true((sweepState->_connectNextFreeEntry == NULL)
+	               || ((void*)sweepState->_connectNextFreeEntry >= chunk->chunkTop));
 
 	/* update the total heap size connected for the subspace */
 	sweepState->_heapSizeConnected += chunk->size();
@@ -568,7 +582,7 @@ MM_ConcurrentSweepScheme::postConnectChunk(MM_EnvironmentBase *env, MM_ParallelS
 
 	/* Update the running total of free memory connected for this cycle */
 	sweepState->_freeMemoryConnected += sweepState->_sweepFreeBytes;
-	
+
 	/* Flush the connection stats to the memory pool */
 	memoryPool->setFreeMemorySize(memoryPool->getActualFreeMemorySize() + sweepState->_sweepFreeBytes);
 	memoryPool->setFreeEntryCount(memoryPool->getActualFreeEntryCount() + sweepState->_sweepFreeHoles);
@@ -576,7 +590,7 @@ MM_ConcurrentSweepScheme::postConnectChunk(MM_EnvironmentBase *env, MM_ParallelS
 	/* Make the final free entry valid on the free list.  The entry itself has already been counted in the stats
 	 * book keeping - just a matter of getting the right header installed.
 	 */
-	if(NULL != sweepState->_connectPreviousFreeEntry) {
+	if (NULL != sweepState->_connectPreviousFreeEntry) {
 		bool const compressed = env->compressObjectReferences();
 		/* If we are connecting to the top of the chunk then we may need to fix the heap to ensure it is still walkable.
 		 * The scenario that can result in a corrupted heap is having an object/dead entry span two different chunks, with the last valid connection
@@ -584,24 +598,29 @@ MM_ConcurrentSweepScheme::postConnectChunk(MM_EnvironmentBase *env, MM_ParallelS
 		 * The solution is to fix the heap by splitting the overlapping memory in the two chunks, and install a dead object header (or slots)
 		 * at the beginning of the next chunk.  This ensures that a walk starting at the beginning of the next chunk will be safe.
 		 */
-		void *endFreeEntry = (void *)(((UDATA)sweepState->_connectPreviousFreeEntry) + sweepState->_connectPreviousFreeEntrySize);
+		void* endFreeEntry = (void*)(((UDATA)sweepState->_connectPreviousFreeEntry)
+		                             + sweepState->_connectPreviousFreeEntrySize);
 		if (endFreeEntry == chunk->chunkTop) {
-			GC_ObjectHeapIteratorAddressOrderedList objectIterator(_extensions, (omrobjectptr_t)sweepState->_connectPreviousFreeEntry, (omrobjectptr_t)chunk->chunkTop, true);
+			GC_ObjectHeapIteratorAddressOrderedList objectIterator(
+			        _extensions, (omrobjectptr_t)sweepState->_connectPreviousFreeEntry,
+			        (omrobjectptr_t)chunk->chunkTop, true);
 			omrobjectptr_t currentObject;
 			UDATA entrySize;
-			
+
 			/* find the entry that takes us to the end of the chunk, or into the next chunk */
 			while (NULL != (currentObject = objectIterator.nextObjectNoAdvance())) {
 				if (objectIterator.isDeadObject()) {
 					entrySize = objectIterator.getDeadObjectSize();
 				} else {
-					entrySize = _extensions->objectModel.getConsumedSizeInBytesWithHeader(currentObject);
+					entrySize = _extensions->objectModel.getConsumedSizeInBytesWithHeader(
+					        currentObject);
 				}
-				
+
 				if ((UDATA)currentObject + entrySize > (UDATA)chunk->chunkTop) {
 					/* Found an overlapping entry - fix the trailing portion that appears in the next chunk to be walkable */
 					entrySize -= (UDATA)chunk->chunkTop - (UDATA)currentObject;
-					memoryPool->abandonHeapChunk((void *)chunk->chunkTop, (void *)((UDATA)chunk->chunkTop + entrySize));						
+					memoryPool->abandonHeapChunk((void*)chunk->chunkTop,
+					                             (void*)((UDATA)chunk->chunkTop + entrySize));
 					break;
 				}
 				objectIterator.advance(entrySize);
@@ -609,18 +628,18 @@ MM_ConcurrentSweepScheme::postConnectChunk(MM_EnvironmentBase *env, MM_ParallelS
 		}
 
 		/* Make the final free entry valid (as mentioned earlier) */
-		memoryPool->createFreeEntry(env,
-			(void *)sweepState->_connectPreviousFreeEntry, 
-			(void *)(((UDATA)sweepState->_connectPreviousFreeEntry) + sweepState->_connectPreviousFreeEntrySize));
+		memoryPool->createFreeEntry(env, (void*)sweepState->_connectPreviousFreeEntry,
+		                            (void*)(((UDATA)sweepState->_connectPreviousFreeEntry)
+		                                    + sweepState->_connectPreviousFreeEntrySize));
 
 		/* If there is a free list entry beyond the connection point, link the last free entry to it. */
 		/* TODO: This "connect" operation should really be left to the pool */
-		if(NULL != sweepState->_connectNextFreeEntry) {
+		if (NULL != sweepState->_connectNextFreeEntry) {
 			Assert_MM_true(sweepState->_connectPreviousFreeEntry < sweepState->_connectNextFreeEntry);
 			sweepState->_connectPreviousFreeEntry->setNext(sweepState->_connectNextFreeEntry, compressed);
 		}
 	}
-	
+
 	assume0(memoryPool->isValidListOrdering());
 }
 
@@ -634,28 +653,26 @@ MM_ConcurrentSweepScheme::postConnectChunk(MM_EnvironmentBase *env, MM_ParallelS
  * 
  */
 MMINLINE void
-MM_ConcurrentSweepScheme::calculateApproximateFree(
-	MM_EnvironmentBase *env,
-	MM_MemoryPool *memoryPool,
-	MM_ConcurrentSweepPoolState *sweepState)
+MM_ConcurrentSweepScheme::calculateApproximateFree(MM_EnvironmentBase* env,
+                                                   MM_MemoryPool* memoryPool,
+                                                   MM_ConcurrentSweepPoolState* sweepState)
 {
 	UDATA approximateFree;
 	UDATA heapSizeRemainingToBeConnected;
-	
+
 	/* Calculate the free memory approximation.  If there is no more connection work to take place, the approximation is 0 */
 	Assert_MM_true(sweepState->_heapSizeToConnect >= sweepState->_heapSizeConnected);
 	heapSizeRemainingToBeConnected = sweepState->_heapSizeToConnect - sweepState->_heapSizeConnected;
 	approximateFree = (UDATA)(sweepState->_previousFreeRatio * heapSizeRemainingToBeConnected);
-	
-	approximateFree= MM_Math::roundToCeiling(sizeof(UDATA), approximateFree); 
-	
-	if(approximateFree > heapSizeRemainingToBeConnected) {
+
+	approximateFree = MM_Math::roundToCeiling(sizeof(UDATA), approximateFree);
+
+	if (approximateFree > heapSizeRemainingToBeConnected) {
 		approximateFree = heapSizeRemainingToBeConnected;
 	}
-	
+
 	memoryPool->setApproximateFreeMemorySize(approximateFree);
-	
-}	
+}
 
 /**
  * @copydoc MM_ParallelSweepScheme::connectChunk(MM_EnvironmentStandard *, MM_ParallelSweepChunk *)
@@ -664,18 +681,18 @@ MM_ConcurrentSweepScheme::calculateApproximateFree(
  * @todo Need to account for a next free entry, assuming Address ordered lists
  */
 void
-MM_ConcurrentSweepScheme::connectChunk(MM_EnvironmentBase *env, MM_ParallelSweepChunk *chunk)
+MM_ConcurrentSweepScheme::connectChunk(MM_EnvironmentBase* env, MM_ParallelSweepChunk* chunk)
 {
 	/* Make sure all state information is set up for a connection into the free list */
 	preConnectChunk(env, chunk);
 
 	/* Do the connection work */
-	MM_AtomicOperations::loadSync();  /* Make sure we haven't read into the chunk too early. */
+	MM_AtomicOperations::loadSync(); /* Make sure we haven't read into the chunk too early. */
 	MM_ParallelSweepScheme::connectChunk(env, chunk);
 	/* If this is the final chunk, make sure we finish it off */
-	if(NULL == chunk->_nextChunk) {
-		MM_MemoryPool *memoryPool = chunk->memoryPool;
-		MM_ConcurrentSweepPoolState *state = (MM_ConcurrentSweepPoolState *)getPoolState(memoryPool);
+	if (NULL == chunk->_nextChunk) {
+		MM_MemoryPool* memoryPool = chunk->memoryPool;
+		MM_ConcurrentSweepPoolState* state = (MM_ConcurrentSweepPoolState*)getPoolState(memoryPool);
 		flushFinalChunk(env, memoryPool);
 		state->_finalFlushed = true;
 	}
@@ -688,10 +705,10 @@ MM_ConcurrentSweepScheme::connectChunk(MM_EnvironmentBase *env, MM_ParallelSweep
  * Flush any remaining free list data from the last chunk processed for every memory subspace.
  */
 void
-MM_ConcurrentSweepScheme::flushAllFinalChunks(MM_EnvironmentBase *env)
+MM_ConcurrentSweepScheme::flushAllFinalChunks(MM_EnvironmentBase* env)
 {
-	Assert_MM_unreachable();  // should not be making this call
-	return ;
+	Assert_MM_unreachable(); // should not be making this call
+	return;
 }
 
 /**
@@ -702,7 +719,7 @@ MM_ConcurrentSweepScheme::flushAllFinalChunks(MM_EnvironmentBase *env)
  * @note called by the master thread only
  */
 void
-MM_ConcurrentSweepScheme::setupForSweep(MM_EnvironmentBase *env)
+MM_ConcurrentSweepScheme::setupForSweep(MM_EnvironmentBase* env)
 {
 	/* Initialize structures needed by the superclass */
 	MM_ParallelSweepScheme::setupForSweep(env);
@@ -715,24 +732,26 @@ MM_ConcurrentSweepScheme::setupForSweep(MM_EnvironmentBase *env)
 
 	/* Initialize sweep states in all memory subspaces */
 	initializeSweepStates(env);
-	
+
 	/* Initialize the chunk range values */
 	initializeChunks(env);
 }
 
 void
-MM_ConcurrentSweepScheme::verifyFreeList(MM_EnvironmentStandard *env, MM_HeapLinkedFreeHeader *freeListHead)
+MM_ConcurrentSweepScheme::verifyFreeList(MM_EnvironmentStandard* env, MM_HeapLinkedFreeHeader* freeListHead)
 {
 	bool const compressed = env->compressObjectReferences();
-	for (MM_HeapLinkedFreeHeader *current = freeListHead; NULL != current; current = current->getNext(compressed)) {
+	for (MM_HeapLinkedFreeHeader* current = freeListHead; NULL != current; current = current->getNext(compressed)) {
 		assume(current < current->afterEnd(), "Free list size overflows");
-		assume( (current->getNext(compressed) == NULL) || (current < current->getNext(compressed)), "Free list next pointer is lower in memory");
-		assume( (current->getNext(compressed) == NULL) || (current->getNext(compressed) > current->afterEnd()), "Size is too large (flows into next free entry)");
+		assume((current->getNext(compressed) == NULL) || (current < current->getNext(compressed)),
+		       "Free list next pointer is lower in memory");
+		assume((current->getNext(compressed) == NULL) || (current->getNext(compressed) > current->afterEnd()),
+		       "Size is too large (flows into next free entry)");
 
-		MM_HeapLinkedFreeHeader *tempNext = current->getNext(compressed);
+		MM_HeapLinkedFreeHeader* tempNext = current->getNext(compressed);
 		UDATA tempSize = current->getSize();
 
-		memset((void *)current, 0xFA, tempSize);
+		memset((void*)current, 0xFA, tempSize);
 
 		current->setNext(tempNext, compressed);
 		current->setSize(tempSize);
@@ -744,33 +763,33 @@ MM_ConcurrentSweepScheme::verifyFreeList(MM_EnvironmentStandard *env, MM_HeapLin
  * @todo We should consider a compare and swap operation for pulling the next sweep chunk from the list.
  * @return chunk that may be eligible for sweeping.
  */
-MM_ParallelSweepChunk *
-MM_ConcurrentSweepScheme::getNextSweepChunk(MM_EnvironmentStandard *env, MM_ConcurrentSweepPoolState *sweepState)
+MM_ParallelSweepChunk*
+MM_ConcurrentSweepScheme::getNextSweepChunk(MM_EnvironmentStandard* env, MM_ConcurrentSweepPoolState* sweepState)
 {
-	MM_ParallelSweepChunk *chunk;
+	MM_ParallelSweepChunk* chunk;
 
 	sweepState->_sweepChunkIteratorLock.acquire();
 
 	chunk = sweepState->_currentSweepChunk;
 	while (chunk != NULL) {
 		/* ensure that this chunk actually should be associated with the given sweepState */
-		Assert_MM_true(sweepState == (MM_ConcurrentSweepPoolState *)getPoolState(chunk->memoryPool));
+		Assert_MM_true(sweepState == (MM_ConcurrentSweepPoolState*)getPoolState(chunk->memoryPool));
 		/* Check chunk has not already been processed */
 		if (chunk->_concurrentSweepState == modron_concurrentsweep_state_unprocessed) {
 			break;
-		}	
+		}
 		/* get next chunk, if any */
-		chunk = chunk->_nextChunk;	
-	}	
-	
-	if(NULL != chunk) {
+		chunk = chunk->_nextChunk;
+	}
+
+	if (NULL != chunk) {
 		sweepState->_currentSweepChunk = chunk->_nextChunk;
 	} else {
 		sweepState->_currentSweepChunk = NULL;
 	}
 
 	sweepState->_sweepChunkIteratorLock.release();
-	
+
 	return chunk;
 }
 
@@ -779,30 +798,30 @@ MM_ConcurrentSweepScheme::getNextSweepChunk(MM_EnvironmentStandard *env, MM_Conc
  * @todo We should consider a compare and swap operation for pulling the next sweep chunk from the list.
  * @return chunk that may be eligible for sweeping.
  */
-MM_ParallelSweepChunk *
-MM_ConcurrentSweepScheme::getPreviousSweepChunk(MM_EnvironmentStandard *env, MM_ConcurrentSweepPoolState *sweepState)
+MM_ParallelSweepChunk*
+MM_ConcurrentSweepScheme::getPreviousSweepChunk(MM_EnvironmentStandard* env, MM_ConcurrentSweepPoolState* sweepState)
 {
-	MM_ParallelSweepChunk *chunk;
+	MM_ParallelSweepChunk* chunk;
 
 	sweepState->_sweepChunkIteratorLock.acquire();
 
 	chunk = sweepState->_currentSweepChunkReverse;
-	if(NULL != chunk) {
+	if (NULL != chunk) {
 		/* ensure that this chunk actually should be associated with the given sweepState */
-		Assert_MM_true(sweepState == (MM_ConcurrentSweepPoolState *)getPoolState(chunk->memoryPool));
+		Assert_MM_true(sweepState == (MM_ConcurrentSweepPoolState*)getPoolState(chunk->memoryPool));
 		Assert_MM_true(chunk->_concurrentSweepState == modron_concurrentsweep_state_unprocessed);
-		MM_ParallelSweepChunk *previous = chunk->_previous;
-		MM_ParallelSweepChunk *reverseChunk = NULL;
-		
+		MM_ParallelSweepChunk* previous = chunk->_previous;
+		MM_ParallelSweepChunk* reverseChunk = NULL;
+
 		/* we can only step back the chunk for this sweep state if the chunk preceding us points to us as its next chunk (otherwise, it is associated with a different pool) */
 		if ((NULL != previous) && (previous->_nextChunk == chunk)) {
 			reverseChunk = previous;
 		}
 		sweepState->_currentSweepChunkReverse = reverseChunk;
-	}	
-	
+	}
+
 	sweepState->_sweepChunkIteratorLock.release();
-	
+
 	return chunk;
 }
 
@@ -812,18 +831,16 @@ MM_ConcurrentSweepScheme::getPreviousSweepChunk(MM_EnvironmentStandard *env, MM_
  * getPreviousSweepChunk(MM_EnvironmentStandard *, MM_ConcurrentSweepPoolState *).
  * @return TRUE if at least one live object in chunk; FALSE otherwise
  */
-bool 
-MM_ConcurrentSweepScheme::incrementalSweepChunk(
-	MM_EnvironmentStandard *env,
-	MM_ParallelSweepChunk *chunk)
+bool
+MM_ConcurrentSweepScheme::incrementalSweepChunk(MM_EnvironmentStandard* env, MM_ParallelSweepChunk* chunk)
 {
 	bool liveObjectFound;
 	Assert_MM_true(modron_concurrentsweep_state_unprocessed == chunk->_concurrentSweepState);
 
 	chunk->_concurrentSweepState = modron_concurrentsweep_state_busy_sweep;
-	liveObjectFound = sweepChunk(env, chunk);	
+	liveObjectFound = sweepChunk(env, chunk);
 
-	MM_AtomicOperations::add((UDATA *)&_stats._totalChunkSweptCount, 1);
+	MM_AtomicOperations::add((UDATA*)&_stats._totalChunkSweptCount, 1);
 
 	/* Make sure all sweeping information is flushed to memory before marking the chunk as having been swept.
 	 * This is to avoid having the connector view the chunk as swept without all the data having been commited
@@ -834,7 +851,7 @@ MM_ConcurrentSweepScheme::incrementalSweepChunk(
 	Assert_MM_true(modron_concurrentsweep_state_busy_sweep == chunk->_concurrentSweepState);
 
 	chunk->_concurrentSweepState = modron_concurrentsweep_state_swept;
-	
+
 	return liveObjectFound;
 }
 
@@ -844,21 +861,21 @@ MM_ConcurrentSweepScheme::incrementalSweepChunk(
  * @return true if a chunk was found and swept by the caller, false otherwise.
  */
 bool
-MM_ConcurrentSweepScheme::sweepNextAvailableChunk(MM_EnvironmentStandard *env, MM_ConcurrentSweepPoolState *sweepState)
+MM_ConcurrentSweepScheme::sweepNextAvailableChunk(MM_EnvironmentStandard* env, MM_ConcurrentSweepPoolState* sweepState)
 {
-	MM_ParallelSweepChunk *chunk;
+	MM_ParallelSweepChunk* chunk;
 
-	if(NULL != (chunk = getNextSweepChunk(env, sweepState))) {
+	if (NULL != (chunk = getNextSweepChunk(env, sweepState))) {
 		Assert_MM_true(!_stats.hasCompletedSweepConcurrently());
 		incrementalSweepChunk(env, chunk);
-		if(concurrentsweep_mode_completing_sweep_phase_concurrently == _stats._mode) {
-			MM_AtomicOperations::add((UDATA *)&_stats._concurrentCompleteSweepBytesSwept, chunk->size());
+		if (concurrentsweep_mode_completing_sweep_phase_concurrently == _stats._mode) {
+			MM_AtomicOperations::add((UDATA*)&_stats._concurrentCompleteSweepBytesSwept, chunk->size());
 		} else if (concurrentsweep_mode_stw_complete_sweep == _stats._mode) {
-			MM_AtomicOperations::add((UDATA *)&_stats._completeSweepPhaseBytesSwept, chunk->size());
+			MM_AtomicOperations::add((UDATA*)&_stats._completeSweepPhaseBytesSwept, chunk->size());
 		}
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -868,12 +885,13 @@ MM_ConcurrentSweepScheme::sweepNextAvailableChunk(MM_EnvironmentStandard *env, M
  * @return true if a chunk was found and swept by the caller, false otherwise.
  */
 bool
-MM_ConcurrentSweepScheme::sweepPreviousAvailableChunk(MM_EnvironmentStandard *env, MM_ConcurrentSweepPoolState *sweepState)
+MM_ConcurrentSweepScheme::sweepPreviousAvailableChunk(MM_EnvironmentStandard* env,
+                                                      MM_ConcurrentSweepPoolState* sweepState)
 {
-	MM_ParallelSweepChunk *chunk;
-	MM_ConcurrentSweepFindMinimumSizeFreeTask *task = (MM_ConcurrentSweepFindMinimumSizeFreeTask *)env->_currentTask;
-	
-	if(NULL != (chunk = getPreviousSweepChunk(env, sweepState))) {
+	MM_ParallelSweepChunk* chunk;
+	MM_ConcurrentSweepFindMinimumSizeFreeTask* task = (MM_ConcurrentSweepFindMinimumSizeFreeTask*)env->_currentTask;
+
+	if (NULL != (chunk = getPreviousSweepChunk(env, sweepState))) {
 		if (incrementalSweepChunk(env, chunk)) {
 			/* Only ever set this flag to true, otherwise the last thread to sweep the chunk can
 			 * overwrite (and hide) the fact that a live object was found
@@ -891,7 +909,8 @@ MM_ConcurrentSweepScheme::sweepPreviousAvailableChunk(MM_EnvironmentStandard *en
  * @return true if a chunk was found and swept by the caller, false otherwise.
  */
 bool
-MM_ConcurrentSweepScheme::concurrentSweepNextAvailableChunk(MM_EnvironmentStandard *env, MM_ConcurrentSweepPoolState *sweepState)
+MM_ConcurrentSweepScheme::concurrentSweepNextAvailableChunk(MM_EnvironmentStandard* env,
+                                                            MM_ConcurrentSweepPoolState* sweepState)
 {
 	bool result = false;
 
@@ -907,16 +926,16 @@ MM_ConcurrentSweepScheme::concurrentSweepNextAvailableChunk(MM_EnvironmentStanda
  * @note the sweep states associated memory pool allocation lock (or equivalent) is expected to be held.
  * @return chunk that may be eligible for connecting.
  */
-MM_ParallelSweepChunk *
-MM_ConcurrentSweepScheme::getNextConnectChunk(MM_EnvironmentStandard *env, MM_ConcurrentSweepPoolState *sweepState)
+MM_ParallelSweepChunk*
+MM_ConcurrentSweepScheme::getNextConnectChunk(MM_EnvironmentStandard* env, MM_ConcurrentSweepPoolState* sweepState)
 {
-	MM_ParallelSweepChunk *chunk;
+	MM_ParallelSweepChunk* chunk;
 
 	chunk = sweepState->_connectCurrentChunk;
-	if(NULL != chunk) {
+	if (NULL != chunk) {
 		sweepState->_connectCurrentChunk = chunk->_nextChunk;
-	}	
-	
+	}
+
 	return chunk;
 }
 
@@ -927,14 +946,13 @@ MM_ConcurrentSweepScheme::getNextConnectChunk(MM_EnvironmentStandard *env, MM_Co
  * @return true if the chunk was connected, false otherwise.
  */
 bool
-MM_ConcurrentSweepScheme::incrementalConnectChunk(
-	MM_EnvironmentStandard *env,
-	MM_ParallelSweepChunk *chunk,
-	MM_ConcurrentSweepPoolState *sweepState,
-	MM_MemoryPoolAddressOrderedList *memoryPool)
+MM_ConcurrentSweepScheme::incrementalConnectChunk(MM_EnvironmentStandard* env,
+                                                  MM_ParallelSweepChunk* chunk,
+                                                  MM_ConcurrentSweepPoolState* sweepState,
+                                                  MM_MemoryPoolAddressOrderedList* memoryPool)
 {
 	/* We can only connect the chunk if it has been swept */
-	if(modron_concurrentsweep_state_swept == chunk->_concurrentSweepState) {
+	if (modron_concurrentsweep_state_swept == chunk->_concurrentSweepState) {
 		/* Unprocessed - take possession of connecting the chunk by flipping its state.
 		 * Since moving to the connected state is uncontended, a simple store is enough.
 		 * The busy_connect stage is really more for debugging than anything (since you can't
@@ -946,9 +964,9 @@ MM_ConcurrentSweepScheme::incrementalConnectChunk(
 		/* Do all connection work for the chunk.  This includes updating all running stats. */
 		connectChunk(env, chunk);
 
-//		verifyFreeList(env, memoryPool->_heapFreeList);
+		//		verifyFreeList(env, memoryPool->_heapFreeList);
 
-		/* Advance the chunk state to swept */			
+		/* Advance the chunk state to swept */
 		chunk->_concurrentSweepState = modron_concurrentsweep_state_connected;
 
 		return true;
@@ -967,11 +985,10 @@ MM_ConcurrentSweepScheme::incrementalConnectChunk(
  * @note The initialization is valid only for a single round of connections (ie: all must be done under the same lock)
  */
 void
-MM_ConcurrentSweepScheme::initializeStateForConnections(
-	MM_EnvironmentBase *envModron,
-	MM_MemoryPoolAddressOrderedList *memoryPool,
-	MM_ConcurrentSweepPoolState *sweepState,
-	MM_ParallelSweepChunk *chunk)
+MM_ConcurrentSweepScheme::initializeStateForConnections(MM_EnvironmentBase* envModron,
+                                                        MM_MemoryPoolAddressOrderedList* memoryPool,
+                                                        MM_ConcurrentSweepPoolState* sweepState,
+                                                        MM_ParallelSweepChunk* chunk)
 {
 	/* Find the previous/next free list entries that surround the chunk range.  This code
 	 * really belongs in the pool itself, but keep hacks localized for now.
@@ -981,9 +998,9 @@ MM_ConcurrentSweepScheme::initializeStateForConnections(
 	MM_HeapLinkedFreeHeader *existingPrevious, *existingNext;
 	existingPrevious = NULL;
 	existingNext = memoryPool->_heapFreeList;
-	if(NULL != chunk) {
-		while(NULL != existingNext) {
-			if((void *)existingNext > chunk->chunkBase) {
+	if (NULL != chunk) {
+		while (NULL != existingNext) {
+			if ((void*)existingNext > chunk->chunkBase) {
 				break;
 			}
 			existingPrevious = existingNext;
@@ -1009,15 +1026,15 @@ MM_ConcurrentSweepScheme::initializeStateForConnections(
  * until a free chunk large enough to satisfy the allocate request is found.
  */
 bool
-MM_ConcurrentSweepScheme::replenishPoolForAllocate(MM_EnvironmentBase *env, MM_MemoryPool *memoryPool, UDATA size)
+MM_ConcurrentSweepScheme::replenishPoolForAllocate(MM_EnvironmentBase* env, MM_MemoryPool* memoryPool, UDATA size)
 {
-	if(isConcurrentSweepActive()) {
-		MM_EnvironmentStandard *envStandard = MM_EnvironmentStandard::getEnvironment(env);
-		MM_MemoryPoolAddressOrderedList *memoryPoolAOL = (MM_MemoryPoolAddressOrderedList *)memoryPool;
+	if (isConcurrentSweepActive()) {
+		MM_EnvironmentStandard* envStandard = MM_EnvironmentStandard::getEnvironment(env);
+		MM_MemoryPoolAddressOrderedList* memoryPoolAOL = (MM_MemoryPoolAddressOrderedList*)memoryPool;
 
-		MM_ParallelSweepChunk *chunk;
+		MM_ParallelSweepChunk* chunk;
 		/* Get the sweep state from the pool */
-		MM_ConcurrentSweepPoolState *sweepState = (MM_ConcurrentSweepPoolState *)getPoolState(memoryPoolAOL);
+		MM_ConcurrentSweepPoolState* sweepState = (MM_ConcurrentSweepPoolState*)getPoolState(memoryPoolAOL);
 
 		/* Make sure all free entry information is up to date for this round of connections.
 		 * (e.g., previous/next free entry, hints are adusted accordingly, etc)
@@ -1027,32 +1044,32 @@ MM_ConcurrentSweepScheme::replenishPoolForAllocate(MM_EnvironmentBase *env, MM_M
 		/* Find the next available chunk to connect.  If a chunk is successfully connected, return.
 		 * Otherwise, find a new chunk until all chunks have been processed.
 		 */
-		while(NULL != (chunk = getNextConnectChunk(envStandard, sweepState))) {
+		while (NULL != (chunk = getNextConnectChunk(envStandard, sweepState))) {
 #if defined(CONCURRENT_SWEEP_TRACE)
-{
-	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-	omrtty_printf("L");
-}
+			{
+				OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+				omrtty_printf("L");
+			}
 #endif /* CONCURRENT_SWEEP_TRACE */
 			/* Loop until the next chunk to connect has at least reached the swept stage */
-			while(chunk->_concurrentSweepState < modron_concurrentsweep_state_swept) {
+			while (chunk->_concurrentSweepState < modron_concurrentsweep_state_swept) {
 				/* The chunk hasn't been swept yet - move the sweeping work along for the state */
-				if(!concurrentSweepNextAvailableChunk(envStandard, sweepState)) {
+				if (!concurrentSweepNextAvailableChunk(envStandard, sweepState)) {
 					/* No work was done, yield (someone else was trying to sweep our chunk) */
 					omrthread_yield();
 				}
 			}
-	
+
 			/* If the chunk is in the swept state, try and connect */
-			if(chunk->_concurrentSweepState == modron_concurrentsweep_state_swept) {
-				if(incrementalConnectChunk(envStandard, chunk, sweepState, memoryPoolAOL)) {
+			if (chunk->_concurrentSweepState == modron_concurrentsweep_state_swept) {
+				if (incrementalConnectChunk(envStandard, chunk, sweepState, memoryPoolAOL)) {
 					/* Update statistics depending on mode */
-					if(concurrentsweep_mode_stw_find_minimum_free_size == _stats._mode) {
+					if (concurrentsweep_mode_stw_find_minimum_free_size == _stats._mode) {
 						_stats._minimumFreeEntryBytesConnected += chunk->size();
 					}
 
 					/* Successfully connected the chunk.   Check if the allocation request can be satisfied. */
-					if(sweepState->_largestFreeEntry >= size) {
+					if (sweepState->_largestFreeEntry >= size) {
 						return true;
 					}
 				}
@@ -1069,7 +1086,7 @@ MM_ConcurrentSweepScheme::replenishPoolForAllocate(MM_EnvironmentBase *env, MM_M
  * @return The taxable number of chunks to sweep for the allocation.
  */
 UDATA
-MM_ConcurrentSweepScheme::calculateTax(MM_EnvironmentBase *envModron, UDATA allocationSize)
+MM_ConcurrentSweepScheme::calculateTax(MM_EnvironmentBase* envModron, UDATA allocationSize)
 {
 	UDATA remainingFree;
 	UDATA chunkTax;
@@ -1077,12 +1094,12 @@ MM_ConcurrentSweepScheme::calculateTax(MM_EnvironmentBase *envModron, UDATA allo
 
 	Assert_MM_true(_stats._totalChunkCount >= _stats._totalChunkSweptCount);
 
-	remainingFree = _extensions->heap->getApproximateActiveFreeMemorySize(MEMORY_TYPE_OLD);	
+	remainingFree = _extensions->heap->getApproximateActiveFreeMemorySize(MEMORY_TYPE_OLD);
 
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
-	if(_extensions->concurrentMark) {
-		UDATA kickoffThreshold = ((MM_ConcurrentGC *)_collector)->getConcurrentGCStats()->getKickoffThreshold();
-		
+	if (_extensions->concurrentMark) {
+		UDATA kickoffThreshold = ((MM_ConcurrentGC*)_collector)->getConcurrentGCStats()->getKickoffThreshold();
+
 		/* Another thread may have pushed us over the kickoffThreshold leaving us with a 
 		 * negative difference between remainingFree and kickoffThreshold 
 		 */
@@ -1118,39 +1135,40 @@ MM_ConcurrentSweepScheme::calculateTax(MM_EnvironmentBase *envModron, UDATA allo
  *  
  */
 void
-MM_ConcurrentSweepScheme::payAllocationTax(MM_EnvironmentBase *env, MM_MemorySubSpace *subSpace,  MM_AllocateDescription *allocDescription)
+MM_ConcurrentSweepScheme::payAllocationTax(MM_EnvironmentBase* env,
+                                           MM_MemorySubSpace* subSpace,
+                                           MM_AllocateDescription* allocDescription)
 {
 	UDATA allocationSize = allocDescription->getAllocationTaxSize();
-	if(isConcurrentSweepActive()) {
+	if (isConcurrentSweepActive()) {
 		UDATA chunkTax = calculateTax(env, allocationSize);
-		
-		if (chunkTax > 0 ) {	
-			
-			/* First sweep the allocation pool */		
-			MM_MemoryPool *allocPool = subSpace->getMemoryPool(allocationSize);
+
+		if (chunkTax > 0) {
+
+			/* First sweep the allocation pool */
+			MM_MemoryPool* allocPool = subSpace->getMemoryPool(allocationSize);
 			if (NULL != allocPool) {
 				chunkTax -= sweepPool(env, allocPool, chunkTax);
 			}
-		
-			/* Have we paid all our tax yet ? */		
-			if (chunkTax > 0 ) {
+
+			/* Have we paid all our tax yet ? */
+			if (chunkTax > 0) {
 				/* Sweep any other pools */
 				MM_MemorySubSpacePoolIterator mssPoolIterator(subSpace);
-				MM_MemoryPool *memoryPool;
-				
-				while(chunkTax > 0 && (
-					  NULL != (memoryPool = mssPoolIterator.nextPool())) ) {
-				
-					/* Skip the allocation pool..we've done that already  */	  	
+				MM_MemoryPool* memoryPool;
+
+				while (chunkTax > 0 && (NULL != (memoryPool = mssPoolIterator.nextPool()))) {
+
+					/* Skip the allocation pool..we've done that already  */
 					if (memoryPool == allocPool) {
 						continue;
 					}
-					
+
 					chunkTax -= sweepPool(env, memoryPool, chunkTax);
 				}
-			}	
-		}	
-	}	
+			}
+		}
+	}
 }
 
 /**
@@ -1163,30 +1181,31 @@ MM_ConcurrentSweepScheme::payAllocationTax(MM_EnvironmentBase *env, MM_MemorySub
  */
 
 MMINLINE UDATA
-MM_ConcurrentSweepScheme::sweepPool(MM_EnvironmentBase *envModron, MM_MemoryPool *memoryPool, UDATA chunkTax) 
+MM_ConcurrentSweepScheme::sweepPool(MM_EnvironmentBase* envModron, MM_MemoryPool* memoryPool, UDATA chunkTax)
 {
 	UDATA taxPaid = 0;
-	MM_ConcurrentSweepPoolState *sweepState = (MM_ConcurrentSweepPoolState *)getPoolState(memoryPool);
-				
+	MM_ConcurrentSweepPoolState* sweepState = (MM_ConcurrentSweepPoolState*)getPoolState(memoryPool);
+
 	/* If there any work to do on this pool ? */
-	if(!sweepState->_finalFlushed) {
-		while(taxPaid < chunkTax) {
-			if(!concurrentSweepNextAvailableChunk(MM_EnvironmentStandard::getEnvironment(envModron), sweepState)) {
+	if (!sweepState->_finalFlushed) {
+		while (taxPaid < chunkTax) {
+			if (!concurrentSweepNextAvailableChunk(MM_EnvironmentStandard::getEnvironment(envModron),
+			                                       sweepState)) {
 				break;
 			}
-			
+
 			/* We swept another chunk */
 			taxPaid++;
-			
+
 #if defined(CONCURRENT_SWEEP_TRACE)
 			OMRPORT_ACCESS_FROM_OMRPORT(envModron->getPortLibrary());
 			omrtty_printf("T");
 #endif /* CONCURRENT_SWEEP_TRACE */
 		}
 	}
-	
+
 	return taxPaid;
-}	
+}
 
 /**
  * Complete the sweep such that all pending chunks have been swept and connected to the appropriate
@@ -1198,27 +1217,27 @@ MM_ConcurrentSweepScheme::sweepPool(MM_EnvironmentBase *envModron, MM_MemoryPool
 void
 MM_ConcurrentSweepScheme::completeSweep(MM_EnvironmentBase* envBase, SweepCompletionReason reason)
 {
-	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
-	MM_Dispatcher *dispatcher = envBase->getExtensions()->dispatcher;
+	MM_EnvironmentStandard* env = MM_EnvironmentStandard::getEnvironment(envBase);
+	MM_Dispatcher* dispatcher = envBase->getExtensions()->dispatcher;
 	OMRPORT_ACCESS_FROM_OMRPORT(envBase->getPortLibrary());
 
 	/* Do no work if we weren't in concurrent sweep mode */
-	if(!isConcurrentSweepActive()) {
-		return ;
+	if (!isConcurrentSweepActive()) {
+		return;
 	}
 
 #if defined(CONCURRENT_SWEEP_TRACE)
-{
-	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-	omrtty_printf("{");
-}
+	{
+		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+		omrtty_printf("{");
+	}
 #endif /* CONCURRENT_SWEEP_TRACE */
 
 	_stats.setMode(concurrentsweep_mode_stw_complete_sweep);
 
 	/* First complete the sweep of all chunks */
 	_stats._completeSweepPhaseTimeStart = omrtime_hires_clock();
-	if(reason == ABOUT_TO_GC) {
+	if (reason == ABOUT_TO_GC) {
 		_extensions->globalGCStats.sweepStats.clear();
 	}
 	MM_ConcurrentSweepCompleteSweepTask completeSweepTask(envBase, dispatcher, this);
@@ -1228,17 +1247,17 @@ MM_ConcurrentSweepScheme::completeSweep(MM_EnvironmentBase* envBase, SweepComple
 	/* Find the last free entry for each memory pool and set up the sweep state to continue connections at that point */
 	_stats._completeConnectPhaseTimeStart = omrtime_hires_clock();
 
-	MM_MemoryPoolAddressOrderedList *memoryPool;
+	MM_MemoryPoolAddressOrderedList* memoryPool;
 	MM_HeapMemoryPoolIterator poolIterator(envBase, _extensions->heap);
-	while(NULL != (memoryPool = (MM_MemoryPoolAddressOrderedList *)poolIterator.nextPool())) {
-		MM_ConcurrentSweepPoolState *sweepState;
+	while (NULL != (memoryPool = (MM_MemoryPoolAddressOrderedList*)poolIterator.nextPool())) {
+		MM_ConcurrentSweepPoolState* sweepState;
 
 		/* Find the previous/next free list entries that surround the chunk range.  This code
 		 * really belongs in the pool itself, but keep hacks localized for now.
 		 * In reality, the pool should maintain the end entry itself and just hand it back.
 		 */
-		sweepState = (MM_ConcurrentSweepPoolState *)getPoolState(memoryPool);
-		
+		sweepState = (MM_ConcurrentSweepPoolState*)getPoolState(memoryPool);
+
 		/*
 		 * Most likely would be NULL if wrong type of Memory Pool is used
 		 */
@@ -1250,9 +1269,9 @@ MM_ConcurrentSweepScheme::completeSweep(MM_EnvironmentBase* envBase, SweepComple
 		initializeStateForConnections(env, memoryPool, sweepState, sweepState->_connectCurrentChunk);
 
 		/* Complete the connection of all chunks for the given state */
-		MM_ParallelSweepChunk *chunk;
+		MM_ParallelSweepChunk* chunk;
 		chunk = sweepState->_connectCurrentChunk;
-		while(NULL != chunk) {
+		while (NULL != chunk) {
 			Assert_MM_true(modron_concurrentsweep_state_swept == chunk->_concurrentSweepState);
 			connectChunk(env, chunk);
 			_stats._completeConnectPhaseBytesConnected += chunk->size();
@@ -1267,15 +1286,15 @@ MM_ConcurrentSweepScheme::completeSweep(MM_EnvironmentBase* envBase, SweepComple
 
 	/* Report that we have completed concurrent sweep  */
 	reportCompletedConcurrentSweep(env, reason);
-	
+
 	/* The concurrent sweep has now completed - set mode indicating that it is inactive */
 	_stats.switchMode(concurrentsweep_mode_stw_complete_sweep, concurrentsweep_mode_off);
 
 #if defined(CONCURRENT_SWEEP_TRACE)
-{
-	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-	omrtty_printf("}");
-}
+	{
+		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+		omrtty_printf("}");
+	}
 #endif /* CONCURRENT_SWEEP_TRACE */
 }
 
@@ -1285,20 +1304,20 @@ MM_ConcurrentSweepScheme::completeSweep(MM_EnvironmentBase* envBase, SweepComple
  * @note Do not call directly as this is the entry point for the dispatched task
  */
 void
-MM_ConcurrentSweepScheme::workThreadCompleteSweep(MM_EnvironmentBase *envBase)
+MM_ConcurrentSweepScheme::workThreadCompleteSweep(MM_EnvironmentBase* envBase)
 {
-	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
+	MM_EnvironmentStandard* env = MM_EnvironmentStandard::getEnvironment(envBase);
 
 	/* Find all sweep states in the system and complete their sweep work */
-	MM_MemoryPool *memoryPool;
+	MM_MemoryPool* memoryPool;
 	MM_HeapMemoryPoolIterator poolIterator(envBase, _extensions->heap);
-	while(NULL != (memoryPool = poolIterator.nextPool())) {
-		MM_ConcurrentSweepPoolState *sweepState = (MM_ConcurrentSweepPoolState *)getPoolState(memoryPool);
+	while (NULL != (memoryPool = poolIterator.nextPool())) {
+		MM_ConcurrentSweepPoolState* sweepState = (MM_ConcurrentSweepPoolState*)getPoolState(memoryPool);
 
 		/* Complete the sweep of all chunks.
 		 * Note that the very nature of the call makes it parallel thread safe, and manages its own work units.
 		 */
-		while(sweepNextAvailableChunk(env, sweepState)) {
+		while (sweepNextAvailableChunk(env, sweepState)) {
 			/* No action - continue doing the work until there's nothing more to do */
 		}
 	}
@@ -1318,28 +1337,31 @@ MM_ConcurrentSweepScheme::workThreadCompleteSweep(MM_EnvironmentBase *envBase)
  * @note Do not call directly as this is the entry point for the dispatched task.
  */
 void
-MM_ConcurrentSweepScheme::workThreadFindMinimumSizeFreeEntry(MM_EnvironmentBase *envBase, MM_MemorySubSpace *memorySubSpace, UDATA minimumFreeSize)
+MM_ConcurrentSweepScheme::workThreadFindMinimumSizeFreeEntry(MM_EnvironmentBase* envBase,
+                                                             MM_MemorySubSpace* memorySubSpace,
+                                                             UDATA minimumFreeSize)
 {
-	MM_MemoryPool *memoryPool;
-	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
-	MM_ConcurrentSweepFindMinimumSizeFreeTask *task = (MM_ConcurrentSweepFindMinimumSizeFreeTask *)env->_currentTask; 
+	MM_MemoryPool* memoryPool;
+	MM_EnvironmentStandard* env = MM_EnvironmentStandard::getEnvironment(envBase);
+	MM_ConcurrentSweepFindMinimumSizeFreeTask* task = (MM_ConcurrentSweepFindMinimumSizeFreeTask*)env->_currentTask;
 	UDATA poolCount = memorySubSpace->getActiveMemoryPoolCount();
 
 	if (poolCount > 1) {
 		/* Segment managed as multiple subpools so to enable us to connect chunks in any given pool
 		 * in any order we must sweep enough chunks in any immediately lower pool to determine 
 		 * the size of any projection into the higher pool
-		 */ 
+		 */
 		MM_MemorySubSpacePoolIterator mssPoolIterator(memorySubSpace);
 		UDATA poolNum = 1;
- 		
-		while(poolNum < poolCount &&  NULL != (memoryPool = mssPoolIterator.nextPool()) )  {
 
-			MM_ConcurrentSweepPoolState *sweepState = (MM_ConcurrentSweepPoolState *)getPoolState(memoryPool);
-			
+		while (poolNum < poolCount && NULL != (memoryPool = mssPoolIterator.nextPool())) {
+
+			MM_ConcurrentSweepPoolState* sweepState =
+			        (MM_ConcurrentSweepPoolState*)getPoolState(memoryPool);
+
 			/* Sweep chunks in reverse order until the first live object is found */
-			while(!task->_foundLiveObject) {
-				if(!sweepPreviousAvailableChunk(env, sweepState)) {
+			while (!task->_foundLiveObject) {
+				if (!sweepPreviousAvailableChunk(env, sweepState)) {
 					/* no more work to do - leave */
 					break;
 				}
@@ -1347,7 +1369,7 @@ MM_ConcurrentSweepScheme::workThreadFindMinimumSizeFreeEntry(MM_EnvironmentBase 
 
 			/* we now sync all threads and master thread propagates any projections */
 			if (env->_currentTask->synchronizeGCThreadsAndReleaseMaster(env, UNIQUE_ID)) {
-				 
+
 				/* Any projections need adjusting ? */
 				if (task->_foundLiveObject) {
 					/* Get reference to last chunk we have swept which may not be one with
@@ -1363,20 +1385,23 @@ MM_ConcurrentSweepScheme::workThreadFindMinimumSizeFreeEntry(MM_EnvironmentBase 
 						if (NULL != sweepState->_currentSweepChunk) {
 							/* Start propagating projections from the first chunk in the pool */
 							propagateChunkProjections(env, sweepState->_currentSweepChunk);
-							
+
 							/* Ensure the first chunk in the next subpool will have enough information
 							 * to be walkable without needing to walk objects in this subpool.
 							 */
-							abandonOverlappedChunks(env, sweepState->_currentSweepChunk, true);
+							abandonOverlappedChunks(env, sweepState->_currentSweepChunk,
+							                        true);
 						}
 					} else {
 						/* Start propagating from the last chunk swept */
-						propagateChunkProjections(env, sweepState->_currentSweepChunkReverse->_nextChunk);
+						propagateChunkProjections(
+						        env, sweepState->_currentSweepChunkReverse->_nextChunk);
 
 						/* Ensure the first chunk in the next subpool will have enough information
 						 * to be walkable without needing to walk objects in this subpool.
 						 */
-						abandonOverlappedChunks(env, sweepState->_currentSweepChunkReverse->_nextChunk, false);
+						abandonOverlappedChunks(
+						        env, sweepState->_currentSweepChunkReverse->_nextChunk, false);
 					}
 				} else {
 					/* There were no live objects in this pool, we still need to ensure that the first chunk
@@ -1387,28 +1412,28 @@ MM_ConcurrentSweepScheme::workThreadFindMinimumSizeFreeEntry(MM_EnvironmentBase 
 						abandonOverlappedChunks(env, sweepState->_currentSweepChunk, true);
 					}
 				}
-				
+
 				/* Initialize for next pool, if any */
 				task->_foundLiveObject = false;
-						
+
 				env->_currentTask->releaseSynchronizedGCThreads(env);
 			}
-			
+
 			/* Process next pool */
 			poolNum++;
-		}	
+		}
 	}
 
-	/* Do we actually need to connect any free chunks to satisfy an AF ? */	
+	/* Do we actually need to connect any free chunks to satisfy an AF ? */
 	if (0 == minimumFreeSize) {
 		/* No ..we are done then. All sweep/connect work will be done by mutators */
 		return;
-	}	
-	
+	}
+
 	/* Determine which pool is the most appropriate to sweep given required minimum free size */
 	memoryPool = memorySubSpace->getMemoryPool(minimumFreeSize);
 	if (NULL != memoryPool) {
-		if(env->isMasterThread()) {
+		if (env->isMasterThread()) {
 			/* Master thread: connect chunks until the correct entry is found or there are no more chunks to connect.
 			 * If an entry is found, set the task flag for slave termination to true
 			 */
@@ -1420,10 +1445,11 @@ MM_ConcurrentSweepScheme::workThreadFindMinimumSizeFreeEntry(MM_EnvironmentBase 
 			 * Note: We might want to have a different flagging system that allows a slave to find the entry from
 			 * its per-chunk statistics.
 			 */
-			MM_ConcurrentSweepPoolState *sweepState = (MM_ConcurrentSweepPoolState *)getPoolState(memoryPool);
-	
-			while(!task->_foundMinimumSizeFreeEntry) {
-				if(!sweepNextAvailableChunk(env, sweepState)) {
+			MM_ConcurrentSweepPoolState* sweepState =
+			        (MM_ConcurrentSweepPoolState*)getPoolState(memoryPool);
+
+			while (!task->_foundMinimumSizeFreeEntry) {
+				if (!sweepNextAvailableChunk(env, sweepState)) {
 					/* no more work to do - leave */
 					break;
 				}
@@ -1437,11 +1463,11 @@ MM_ConcurrentSweepScheme::workThreadFindMinimumSizeFreeEntry(MM_EnvironmentBase 
  * This routine is for development purposes and just checks a bunch of preconditions with assumes.
  */
 void
-MM_ConcurrentSweepScheme::checkRestrictions(MM_EnvironmentBase *env)
+MM_ConcurrentSweepScheme::checkRestrictions(MM_EnvironmentBase* env)
 {
 #if defined(OMR_GC_MODRON_SCAVENGER)
 	assume(env->getExtensions()->scavengerEnabled == false, "Must be a flat collector");
-#endif /* OMR_GC_MODRON_SCAVENGER */	
+#endif /* OMR_GC_MODRON_SCAVENGER */
 }
 
 /**
@@ -1453,10 +1479,10 @@ MM_ConcurrentSweepScheme::checkRestrictions(MM_EnvironmentBase *env)
  * @note Expect to have exclusive access
  */
 void
-MM_ConcurrentSweepScheme::sweep(MM_EnvironmentBase *env)
+MM_ConcurrentSweepScheme::sweep(MM_EnvironmentBase* env)
 {
 	checkRestrictions(env);
-	
+
 	_stats.switchMode(concurrentsweep_mode_off, concurrentsweep_mode_on);
 
 	setupForSweep(env);
@@ -1474,20 +1500,19 @@ MM_ConcurrentSweepScheme::sweep(MM_EnvironmentBase *env)
  * @return true if a free entry of at least the requested size was found, false otherwise.
  */
 bool
-MM_ConcurrentSweepScheme::sweepForMinimumSize(
-	MM_EnvironmentBase *env,
-	MM_MemorySubSpace *baseMemorySubSpace, 
-	MM_AllocateDescription *allocateDescription)
-{	
+MM_ConcurrentSweepScheme::sweepForMinimumSize(MM_EnvironmentBase* env,
+                                              MM_MemorySubSpace* baseMemorySubSpace,
+                                              MM_AllocateDescription* allocateDescription)
+{
 	UDATA minimumFreeSize = (allocateDescription ? allocateDescription->getBytesRequested() : 0);
 
-	MM_MemorySubSpace *memorySubSpace;
+	MM_MemorySubSpace* memorySubSpace;
 	MM_MemorySubSpaceChildIterator mssChildIterator(baseMemorySubSpace);
 	bool minimumSizeFound;
 
 #if defined(CONCURRENT_SWEEP_TRACE)
-OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-omrtty_printf("[");
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+	omrtty_printf("[");
 #endif /* CONCURRENT_SWEEP_TRACE */
 
 	checkRestrictions(env);
@@ -1498,20 +1523,21 @@ omrtty_printf("[");
 
 	minimumSizeFound = false;
 
-	while(NULL != (memorySubSpace = mssChildIterator.nextSubSpace())) {
-		if(isConcurrentSweepCandidate(memorySubSpace)) {
+	while (NULL != (memorySubSpace = mssChildIterator.nextSubSpace())) {
+		if (isConcurrentSweepCandidate(memorySubSpace)) {
 			MM_MemorySubSpacePoolIterator mssPoolIterator(memorySubSpace);
-			MM_MemoryPool *memoryPool;
-			MM_ConcurrentSweepPoolState *state;
-			
-			MM_ConcurrentSweepFindMinimumSizeFreeTask findMinimumSizeFreeEntryTask(env, _dispatcher, this, memorySubSpace, minimumFreeSize);
+			MM_MemoryPool* memoryPool;
+			MM_ConcurrentSweepPoolState* state;
+
+			MM_ConcurrentSweepFindMinimumSizeFreeTask findMinimumSizeFreeEntryTask(
+			        env, _dispatcher, this, memorySubSpace, minimumFreeSize);
 			_dispatcher->run(env, &findMinimumSizeFreeEntryTask);
 			minimumSizeFound |= (bool)findMinimumSizeFreeEntryTask._foundMinimumSizeFreeEntry;
-			
+
 			/* Ensure approximate free reset in all memory pools not just the ones we sweep */
-			while(NULL != (memoryPool = mssPoolIterator.nextPool())) {
-				state = (MM_ConcurrentSweepPoolState *)getPoolState(memoryPool);
-	        	calculateApproximateFree(env, memoryPool, state);
+			while (NULL != (memoryPool = mssPoolIterator.nextPool())) {
+				state = (MM_ConcurrentSweepPoolState*)getPoolState(memoryPool);
+				calculateApproximateFree(env, memoryPool, state);
 			}
 		}
 	}
@@ -1519,7 +1545,7 @@ omrtty_printf("[");
 	_stats.switchMode(concurrentsweep_mode_stw_find_minimum_free_size, concurrentsweep_mode_on);
 
 #if defined(CONCURRENT_SWEEP_TRACE)
-omrtty_printf("]");
+	omrtty_printf("]");
 #endif /* CONCURRENT_SWEEP_TRACE */
 
 	return minimumSizeFound;
@@ -1534,26 +1560,26 @@ omrtty_printf("]");
  * @return true if sweeping has been completed, false otherwise.
  */
 bool
-MM_ConcurrentSweepScheme::completeSweepingConcurrently(MM_EnvironmentBase *envModron)
+MM_ConcurrentSweepScheme::completeSweepingConcurrently(MM_EnvironmentBase* envModron)
 {
-	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envModron);
+	MM_EnvironmentStandard* env = MM_EnvironmentStandard::getEnvironment(envModron);
 
 	/* Sanity check - is there anything to do here? */
-	if(!_stats.canCompleteSweepConcurrently()) {
+	if (!_stats.canCompleteSweepConcurrently()) {
 		return true;
 	}
 
-	if(!increaseActiveSweepingThreadCount(env, true)) {
+	if (!increaseActiveSweepingThreadCount(env, true)) {
 		return true;
 	}
 
 	/* Walk all pools, sweeping every remaining chunk in the to-be-swept list */
 	MM_HeapMemoryPoolIterator poolIterator(envModron, _extensions->heap);
-	MM_MemoryPoolAddressOrderedList *memoryPool;
-	while(NULL != (memoryPool = (MM_MemoryPoolAddressOrderedList *)poolIterator.nextPool())) {
-		MM_ConcurrentSweepPoolState *sweepState = (MM_ConcurrentSweepPoolState *)getPoolState(memoryPool);
+	MM_MemoryPoolAddressOrderedList* memoryPool;
+	while (NULL != (memoryPool = (MM_MemoryPoolAddressOrderedList*)poolIterator.nextPool())) {
+		MM_ConcurrentSweepPoolState* sweepState = (MM_ConcurrentSweepPoolState*)getPoolState(memoryPool);
 
-		while(sweepNextAvailableChunk(env, sweepState)) {
+		while (sweepNextAvailableChunk(env, sweepState)) {
 #if defined(CONCURRENT_SWEEP_TRACE)
 			OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 			omrtty_printf("C");
@@ -1562,7 +1588,7 @@ MM_ConcurrentSweepScheme::completeSweepingConcurrently(MM_EnvironmentBase *envMo
 	}
 
 	decreaseActiveSweepingThreadCount(env, true);
-	
+
 	return true;
 }
 
@@ -1573,16 +1599,16 @@ MM_ConcurrentSweepScheme::completeSweepingConcurrently(MM_EnvironmentBase *envMo
  * @return true if there is work to be done (successfully bumped the count), false otherwise.
  */
 bool
-MM_ConcurrentSweepScheme::increaseActiveSweepingThreadCount(MM_EnvironmentBase *envModron, bool completeSweeping)
+MM_ConcurrentSweepScheme::increaseActiveSweepingThreadCount(MM_EnvironmentBase* envModron, bool completeSweeping)
 {
 	omrthread_monitor_enter(_completeSweepingConcurrentlyLock);
 	Assert_MM_true(isConcurrentSweepActive());
-	
-	if(completeSweeping) {
+
+	if (completeSweeping) {
 		/* Sweeping could have been completed (but since we have access, after the check above, all sweep/connection
 		 * activity cannot) while acquiring the lock - check again.
 		 */
-		if(_stats.hasCompletedSweepConcurrently()) {
+		if (_stats.hasCompletedSweepConcurrently()) {
 			omrthread_monitor_exit(_completeSweepingConcurrentlyLock);
 			return false;
 		}
@@ -1591,15 +1617,16 @@ MM_ConcurrentSweepScheme::increaseActiveSweepingThreadCount(MM_EnvironmentBase *
 		/* NOTE: We can't use the threadcount here to check as other threads not actively completing the sweep may have
 		 * bumped the count above zero (sweeping to connect, general allocation tax that missed kickoff, etc).
 		 */
-		if(concurrentsweep_mode_on == _stats._mode) {
+		if (concurrentsweep_mode_on == _stats._mode) {
 			OMRPORT_ACCESS_FROM_OMRPORT(envModron->getPortLibrary());
-			_stats.switchMode(concurrentsweep_mode_on, concurrentsweep_mode_completing_sweep_phase_concurrently);
+			_stats.switchMode(concurrentsweep_mode_on,
+			                  concurrentsweep_mode_completing_sweep_phase_concurrently);
 			_stats._concurrentCompleteSweepTimeStart = omrtime_hires_clock();
 		}
 	}
 
 	_concurrentSweepingThreadCount += 1;
-	
+
 	omrthread_monitor_exit(_completeSweepingConcurrentlyLock);
 
 	return true;
@@ -1610,27 +1637,25 @@ MM_ConcurrentSweepScheme::increaseActiveSweepingThreadCount(MM_EnvironmentBase *
  * @return true if all concurrent sweeping activity is complete (if started), false otherwise.
  */
 bool
-MM_ConcurrentSweepScheme::decreaseActiveSweepingThreadCount(MM_EnvironmentBase *envModron, bool completeSweeping)
+MM_ConcurrentSweepScheme::decreaseActiveSweepingThreadCount(MM_EnvironmentBase* envModron, bool completeSweeping)
 {
 	omrthread_monitor_enter(_completeSweepingConcurrentlyLock);
 
 	_concurrentSweepingThreadCount -= 1;
-	if(_stats.isCompletingSweepConcurrently()) {
+	if (_stats.isCompletingSweepConcurrently()) {
 		/* We've completed a full pass through the memory pools, and done all the work we could.  If we're the last
 		 * thread leaving the operation, then we must have successfully completed the sweeping phase (set the
 		 * flag to say as much).
 		 */
-		if(0 == _concurrentSweepingThreadCount) {
+		if (0 == _concurrentSweepingThreadCount) {
 			OMRPORT_ACCESS_FROM_OMRPORT(envModron->getPortLibrary());
 			_stats._concurrentCompleteSweepTimeEnd = omrtime_hires_clock();
 			reportConcurrentlyCompletedSweepPhase(envModron);
-			_stats.switchMode(
-				concurrentsweep_mode_completing_sweep_phase_concurrently,
-				concurrentsweep_mode_completed_sweep_phase_concurrently);
+			_stats.switchMode(concurrentsweep_mode_completing_sweep_phase_concurrently,
+			                  concurrentsweep_mode_completed_sweep_phase_concurrently);
 			omrthread_monitor_notify_all(_completeSweepingConcurrentlyLock);
-		}
-		else {
-			if(completeSweeping) {
+		} else {
+			if (completeSweeping) {
 				omrthread_monitor_wait(_completeSweepingConcurrentlyLock);
 			}
 		}
@@ -1638,7 +1663,7 @@ MM_ConcurrentSweepScheme::decreaseActiveSweepingThreadCount(MM_EnvironmentBase *
 
 	omrthread_monitor_exit(_completeSweepingConcurrentlyLock);
 
-	if(completeSweeping) {
+	if (completeSweeping) {
 		omrthread_yield();
 	}
 
@@ -1653,32 +1678,34 @@ MM_ConcurrentSweepScheme::decreaseActiveSweepingThreadCount(MM_EnvironmentBase *
  * @note Only the chunks after the first live object will be gaurenteed to have proper projections
  */
 void
-MM_ConcurrentSweepScheme::propagateChunkProjections(MM_EnvironmentBase *envModron, MM_ParallelSweepChunk *startingChunkToPropagate)
+MM_ConcurrentSweepScheme::propagateChunkProjections(MM_EnvironmentBase* envModron,
+                                                    MM_ParallelSweepChunk* startingChunkToPropagate)
 {
 	MM_ParallelSweepChunk *previousChunk, *currentChunk;
 	UDATA projection;
-	
-	previousChunk= startingChunkToPropagate;
+
+	previousChunk = startingChunkToPropagate;
 	currentChunk = startingChunkToPropagate->_nextChunk;
 
 	while (NULL != currentChunk) {
 		/* Sanity checks */
 		Assert_MM_true(currentChunk->_concurrentSweepState >= modron_concurrentsweep_state_swept);
-		Assert_MM_true(previousChunk->chunkTop == currentChunk->chunkBase);              
+		Assert_MM_true(previousChunk->chunkTop == currentChunk->chunkBase);
 		Assert_MM_true(previousChunk->memoryPool == currentChunk->memoryPool);
-		
+
 		/* Get size of any projection from previous chunk */
 		projection = previousChunk->projection;
 
 		/* Does the projection extend beyond this chunk ? */
-		if(projection > (((UDATA)currentChunk->chunkTop) - ((UDATA)currentChunk->chunkBase))) {
-			currentChunk->projection = projection - (((UDATA)currentChunk->chunkTop) - ((UDATA)currentChunk->chunkBase));
+		if (projection > (((UDATA)currentChunk->chunkTop) - ((UDATA)currentChunk->chunkBase))) {
+			currentChunk->projection = projection
+			        - (((UDATA)currentChunk->chunkTop) - ((UDATA)currentChunk->chunkBase));
 		}
 
 		/* Move to next chunk */
 		previousChunk = currentChunk;
 		currentChunk = currentChunk->_nextChunk;
-	}	
+	}
 }
 
 /**
@@ -1689,52 +1716,59 @@ MM_ConcurrentSweepScheme::propagateChunkProjections(MM_EnvironmentBase *envModro
  * @note Only the chunks after the first live object will be gaurenteed to have proper projections
  */
 void
-MM_ConcurrentSweepScheme::abandonOverlappedChunks(MM_EnvironmentBase *envModron, MM_ParallelSweepChunk *startingChunk, bool isFirstChunkInSubpool)
+MM_ConcurrentSweepScheme::abandonOverlappedChunks(MM_EnvironmentBase* envModron,
+                                                  MM_ParallelSweepChunk* startingChunk,
+                                                  bool isFirstChunkInSubpool)
 {
-	MM_ParallelSweepChunk *currentChunk = startingChunk;
+	MM_ParallelSweepChunk* currentChunk = startingChunk;
 	bool chunkProcessed = false;
 	CONSS_DEBUG_OMRPORT_ACCESS_FROM_OMRPORT(envModron->getPortLibrary());
 
 	do {
-		void *walkStart;
+		void* walkStart;
 
 		CONSS_DEBUG_PRINTF(("investigating chunk [%p]\n", currentChunk));
 
 		/* If the chunk has a projection, then the next chunks starting walk point will be well defined (there is no leading free entry that may
 		 * have started in a previous chunk).  This chunk can be safely ignored.
 		 */
-		if(0 != currentChunk->projection) {
+		if (0 != currentChunk->projection) {
 			CONSS_DEBUG_PRINTF(("has projection, next chunk safe walkstart known\n"));
 			chunkProcessed = true;
 			continue;
 		}
 
 		walkStart = NULL;
-		
+
 		/* If the chunk has a trailing free candidate then there must have been a live object within the chunk, or a projection into the chunk.
 		 * This is a well defined starting point.  A walk is required to properly abandon any memory overlap as this chunk may be the chunk
 		 * adjacent to the next subpool (ie: the last chunk in the SOA before the LOA chunks)
 		 */
-		if(NULL != currentChunk->trailingFreeCandidate) {
+		if (NULL != currentChunk->trailingFreeCandidate) {
 			walkStart = currentChunk->trailingFreeCandidate;
-			CONSS_DEBUG_PRINTF(("trailing(size: %p): set walkstart [%p]\n", currentChunk->trailingFreeCandidateSize, walkStart));
+			CONSS_DEBUG_PRINTF(("trailing(size: %p): set walkstart [%p]\n",
+			                    currentChunk->trailingFreeCandidateSize, walkStart));
 		} else {
-			if(NULL != currentChunk->leadingFreeCandidate) {
+			if (NULL != currentChunk->leadingFreeCandidate) {
 				/* Check if the chunk is completely empty */
-				if(((void *)(((UDATA)currentChunk->leadingFreeCandidate) + currentChunk->leadingFreeCandidateSize) == currentChunk->chunkTop)) {
+				if (((void*)(((UDATA)currentChunk->leadingFreeCandidate)
+				             + currentChunk->leadingFreeCandidateSize)
+				     == currentChunk->chunkTop)) {
 					/* If this is the very first chunk in the pool (the pool was entirely empty.)  It will be safe to walk from the beginning. */
-					if (isFirstChunkInSubpool && (currentChunk == startingChunk))
-					{
-						walkStart = (void *)currentChunk->leadingFreeCandidate;
-						CONSS_DEBUG_PRINTF(("initial(size: %p): set walkstart [%p]\n", currentChunk->leadingFreeCandidateSize, walkStart));
+					if (isFirstChunkInSubpool && (currentChunk == startingChunk)) {
+						walkStart = (void*)currentChunk->leadingFreeCandidate;
+						CONSS_DEBUG_PRINTF(("initial(size: %p): set walkstart [%p]\n",
+						                    currentChunk->leadingFreeCandidateSize, walkStart));
 					} else if (chunkProcessed) {
 						/* A chunk has been previously processed -- it is safe to walk the chunk from the beginning, or at a projection point */
 
 						/* It's possible to think that this chunk is completely empty, even if there is a projection, so factor in the previous chunk
 						 * projection, and use this information to determine the walk starting point.
 						 */
-						walkStart = (void *)((UDATA)currentChunk->chunkBase + currentChunk->_previous->projection);
-						CONSS_DEBUG_PRINTF(("projection(size: %p): set walkstart [%p]\n", currentChunk->_previous->projection, walkStart));
+						walkStart = (void*)((UDATA)currentChunk->chunkBase
+						                    + currentChunk->_previous->projection);
+						CONSS_DEBUG_PRINTF(("projection(size: %p): set walkstart [%p]\n",
+						                    currentChunk->_previous->projection, walkStart));
 					} else {
 						/* The startingChunk can be a chunk previous to the chunk found with the live object in it (as per comment in
 						 * workThreadFindMinimumSizeFreeEntry.)  This must be a chunk before the chunk with the live object in it.  If there was
@@ -1750,7 +1784,8 @@ MM_ConcurrentSweepScheme::abandonOverlappedChunks(MM_EnvironmentBase *envModron,
 					 * the chunk.  The live object can not overlap between chunks, otherwise there would have been a projection, which is handled
 					 * above.  The next chunk will be walkable from the beginning of the chunk.  No walk needs to be done for the current chunk.
 					 */
-					CONSS_DEBUG_PRINTF(("live object terminates at end of chunk -- next chunk walkable from start\n"));
+					CONSS_DEBUG_PRINTF(("live object terminates at end of chunk -- next chunk "
+					                    "walkable from start\n"));
 					chunkProcessed = true;
 					continue;
 				}
@@ -1759,7 +1794,8 @@ MM_ConcurrentSweepScheme::abandonOverlappedChunks(MM_EnvironmentBase *envModron,
 				 * live object overlaps onto the next chunk there would have been a projection, which is handled above.  The next chunk will be
 				 * walkable from the beginning of the chunk, so no walk needs to be done for this chunk.
 				 */
-				CONSS_DEBUG_PRINTF(("live objects at beginning and end of chunk -- next chunk walkable from start\n"));
+				CONSS_DEBUG_PRINTF(("live objects at beginning and end of chunk -- next chunk walkable "
+				                    "from start\n"));
 				chunkProcessed = true;
 				continue;
 			}
@@ -1769,10 +1805,10 @@ MM_ConcurrentSweepScheme::abandonOverlappedChunks(MM_EnvironmentBase *envModron,
 
 		/* Setup the next chunk in case we need to walk it */
 		walkChunkForOverlappingDeadSpace(envModron, currentChunk, walkStart);
-	} while(NULL != (currentChunk = currentChunk->_nextChunk));
+	} while (NULL != (currentChunk = currentChunk->_nextChunk));
 
 	CONSS_DEBUG_PRINTF(("done investigating chunks\n"));
-} 
+}
 
 /** Walk a chunk and ensure that the next chunk will have enough information in the chunk to start an object walk
  *  from the its base.
@@ -1782,7 +1818,9 @@ MM_ConcurrentSweepScheme::abandonOverlappedChunks(MM_EnvironmentBase *envModron,
  *  @note The chunk MUST be known to have dead space at the end
  */
 void
-MM_ConcurrentSweepScheme::walkChunkForOverlappingDeadSpace(MM_EnvironmentBase *envModron, MM_ParallelSweepChunk *currentChunk, void *walkStart)
+MM_ConcurrentSweepScheme::walkChunkForOverlappingDeadSpace(MM_EnvironmentBase* envModron,
+                                                           MM_ParallelSweepChunk* currentChunk,
+                                                           void* walkStart)
 {
 	CONSS_DEBUG_OMRPORT_ACCESS_FROM_OMRPORT(envModron->getPortLibrary());
 
@@ -1792,7 +1830,8 @@ MM_ConcurrentSweepScheme::walkChunkForOverlappingDeadSpace(MM_EnvironmentBase *e
 	CONSS_DEBUG_PRINTF(("walking chunk [%p] at [%p]\n", currentChunk, walkStart));
 
 	/* Walk to find overlap and abandon both sides */
-	GC_ObjectHeapIteratorAddressOrderedList objectIterator(_extensions, (omrobjectptr_t)walkStart, (omrobjectptr_t)currentChunk->chunkTop, true);
+	GC_ObjectHeapIteratorAddressOrderedList objectIterator(_extensions, (omrobjectptr_t)walkStart,
+	                                                       (omrobjectptr_t)currentChunk->chunkTop, true);
 	omrobjectptr_t currentObject;
 	UDATA entrySize;
 
@@ -1817,11 +1856,13 @@ MM_ConcurrentSweepScheme::walkChunkForOverlappingDeadSpace(MM_EnvironmentBase *e
 			/* TODO: when splitting regions spanning more than two chunks all the inner chunks have abandon called twice. */
 			entrySize -= (UDATA)currentChunk->chunkTop - (UDATA)currentObject;
 
-			CONSS_DEBUG_PRINTF(("abandoning [%p - %p] and [%p - %p]\n", currentObject, currentChunk->chunkTop,
-				currentChunk->chunkTop, (void *)((UDATA)currentChunk->chunkTop + entrySize)));
+			CONSS_DEBUG_PRINTF(("abandoning [%p - %p] and [%p - %p]\n", currentObject,
+			                    currentChunk->chunkTop, currentChunk->chunkTop,
+			                    (void*)((UDATA)currentChunk->chunkTop + entrySize)));
 
-			currentChunk->memoryPool->abandonHeapChunk((void *)currentObject, (void *)currentChunk->chunkTop);
-			currentChunk->memoryPool->abandonHeapChunk((void *)currentChunk->chunkTop, (void *)((UDATA)currentChunk->chunkTop + entrySize));
+			currentChunk->memoryPool->abandonHeapChunk((void*)currentObject, (void*)currentChunk->chunkTop);
+			currentChunk->memoryPool->abandonHeapChunk((void*)currentChunk->chunkTop,
+			                                           (void*)((UDATA)currentChunk->chunkTop + entrySize));
 			break;
 		}
 

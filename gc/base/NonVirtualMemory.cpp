@@ -20,29 +20,31 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 /**
  * @file
  * @ingroup GC_Base_Core
  */
 
-#include <string.h>
-
-#include "omrcomp.h"
-#include "omrport.h"
+#include "NonVirtualMemory.hpp"
 
 #include "EnvironmentBase.hpp"
 #include "Forge.hpp"
-#include "NonVirtualMemory.hpp"
+#include "omrcomp.h"
+#include "omrport.h"
+#include <string.h>
 
 /**
  * Create and initialize a new instance of NonVirtualMemory.
  * @return Pointer to a NonVirtualMemory object if initialisation successful, NULL otherwise
  */
 MM_NonVirtualMemory*
-MM_NonVirtualMemory::newInstance(MM_EnvironmentBase* env, uintptr_t heapAlignment, uintptr_t size, uint32_t memoryCategory)
+MM_NonVirtualMemory::newInstance(MM_EnvironmentBase* env,
+                                 uintptr_t heapAlignment,
+                                 uintptr_t size,
+                                 uint32_t memoryCategory)
 {
-	MM_NonVirtualMemory* vmem = (MM_NonVirtualMemory*)env->getForge()->allocate(sizeof(MM_NonVirtualMemory), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_NonVirtualMemory* vmem = (MM_NonVirtualMemory*)env->getForge()->allocate(
+	        sizeof(MM_NonVirtualMemory), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (vmem) {
 		new (vmem) MM_NonVirtualMemory(env, heapAlignment);
 		if (!vmem->initialize(env, size, NULL, NULL, 0, memoryCategory)) {
@@ -68,7 +70,8 @@ MM_NonVirtualMemory::reserveMemory(J9PortVmemParams* params)
 	if (alignment > 0) {
 		bytesToAllocate += (alignment - 1);
 	}
-	_baseAddress = _extensions->getForge()->allocate(bytesToAllocate, OMR::GC::AllocationCategory::GC_HEAP, OMR_GET_CALLSITE());
+	_baseAddress = _extensions->getForge()->allocate(bytesToAllocate, OMR::GC::AllocationCategory::GC_HEAP,
+	                                                 OMR_GET_CALLSITE());
 	void* addressToReturn = _baseAddress;
 	if ((NULL != _baseAddress) && (alignment > 0)) {
 		addressToReturn = (void*)(((uintptr_t)addressToReturn + alignment - 1) & ~(alignment - 1));

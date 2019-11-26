@@ -25,25 +25,24 @@
  * @ingroup GC_Structs
  */
 
-#include "omrcfg.h"
-#include "omrcomp.h"
-
 #include "SublistIterator.hpp"
 
 #include "SublistPuddle.hpp"
+#include "omrcfg.h"
+#include "omrcomp.h"
 
 /**
  * @return the next sublist puddle
  * @return NULL if there are no more puddles
  */
-MM_SublistPuddle *
+MM_SublistPuddle*
 GC_SublistIterator::nextList()
 {
-	if(NULL != _currentPuddle) {
+	if (NULL != _currentPuddle) {
 		_currentPuddle = _currentPuddle->_next;
 	} else {
 		_currentPuddle = _sublistPool->_list;
 	}
-	
+
 	return _currentPuddle;
 }

@@ -20,13 +20,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "omrcfg.h"
-#include "ModronAssertions.h"
-#include "modronopt.h"
-#include "objectdescription.h"
-#include "sizeclasses.h"
-
-#include <string.h>
+#include "MemoryPoolSegregated.hpp"
 
 #include "AllocateDescription.hpp"
 #include "ArrayletObjectModel.hpp"
@@ -36,27 +30,35 @@
 #include "HeapRegionDescriptorSegregated.hpp"
 #include "MemoryPool.hpp"
 #include "MemoryPoolAggregatedCellList.hpp"
-#include "ObjectHeapIteratorSegregated.hpp"
+#include "ModronAssertions.h"
 #include "OMRVMThreadListIterator.hpp"
+#include "ObjectHeapIteratorSegregated.hpp"
 #include "RegionPoolSegregated.hpp"
 #include "SegregatedAllocationInterface.hpp"
 #include "SegregatedAllocationTracker.hpp"
 #include "SizeClasses.hpp"
 #include "SlotObject.hpp"
-
-#include "MemoryPoolSegregated.hpp"
+#include "modronopt.h"
+#include "objectdescription.h"
+#include "omrcfg.h"
+#include "sizeclasses.h"
+#include <string.h>
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
 
 /**
  * Create an instance of MPS and initialize it
  */
-MM_MemoryPoolSegregated *
-MM_MemoryPoolSegregated::newInstance(MM_EnvironmentBase *env, MM_RegionPoolSegregated *regionPool, uintptr_t minimumFreeEntrySize, MM_GlobalAllocationManagerSegregated *gam)
+MM_MemoryPoolSegregated*
+MM_MemoryPoolSegregated::newInstance(MM_EnvironmentBase* env,
+                                     MM_RegionPoolSegregated* regionPool,
+                                     uintptr_t minimumFreeEntrySize,
+                                     MM_GlobalAllocationManagerSegregated* gam)
 {
-	MM_MemoryPoolSegregated *memoryPool = (MM_MemoryPoolSegregated *)env->getForge()->allocate(sizeof(MM_MemoryPoolSegregated), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_MemoryPoolSegregated* memoryPool = (MM_MemoryPoolSegregated*)env->getForge()->allocate(
+	        sizeof(MM_MemoryPoolSegregated), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (memoryPool) {
-		memoryPool = new(memoryPool) MM_MemoryPoolSegregated(env, regionPool, minimumFreeEntrySize, gam);
+		memoryPool = new (memoryPool) MM_MemoryPoolSegregated(env, regionPool, minimumFreeEntrySize, gam);
 		if (!memoryPool->initialize(env)) {
 			memoryPool->kill(env);
 			memoryPool = NULL;
@@ -69,9 +71,9 @@ MM_MemoryPoolSegregated::newInstance(MM_EnvironmentBase *env, MM_RegionPoolSegre
  * Initialize MPS
  */
 bool
-MM_MemoryPoolSegregated::initialize(MM_EnvironmentBase *env)
+MM_MemoryPoolSegregated::initialize(MM_EnvironmentBase* env)
 {
-	if(!MM_MemoryPool::initialize(env)) {
+	if (!MM_MemoryPool::initialize(env)) {
 		return false;
 	}
 
@@ -85,32 +87,32 @@ MM_MemoryPoolSegregated::initialize(MM_EnvironmentBase *env)
  * Tear down an MPS instance
  */
 void
-MM_MemoryPoolSegregated::tearDown(MM_EnvironmentBase *env)
+MM_MemoryPoolSegregated::tearDown(MM_EnvironmentBase* env)
 {
 	if (NULL != _regionPool) {
 		_regionPool->kill(env);
 		_regionPool = NULL;
 	}
-	
+
 	MM_MemoryPool::tearDown(env);
 }
 
-MM_SegregatedAllocationTracker *
+MM_SegregatedAllocationTracker*
 MM_MemoryPoolSegregated::createAllocationTracker(MM_EnvironmentBase* env)
 {
-	return MM_SegregatedAllocationTracker::newInstance(env, &_bytesInUse, _extensions->allocationTrackerFlushThreshold);
+	return MM_SegregatedAllocationTracker::newInstance(env, &_bytesInUse,
+	                                                   _extensions->allocationTrackerFlushThreshold);
 }
 
-
 void
-MM_MemoryPoolSegregated::flushCachedFullRegions(MM_EnvironmentBase *env)
+MM_MemoryPoolSegregated::flushCachedFullRegions(MM_EnvironmentBase* env)
 {
 	/* delegate to GAM to perform the flushing of per-context full regions to the region pool */
 	_globalAllocationManager->flushCachedFullRegions(env);
 }
 
 void
-MM_MemoryPoolSegregated::moveInUseToSweep(MM_EnvironmentBase *env)
+MM_MemoryPoolSegregated::moveInUseToSweep(MM_EnvironmentBase* env)
 {
 	assume(env->isMasterThread(), "only can be called by master thread");
 	/* Must flush allocation contexts as part of transfering inUseToSweep.
@@ -122,45 +124,52 @@ MM_MemoryPoolSegregated::moveInUseToSweep(MM_EnvironmentBase *env)
 }
 
 void*
-MM_MemoryPoolSegregated::allocateChunkedArray(MM_EnvironmentBase *env, MM_AllocateDescription *allocDesc, MM_AllocationContextSegregated *ac)
+MM_MemoryPoolSegregated::allocateChunkedArray(MM_EnvironmentBase* env,
+                                              MM_AllocateDescription* allocDesc,
+                                              MM_AllocationContextSegregated* ac)
 {
 	const uintptr_t spineBytes = allocDesc->getContiguousBytes();
 	const uintptr_t totalBytes = allocDesc->getBytesRequested();
-	const uintptr_t numberArraylets = allocDesc->getNumArraylets(); 
+	const uintptr_t numberArraylets = allocDesc->getNumArraylets();
 
 	omrarrayptr_t spine = (omrarrayptr_t)allocateContiguous(env, allocDesc, ac);
 
-	MM_HeapRegionManager *regionManager = _extensions->getHeap()->getHeapRegionManager();
+	MM_HeapRegionManager* regionManager = _extensions->getHeap()->getHeapRegionManager();
 	const uintptr_t arrayletLeafLogSize = env->getOmrVM()->_arrayletLeafLogSize;
 	const uintptr_t arrayletLeafSize = env->getOmrVM()->_arrayletLeafSize;
-	
+
 	if (spine) {
-		memset((void *)((uint8_t *)spine), 0, spineBytes);
-		fomrobject_t *arrayoidPtr = _extensions->indexableObjectModel.getArrayoidPointer(spine);
+		memset((void*)((uint8_t*)spine), 0, spineBytes);
+		fomrobject_t* arrayoidPtr = _extensions->indexableObjectModel.getArrayoidPointer(spine);
 		Assert_MM_true(totalBytes >= spineBytes);
 		uintptr_t bytesRemaining = totalBytes - spineBytes;
-		for (uintptr_t i=0; i<numberArraylets; i++) {
+		for (uintptr_t i = 0; i < numberArraylets; i++) {
 			uintptr_t* arraylet = NULL;
 			if (0 < bytesRemaining) {
 				arraylet = ac->allocateArraylet(env, spine);
 				if (arraylet == NULL) {
 					/* allocation failed; release all storage include spine. */
 					env->getAllocationContext()->flush(env);
-	
-					for (uintptr_t j=0; j<i; j++) {
+
+					for (uintptr_t j = 0; j < i; j++) {
 						GC_SlotObject slotObject(env->getOmrVM(), &arrayoidPtr[j]);
 						arraylet = (uintptr_t*)slotObject.readReferenceFromSlot();
-						
-						MM_HeapRegionDescriptorSegregated *region = (MM_HeapRegionDescriptorSegregated *)regionManager->tableDescriptorForAddress(arraylet);
-						region->clearArraylet(region->whichArraylet(arraylet, arrayletLeafLogSize));
+
+						MM_HeapRegionDescriptorSegregated* region =
+						        (MM_HeapRegionDescriptorSegregated*)
+						                regionManager->tableDescriptorForAddress(arraylet);
+						region->clearArraylet(
+						        region->whichArraylet(arraylet, arrayletLeafLogSize));
 						/* Arraylet backout means arraylets may be re-used before the next cycle, so we need to correct for 
 						 * their un-allocation
 						 */
 						region->addBytesFreedToArrayletBackout(env);
 					}
-					MM_HeapRegionDescriptorSegregated *region = (MM_HeapRegionDescriptorSegregated *)regionManager->tableDescriptorForAddress((uintptr_t *)spine);
+					MM_HeapRegionDescriptorSegregated* region =
+					        (MM_HeapRegionDescriptorSegregated*)
+					                regionManager->tableDescriptorForAddress((uintptr_t*)spine);
 					if (region->isSmall()) {
-						region->getMemoryPoolACL()->returnCell(env, (uintptr_t *)spine);
+						region->getMemoryPoolACL()->returnCell(env, (uintptr_t*)spine);
 						/* Small spine backout means the cell may be re-used before the next cycle, so we need to correct for
 						 * its un-allocation
 						 */
@@ -191,56 +200,57 @@ MM_MemoryPoolSegregated::allocateChunkedArray(MM_EnvironmentBase *env, MM_Alloca
 /**
  * Allocate an arraylet leaf.
  */
-void *
-MM_MemoryPoolSegregated::allocateArrayletLeaf(MM_EnvironmentBase *env, MM_AllocateDescription *allocDesc)
+void*
+MM_MemoryPoolSegregated::allocateArrayletLeaf(MM_EnvironmentBase* env, MM_AllocateDescription* allocDesc)
 {
-	MM_AllocationContextSegregated *allocationContext = (MM_AllocationContextSegregated *)env->getAllocationContext();
+	MM_AllocationContextSegregated* allocationContext =
+	        (MM_AllocationContextSegregated*)env->getAllocationContext();
 	/* we must have already allocated the parent spine, which is stored in the AllocateDescriptionCore */
 	omrarrayptr_t spine = allocDesc->getSpine();
-	
+
 	return allocationContext->allocateArraylet(env, spine);
 }
 
 /**
  * @todo Provide function documentation
  */
-void *
-MM_MemoryPoolSegregated::allocateObject(MM_EnvironmentBase *env, MM_AllocateDescription *allocDesc)
+void*
+MM_MemoryPoolSegregated::allocateObject(MM_EnvironmentBase* env, MM_AllocateDescription* allocDesc)
 {
-	void *result = NULL;
-	MM_AllocationContextSegregated *allocationContext = (MM_AllocationContextSegregated *)env->getAllocationContext();
+	void* result = NULL;
+	MM_AllocationContextSegregated* allocationContext =
+	        (MM_AllocationContextSegregated*)env->getAllocationContext();
 
 	if (allocDesc->isArrayletSpine()) {
-		result = (void *) allocateContiguous(env, allocDesc, allocationContext);
+		result = (void*)allocateContiguous(env, allocDesc, allocationContext);
 	} else if (allocDesc->isChunkedArray()) {
 		result = allocateChunkedArray(env, allocDesc, allocationContext);
 	} else {
-		result = (void *) allocateContiguous(env, allocDesc, allocationContext);
+		result = (void*)allocateContiguous(env, allocDesc, allocationContext);
 	}
 	return result;
 }
 
-
-
-uintptr_t *
-MM_MemoryPoolSegregated::allocateContiguous(MM_EnvironmentBase *env,  
-										MM_AllocateDescription *allocDesc,
-										MM_AllocationContextSegregated *ac)
+uintptr_t*
+MM_MemoryPoolSegregated::allocateContiguous(MM_EnvironmentBase* env,
+                                            MM_AllocateDescription* allocDesc,
+                                            MM_AllocationContextSegregated* ac)
 {
 	const uintptr_t sizeInBytesRequired = allocDesc->getContiguousBytes();
 	const uintptr_t sizeClass = _extensions->defaultSizeClasses->getSizeClass(sizeInBytesRequired);
-	uintptr_t *result = NULL;
+	uintptr_t* result = NULL;
 
 	if (sizeClass == OMR_SIZECLASSES_LARGE) {
 		/* allocating large also goes through AC so that AC can see and cache the large full page */
 		result = ac->allocateLarge(env, sizeInBytesRequired);
 	} else {
-		result = (uintptr_t*)(MM_SegregatedAllocationInterface::getObjectAllocationInterface(env)->allocateFromCache(env, sizeInBytesRequired));
+		result = (uintptr_t*)(MM_SegregatedAllocationInterface::getObjectAllocationInterface(env)
+		                              ->allocateFromCache(env, sizeInBytesRequired));
 		if (NULL == result) {
 			result = ac->preAllocateSmall(env, sizeInBytesRequired);
 		}
 	}
-	
+
 	return result;
 }
 
@@ -248,8 +258,11 @@ MM_MemoryPoolSegregated::allocateContiguous(MM_EnvironmentBase *env,
 /**
  * There is currently no TLH in this memory pool.
  */
-void *
-MM_MemoryPoolSegregated::allocateTLH(MM_EnvironmentBase *env,  uintptr_t maximumSizeInBytesRequired, void * &addrBase, void * &addrTop)
+void*
+MM_MemoryPoolSegregated::allocateTLH(MM_EnvironmentBase* env,
+                                     uintptr_t maximumSizeInBytesRequired,
+                                     void*& addrBase,
+                                     void*& addrTop)
 {
 	return NULL;
 }
@@ -261,44 +274,57 @@ MM_MemoryPoolSegregated::reset(Cause cause)
 	Assert_MM_unreachable();
 }
 
-
 void
-MM_MemoryPoolSegregated::addRange(MM_EnvironmentBase *env,  void *previousFreeEntry, uintptr_t previousFreeEntrySize, void *currentFreeEntry, uintptr_t currentFreeEntrySize)
+MM_MemoryPoolSegregated::addRange(MM_EnvironmentBase* env,
+                                  void* previousFreeEntry,
+                                  uintptr_t previousFreeEntrySize,
+                                  void* currentFreeEntry,
+                                  uintptr_t currentFreeEntrySize)
 {
 	/* Used by the sweep routine to add free chunks to the list - ignored here */
-	return ;
+	return;
 }
 
 void
-MM_MemoryPoolSegregated::insertRange(MM_EnvironmentBase *env, 
-	void *previousFreeListEntry, uintptr_t previousFreeListEntrySize,
-	void *expandRangeBase, void *expandRangeTop,
-	void *nextFreeListEntry, uintptr_t nextFreeListEntrySize)
+MM_MemoryPoolSegregated::insertRange(MM_EnvironmentBase* env,
+                                     void* previousFreeListEntry,
+                                     uintptr_t previousFreeListEntrySize,
+                                     void* expandRangeBase,
+                                     void* expandRangeTop,
+                                     void* nextFreeListEntry,
+                                     uintptr_t nextFreeListEntrySize)
 {
 	Assert_MM_unreachable();
 }
 
-void *
-MM_MemoryPoolSegregated::contractWithRange(MM_EnvironmentBase *env, uintptr_t expandSize, void *lowAddress, void *highAddress)
+void*
+MM_MemoryPoolSegregated::contractWithRange(MM_EnvironmentBase* env,
+                                           uintptr_t expandSize,
+                                           void* lowAddress,
+                                           void* highAddress)
 {
 	Assert_MM_unreachable();
 	return NULL;
 }
 
 void
-MM_MemoryPoolSegregated::expandWithRange(MM_EnvironmentBase *env,  uintptr_t expandSize, void *base, void *top, bool canCoalesce)
+MM_MemoryPoolSegregated::expandWithRange(MM_EnvironmentBase* env,
+                                         uintptr_t expandSize,
+                                         void* base,
+                                         void* top,
+                                         bool canCoalesce)
 {
 	Assert_MM_unreachable();
 }
 
 void
-MM_MemoryPoolSegregated::buildRange(MM_EnvironmentBase *env,  void *expandRangeBase, void *expandRangeTop)
+MM_MemoryPoolSegregated::buildRange(MM_EnvironmentBase* env, void* expandRangeBase, void* expandRangeTop)
 {
 	abandonHeapChunk(expandRangeBase, expandRangeTop);
 }
 
 bool
-MM_MemoryPoolSegregated::abandonHeapChunk(void *addrBase, void *addrTop) 
+MM_MemoryPoolSegregated::abandonHeapChunk(void* addrBase, void* addrTop)
 {
 	Assert_MM_unreachable();
 	return false;
@@ -322,9 +348,9 @@ MM_MemoryPoolSegregated::getActualFreeMemorySize()
 	uintptr_t single = 0;
 	uintptr_t multi = 0;
 	uintptr_t coalesce = 0;
-	
+
 	_regionPool->countFreeRegions(&single, &multi, &coalesce);
-	
+
 	return (single + multi + coalesce) * _extensions->getHeap()->getHeapRegionManager()->getRegionSize();
 }
 
@@ -342,25 +368,23 @@ uintptr_t
 MM_MemoryPoolSegregated::debugGetActualFreeMemorySize()
 {
 	GC_OMRVMThreadListIterator vmThreadListIterator(_extensions->getOmrVM());
-	OMR_VMThread *walkThread;
+	OMR_VMThread* walkThread;
 	uintptr_t totalBytesInUse = _bytesInUse;
-	
+
 	while (NULL != (walkThread = vmThreadListIterator.nextOMRVMThread())) {
-		MM_EnvironmentBase *walkEnv = MM_EnvironmentBase::getEnvironment(walkThread);
+		MM_EnvironmentBase* walkEnv = MM_EnvironmentBase::getEnvironment(walkThread);
 		totalBytesInUse += walkEnv->_allocationTracker->getUnflushedBytesAllocated(walkEnv);
 	}
-	
+
 	return totalBytesInUse;
 }
 
 void
 MM_MemoryPoolSegregated::setFreeMemorySize(uintptr_t freeMemorySize)
-{
-}
+{}
 
 void
 MM_MemoryPoolSegregated::setFreeEntryCount(uintptr_t entryCount)
-{
-}
+{}
 
 #endif /* OMR_GC_SEGREGATED_HEAP */

@@ -20,7 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 #include "PhysicalArena.hpp"
 
 #include "EnvironmentBase.hpp"
@@ -33,7 +32,7 @@
  * @return true if the expansion is allowed, false otherwise.
  */
 bool
-MM_PhysicalArena::canExpand(MM_EnvironmentBase *env, MM_PhysicalSubArena *expandArena)
+MM_PhysicalArena::canExpand(MM_EnvironmentBase* env, MM_PhysicalSubArena* expandArena)
 {
 	return true;
 }
@@ -42,7 +41,7 @@ MM_PhysicalArena::canExpand(MM_EnvironmentBase *env, MM_PhysicalSubArena *expand
  * Destroy and delete the instance.
  */
 void
-MM_PhysicalArena::kill(MM_EnvironmentBase *env)
+MM_PhysicalArena::kill(MM_EnvironmentBase* env)
 {
 	tearDown(env);
 	env->getForge()->free(this);
@@ -53,7 +52,7 @@ MM_PhysicalArena::kill(MM_EnvironmentBase *env)
  * @return true on success, false otherwise.
  */
 bool
-MM_PhysicalArena::initialize(MM_EnvironmentBase *env)
+MM_PhysicalArena::initialize(MM_EnvironmentBase* env)
 {
 	return true;
 }
@@ -62,9 +61,9 @@ MM_PhysicalArena::initialize(MM_EnvironmentBase *env)
  * Cleanup internal structures of the receiver.
  */
 void
-MM_PhysicalArena::tearDown(MM_EnvironmentBase *env)
+MM_PhysicalArena::tearDown(MM_EnvironmentBase* env)
 {
-	if(_attached) {
+	if (_attached) {
 		_heap->detachArena(env, this);
 	}
 }

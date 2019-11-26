@@ -23,28 +23,26 @@
 #if !defined(OVERFLOWSEGREGATED_HPP_)
 #define OVERFLOWSEGREGATED_HPP_
 
-#include "omr.h"
-
-#include "WorkPacketOverflow.hpp"
-
 #include "EnvironmentBase.hpp"
 #include "GCExtensionsBase.hpp"
+#include "WorkPacketOverflow.hpp"
+#include "omr.h"
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
 
 class MM_OverflowSegregated : public MM_WorkPacketOverflow
 {
-/* Data members */
+	/* Data members */
 public:
 protected:
 private:
-	MM_GCExtensionsBase *_extensions;
+	MM_GCExtensionsBase* _extensions;
 
-/* Methods */
+	/* Methods */
 public:
-	static MM_OverflowSegregated *newInstance(MM_EnvironmentBase *env, MM_WorkPackets *workPackets);
+	static MM_OverflowSegregated* newInstance(MM_EnvironmentBase* env, MM_WorkPackets* workPackets);
 
-	virtual void reset(MM_EnvironmentBase *env);
+	virtual void reset(MM_EnvironmentBase* env);
 	virtual bool isEmpty();
 
 	/**
@@ -57,7 +55,7 @@ public:
 	 * @param type - ignored for concurrent collector
 	 *
 	 */
-	virtual void emptyToOverflow(MM_EnvironmentBase *env, MM_Packet *packet, MM_OverflowType type);
+	virtual void emptyToOverflow(MM_EnvironmentBase* env, MM_Packet* packet, MM_OverflowType type);
 
 	/**
 	 * Fill a packet from overflow list
@@ -67,7 +65,7 @@ public:
 	 * @note No-op in this overflow handler. We will never fill a packet from
 	 * the card table.
 	 */
-	virtual void fillFromOverflow(MM_EnvironmentBase *env, MM_Packet *packet);
+	virtual void fillFromOverflow(MM_EnvironmentBase* env, MM_Packet* packet);
 
 	/**
 	 * Overflow an item
@@ -78,20 +76,20 @@ public:
 	 * @param type - ignored for concurrent collector
 	 *
 	 */
-	virtual void overflowItem(MM_EnvironmentBase *env, void *item, MM_OverflowType type);
+	virtual void overflowItem(MM_EnvironmentBase* env, void* item, MM_OverflowType type);
 
 	/**
 	 * Handle Overflow - clean card table
 	 * @param env current thread environment
 	 */
-	virtual void handleOverflow(MM_EnvironmentBase *env);
+	virtual void handleOverflow(MM_EnvironmentBase* env);
 
 	/**
 	 * Create a MM_OverflowSegregated object.
 	 */
-	MM_OverflowSegregated(MM_EnvironmentBase *env, MM_WorkPackets *workPackets) :
-		MM_WorkPacketOverflow(env, workPackets),
-		_extensions(MM_GCExtensionsBase::getExtensions(env->getOmrVM()))
+	MM_OverflowSegregated(MM_EnvironmentBase* env, MM_WorkPackets* workPackets)
+	        : MM_WorkPacketOverflow(env, workPackets),
+	          _extensions(MM_GCExtensionsBase::getExtensions(env->getOmrVM()))
 	{
 		_typeId = __FUNCTION__;
 	};
@@ -102,12 +100,12 @@ protected:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	bool initialize(MM_EnvironmentBase *env);
+	bool initialize(MM_EnvironmentBase* env);
 
 	/**
 	 * Cleanup the resources for a MM_ConcurrentOverflow object
 	 */
-	void tearDown(MM_EnvironmentBase *env);
+	void tearDown(MM_EnvironmentBase* env);
 
 	/**
 	 * Overflow an item
@@ -117,10 +115,9 @@ protected:
 	 * @param item - item to overflow
 	 *
 	 */
-	void overflowItemInternal(MM_EnvironmentBase *env, void *item);
+	void overflowItemInternal(MM_EnvironmentBase* env, void* item);
 
 private:
-
 };
 
 #endif /* OMR_GC_SEGREGATED_HEAP */

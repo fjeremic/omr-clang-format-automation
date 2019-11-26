@@ -20,47 +20,50 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include "LockingFreeHeapRegionList.hpp"
+
+#include "modronopt.h"
 #include "omrcfg.h"
 #include "omrcomp.h"
-#include "modronopt.h"
 #include "sizeclasses.h"
-
-#include "LockingFreeHeapRegionList.hpp"
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
 
-MM_LockingFreeHeapRegionList *
-MM_LockingFreeHeapRegionList::newInstance(MM_EnvironmentBase *env, MM_HeapRegionList::RegionListKind regionListKind, bool singleRegionsOnly)
+MM_LockingFreeHeapRegionList*
+MM_LockingFreeHeapRegionList::newInstance(MM_EnvironmentBase* env,
+                                          MM_HeapRegionList::RegionListKind regionListKind,
+                                          bool singleRegionsOnly)
 {
-	MM_LockingFreeHeapRegionList *fpl = (MM_LockingFreeHeapRegionList *)env->getForge()->allocate(sizeof(MM_LockingFreeHeapRegionList), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_LockingFreeHeapRegionList* fpl = (MM_LockingFreeHeapRegionList*)env->getForge()->allocate(
+	        sizeof(MM_LockingFreeHeapRegionList), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (fpl) {
 		new (fpl) MM_LockingFreeHeapRegionList(regionListKind, singleRegionsOnly);
 		if (!fpl->initialize(env)) {
 			fpl->kill(env);
 			return NULL;
-		}		
+		}
 	}
 	return fpl;
 }
 
 void
-MM_LockingFreeHeapRegionList::kill(MM_EnvironmentBase *env)
+MM_LockingFreeHeapRegionList::kill(MM_EnvironmentBase* env)
 {
 	tearDown(env);
 	env->getForge()->free(this);
 }
 
 bool
-MM_LockingFreeHeapRegionList::initialize(MM_EnvironmentBase *env)
+MM_LockingFreeHeapRegionList::initialize(MM_EnvironmentBase* env)
 {
 	if (0 != omrthread_monitor_init_with_name(&_lockMonitor, 0, "FreeHeapRegionList lock monitor")) {
 		return false;
 	}
 	return true;
 }
-	
+
 void
-MM_LockingFreeHeapRegionList::tearDown(MM_EnvironmentBase *env)
+MM_LockingFreeHeapRegionList::tearDown(MM_EnvironmentBase* env)
 {
 	if (_lockMonitor) {
 		omrthread_monitor_destroy(_lockMonitor);
@@ -74,16 +77,15 @@ MM_LockingFreeHeapRegionList::getTotalRegions()
 	return _totalRegionsCount;
 }
 
-
 void
-MM_LockingFreeHeapRegionList::showList(MM_EnvironmentBase *env)
+MM_LockingFreeHeapRegionList::showList(MM_EnvironmentBase* env)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 	uintptr_t index = 0;
 	uintptr_t count = 0;
 	lock();
 	omrtty_printf("LockingFreeHeapRegionList 0x%x: ", this);
-	for (MM_HeapRegionDescriptorSegregated *cur = _head; cur != NULL; cur = cur->getNext()) {
+	for (MM_HeapRegionDescriptorSegregated* cur = _head; cur != NULL; cur = cur->getNext()) {
 		omrtty_printf("  %d-%d-%d ", count, index, cur->getRange());
 		count += 1;
 		index += cur->getRange();
@@ -93,10 +95,13 @@ MM_LockingFreeHeapRegionList::showList(MM_EnvironmentBase *env)
 }
 
 MM_HeapRegionDescriptorSegregated*
-MM_LockingFreeHeapRegionList::allocate(MM_EnvironmentBase *env, uintptr_t szClass, uintptr_t numRegions, uintptr_t maxExcess)
+MM_LockingFreeHeapRegionList::allocate(MM_EnvironmentBase* env,
+                                       uintptr_t szClass,
+                                       uintptr_t numRegions,
+                                       uintptr_t maxExcess)
 {
 	lock();
-	for (MM_HeapRegionDescriptorSegregated *cur = _head; cur != NULL; cur = cur->getNext()) {
+	for (MM_HeapRegionDescriptorSegregated* cur = _head; cur != NULL; cur = cur->getNext()) {
 		uintptr_t currentSize = cur->getRange();
 		if ((currentSize >= numRegions) && cur->isCommitted()) {
 			uintptr_t leftOver = currentSize - numRegions;
@@ -104,7 +109,7 @@ MM_LockingFreeHeapRegionList::allocate(MM_EnvironmentBase *env, uintptr_t szClas
 				/* The detach call is safe even though we are iterating over the list because iterations stops immediately. */
 				detachInternal(cur);
 				if (leftOver > 0) {
-					MM_HeapRegionDescriptorSegregated *remainder = cur->splitRange(numRegions);
+					MM_HeapRegionDescriptorSegregated* remainder = cur->splitRange(numRegions);
 					pushInternal(remainder);
 				}
 				cur->setRangeHead(cur);

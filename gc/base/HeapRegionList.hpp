@@ -28,12 +28,11 @@
 #if !defined(HEAPREGIONLIST_HPP_)
 #define HEAPREGIONLIST_HPP_
 
-#include "omrcfg.h"
-#include "modronopt.h"
-
 #include "AtomicOperations.hpp"
 #include "Debug.hpp"
 #include "EnvironmentBase.hpp"
+#include "modronopt.h"
+#include "omrcfg.h"
 
 /**
  * A HeapRegionList is a List (ordered collection) of HeapRegionDescriptrs. 
@@ -51,8 +50,8 @@
  */
 class MM_HeapRegionList : public MM_BaseVirtual
 {
-/* Data members & types */		
-public:	
+	/* Data members & types */
+public:
 	/**< An Enumeration of the different kinds of RegionList.
 	 *   Merely descriptive for Metronome, but in Realtime used to detect that
 	 *   a region has been moved from one list to another concurrently with
@@ -61,7 +60,8 @@ public:
 	 *   Within a single GC cycle, the RegionLists form a lattice.
 	 *   The valid transitions between region lists are defined by isValidTransition. 
 	 */
-	typedef enum {
+	typedef enum
+	{
 		HRL_KIND_LOCAL_WORK = 0,
 		HRL_KIND_MULTI_FREE = 1,
 		HRL_KIND_FREE = 2,
@@ -70,32 +70,29 @@ public:
 		HRL_KIND_SWEEP = 5,
 		HRL_KIND_COALESCE = 6
 	} RegionListKind;
-	
+
 protected:
-	uintptr_t _length;	
+	uintptr_t _length;
 	/**< What kind of region list is this? @see ListKind for description of RegionList kinds */
 	RegionListKind _regionListKind;
 	/**< Do regions on the list represent only themselves, or do they encode region ranges (Large & MultiFree) */
 	bool _singleRegionsOnly;
-	
-private:	
-	
-/* Methods */	
+
+private:
+	/* Methods */
 public:
-	virtual void kill(MM_EnvironmentBase *env) = 0;
-	
-	virtual bool initialize(MM_EnvironmentBase *env) = 0;
-	virtual void tearDown(MM_EnvironmentBase *env) = 0;
+	virtual void kill(MM_EnvironmentBase* env) = 0;
+
+	virtual bool initialize(MM_EnvironmentBase* env) = 0;
+	virtual void tearDown(MM_EnvironmentBase* env) = 0;
 
 	/**
 	 * @param pt The RegionList that contains all regions that will be put on this RegionList.
 	 * @param regionListKind  The RegionListKind of this RegionList.
 	 * @param singleRegionsOnly True if this heapRgionlist is for small/arraylet, false if it is for large (multi-region)
 	 */
-	MM_HeapRegionList(RegionListKind regionListKind, bool singleRegionsOnly) :
-		_length(0),
-		_regionListKind(regionListKind),
-		_singleRegionsOnly(singleRegionsOnly)
+	MM_HeapRegionList(RegionListKind regionListKind, bool singleRegionsOnly)
+	        : _length(0), _regionListKind(regionListKind), _singleRegionsOnly(singleRegionsOnly)
 	{
 		_typeId = __FUNCTION__;
 	}
@@ -106,15 +103,14 @@ public:
 
 	virtual uintptr_t getTotalRegions() = 0;
 
-	virtual void showList(MM_EnvironmentBase *env) = 0;
-	
+	virtual void showList(MM_EnvironmentBase* env) = 0;
+
 	bool isAvailableList() { return _regionListKind == HRL_KIND_AVAILABLE; }
 	bool isFullList() { return _regionListKind == HRL_KIND_FULL; }
 	bool isSweepList() { return _regionListKind == HRL_KIND_SWEEP; }
 	bool isFreeList() { return _regionListKind == HRL_KIND_FREE || _regionListKind == HRL_KIND_MULTI_FREE; }
-	
-	static const char*
-	describeListKind(RegionListKind regionListKind)
+
+	static const char* describeListKind(RegionListKind regionListKind)
 	{
 		switch (regionListKind) {
 		case HRL_KIND_LOCAL_WORK: return "local work list";
@@ -127,36 +123,26 @@ public:
 		default: return "unknown kind of list";
 		}
 	}
-	
-	const char *
-	describeList()
-	{ 
-		return describeListKind(_regionListKind);
-	}
-	
-	static bool
-	isValidTransition(RegionListKind from, RegionListKind to)
+
+	const char* describeList() { return describeListKind(_regionListKind); }
+
+	static bool isValidTransition(RegionListKind from, RegionListKind to)
 	{
 		if (HRL_KIND_LOCAL_WORK == from || HRL_KIND_LOCAL_WORK == to) {
 			return true; // SIGH. Local work blinds us because we need 3 states to really check it.
 		}
-		
-		switch(from) {
-		case HRL_KIND_MULTI_FREE:
-			return HRL_KIND_FREE == to || HRL_KIND_FULL == to || HRL_KIND_COALESCE == to;
-		case HRL_KIND_FREE:
-			return HRL_KIND_AVAILABLE == to || HRL_KIND_FULL == to || HRL_KIND_COALESCE == to;
-		case HRL_KIND_AVAILABLE:
-			return HRL_KIND_FULL == to || HRL_KIND_SWEEP == to;
-		case HRL_KIND_FULL:
-			return HRL_KIND_SWEEP == to;
-		case HRL_KIND_SWEEP:
-			return HRL_KIND_FREE == to || HRL_KIND_AVAILABLE == to || HRL_KIND_FULL == to;
+
+		switch (from) {
+		case HRL_KIND_MULTI_FREE: return HRL_KIND_FREE == to || HRL_KIND_FULL == to || HRL_KIND_COALESCE == to;
+		case HRL_KIND_FREE: return HRL_KIND_AVAILABLE == to || HRL_KIND_FULL == to || HRL_KIND_COALESCE == to;
+		case HRL_KIND_AVAILABLE: return HRL_KIND_FULL == to || HRL_KIND_SWEEP == to;
+		case HRL_KIND_FULL: return HRL_KIND_SWEEP == to;
+		case HRL_KIND_SWEEP: return HRL_KIND_FREE == to || HRL_KIND_AVAILABLE == to || HRL_KIND_FULL == to;
 		case HRL_KIND_COALESCE:
 			/* NOTE: COALESCE ==> COALESCE is only allowable because coalesce list is still using locks */
-			return HRL_KIND_FREE == to || HRL_KIND_MULTI_FREE == to || HRL_KIND_FULL == to || HRL_KIND_COALESCE == to;
-		default:
-			return false;
+			return HRL_KIND_FREE == to || HRL_KIND_MULTI_FREE == to || HRL_KIND_FULL == to
+			        || HRL_KIND_COALESCE == to;
+		default: return false;
 		}
 	}
 };

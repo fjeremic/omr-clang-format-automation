@@ -20,7 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 #include "PhysicalSubArena.hpp"
 
 #include "Debug.hpp"
@@ -31,7 +30,7 @@
  * @return true if the initialization was successful, false otherwise.
  */
 bool
-MM_PhysicalSubArena::initialize(MM_EnvironmentBase *env)
+MM_PhysicalSubArena::initialize(MM_EnvironmentBase* env)
 {
 	return true;
 }
@@ -40,9 +39,8 @@ MM_PhysicalSubArena::initialize(MM_EnvironmentBase *env)
  * Destroy and delete the instances internal structures.
  */
 void
-MM_PhysicalSubArena::tearDown(MM_EnvironmentBase *env)
-{
-}
+MM_PhysicalSubArena::tearDown(MM_EnvironmentBase* env)
+{}
 
 /**
  * Determine whether the sub arena is allowed to expand.
@@ -51,13 +49,13 @@ MM_PhysicalSubArena::tearDown(MM_EnvironmentBase *env)
  * @return true if the expansion is allowed, false otherwise.
  */
 bool
-MM_PhysicalSubArena::canExpand(MM_EnvironmentBase *env)
+MM_PhysicalSubArena::canExpand(MM_EnvironmentBase* env)
 {
-	if(!_resizable) {
+	if (!_resizable) {
 		return false;
 	}
 
-	if(_parent) {
+	if (_parent) {
 		return _parent->canExpand(env, this);
 	}
 
@@ -70,7 +68,7 @@ MM_PhysicalSubArena::canExpand(MM_EnvironmentBase *env)
  * @return The amount of heap actually contracted.
  */
 uintptr_t
-MM_PhysicalSubArena::contract(MM_EnvironmentBase *env, uintptr_t contractSize)
+MM_PhysicalSubArena::contract(MM_EnvironmentBase* env, uintptr_t contractSize)
 {
 	assume0(false); // Should never get here
 	return 0;
@@ -82,7 +80,7 @@ MM_PhysicalSubArena::contract(MM_EnvironmentBase *env, uintptr_t contractSize)
  * @return true if the contraction is allowed, false otherwise.
  */
 bool
-MM_PhysicalSubArena::canContract(MM_EnvironmentBase *env)
+MM_PhysicalSubArena::canContract(MM_EnvironmentBase* env)
 {
 	/* Normally we'd use the _resizable flag, but since contract is a stronger operation,
 	 * we just default to false in the generic case.
@@ -98,7 +96,9 @@ MM_PhysicalSubArena::canContract(MM_EnvironmentBase *env)
  * @return the actual physical size that the receiver can expand by, or 0 if there is no room or alignment restrictions cannot be met.
  */
 uintptr_t
-MM_PhysicalSubArena::checkCounterBalanceExpand(MM_EnvironmentBase *env, uintptr_t expandSizeDeltaAlignment, uintptr_t expandSize)
+MM_PhysicalSubArena::checkCounterBalanceExpand(MM_EnvironmentBase* env,
+                                               uintptr_t expandSizeDeltaAlignment,
+                                               uintptr_t expandSize)
 {
 	return expandSize;
 }
@@ -110,9 +110,9 @@ MM_PhysicalSubArena::checkCounterBalanceExpand(MM_EnvironmentBase *env, uintptr_
  * @return the size of the expansion (which should match the size supplied)
  */
 uintptr_t
-MM_PhysicalSubArena::expandNoCheck(MM_EnvironmentBase *env, uintptr_t expandSize)
+MM_PhysicalSubArena::expandNoCheck(MM_EnvironmentBase* env, uintptr_t expandSize)
 {
-	assume0(0);  /* override - you can only call this if the receiver can in fact expand */
+	assume0(0); /* override - you can only call this if the receiver can in fact expand */
 	return expandSize;
 }
 
@@ -123,9 +123,11 @@ MM_PhysicalSubArena::expandNoCheck(MM_EnvironmentBase *env, uintptr_t expandSize
  * @note For non-semispace PSA's, do nothing (it means nothing to call this on it)
  */
 void
-MM_PhysicalSubArena::tilt(MM_EnvironmentBase *env, uintptr_t allocateSpaceSize, uintptr_t survivorSpaceSize, bool updateMemoryPools)
-{
-}
+MM_PhysicalSubArena::tilt(MM_EnvironmentBase* env,
+                          uintptr_t allocateSpaceSize,
+                          uintptr_t survivorSpaceSize,
+                          bool updateMemoryPools)
+{}
 
 /**
  * Slide the boundary between the two semi spaces to create sufficient free space to operate in both the
@@ -133,9 +135,8 @@ MM_PhysicalSubArena::tilt(MM_EnvironmentBase *env, uintptr_t allocateSpaceSize, 
  * @note For non-semispace PSA's, do nothing (it means nothing to call this on it)
  */
 void
-MM_PhysicalSubArena::tilt(MM_EnvironmentBase *env, uintptr_t survivorSpaceSizeRequested)
-{
-}
+MM_PhysicalSubArena::tilt(MM_EnvironmentBase* env, uintptr_t survivorSpaceSizeRequested)
+{}
 
 /**
  * Get the size of heap available for contraction.
@@ -144,8 +145,9 @@ MM_PhysicalSubArena::tilt(MM_EnvironmentBase *env, uintptr_t survivorSpaceSizeRe
  * @return The amount of heap available for contraction factoring in the size of the allocate (if applicable)
  */
 uintptr_t
-MM_PhysicalSubArena::getAvailableContractionSize(MM_EnvironmentBase *env, MM_MemorySubSpace *memorySubSpace, MM_AllocateDescription *allocDescription)
+MM_PhysicalSubArena::getAvailableContractionSize(MM_EnvironmentBase* env,
+                                                 MM_MemorySubSpace* memorySubSpace,
+                                                 MM_AllocateDescription* allocDescription)
 {
 	return 0;
 }
-

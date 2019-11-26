@@ -24,12 +24,12 @@
  * @file
  * @ingroup GC_Structs
  */
- 
+
 #if !defined(OBJECTITERATORSTATE_HPP_)
 #define OBJECTITERATORSTATE_HPP_
 
-#include "omrcfg.h"
 #include "objectdescription.h"
+#include "omrcfg.h"
 
 /**
  * Defines the class for storing ObjectIterator state. It is necessary to use this common
@@ -41,17 +41,18 @@ class GC_ObjectIteratorState
 private:
 protected:
 public:
-	omrobjectptr_t _objectPtr;				/**< pointer to the array object being scanned */
-	union {
-		uintptr_t _index;					/**< index into arraylet */
-		fomrobject_t *_scanPtr;			/**< scan pointer into non-arraylet reference slot */
+	omrobjectptr_t _objectPtr; /**< pointer to the array object being scanned */
+	union
+	{
+		uintptr_t _index; /**< index into arraylet */
+		fomrobject_t* _scanPtr; /**< scan pointer into non-arraylet reference slot */
 	};
 	bool _contiguous; /**< whether or not the array being iterated is contiguous */
 
-	fomrobject_t *_endPtr;				/**< points past last reference slot */
-	uintptr_t *_descriptionPtr;				/**< pointer to next description word */
-	uintptr_t _description;					/**< current description word shifted to next slot */
-	uintptr_t _descriptionIndex;			/**< iteration for next description slot */
+	fomrobject_t* _endPtr; /**< points past last reference slot */
+	uintptr_t* _descriptionPtr; /**< pointer to next description word */
+	uintptr_t _description; /**< current description word shifted to next slot */
+	uintptr_t _descriptionIndex; /**< iteration for next description slot */
 
 	/* Member Functions */
 private:

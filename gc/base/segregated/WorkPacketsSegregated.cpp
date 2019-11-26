@@ -20,12 +20,10 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
-#include "omr.h"
+#include "WorkPacketsSegregated.hpp"
 
 #include "OverflowSegregated.hpp"
-
-#include "WorkPacketsSegregated.hpp"
+#include "omr.h"
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
 
@@ -34,14 +32,15 @@
  * @param mode type of packets (used for getting the right overflow handler)
  * @return pointer to the new object
  */
-MM_WorkPacketsSegregated *
-MM_WorkPacketsSegregated::newInstance(MM_EnvironmentBase *env)
+MM_WorkPacketsSegregated*
+MM_WorkPacketsSegregated::newInstance(MM_EnvironmentBase* env)
 {
-	MM_WorkPacketsSegregated *workPackets;
+	MM_WorkPacketsSegregated* workPackets;
 
-	workPackets = (MM_WorkPacketsSegregated *)env->getForge()->allocate(sizeof(MM_WorkPacketsSegregated), OMR::GC::AllocationCategory::WORK_PACKETS, OMR_GET_CALLSITE());
+	workPackets = (MM_WorkPacketsSegregated*)env->getForge()->allocate(
+	        sizeof(MM_WorkPacketsSegregated), OMR::GC::AllocationCategory::WORK_PACKETS, OMR_GET_CALLSITE());
 	if (NULL != workPackets) {
-		new(workPackets) MM_WorkPacketsSegregated(env);
+		new (workPackets) MM_WorkPacketsSegregated(env);
 		if (!workPackets->initialize(env)) {
 			workPackets->kill(env);
 			workPackets = NULL;
@@ -51,8 +50,8 @@ MM_WorkPacketsSegregated::newInstance(MM_EnvironmentBase *env)
 	return workPackets;
 }
 
-MM_WorkPacketOverflow *
-MM_WorkPacketsSegregated::createOverflowHandler(MM_EnvironmentBase *env, MM_WorkPackets *workPackets)
+MM_WorkPacketOverflow*
+MM_WorkPacketsSegregated::createOverflowHandler(MM_EnvironmentBase* env, MM_WorkPackets* workPackets)
 {
 	return MM_OverflowSegregated::newInstance(env, this);
 }

@@ -19,24 +19,26 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "omrcfg.h"
-
 #include "HeapRegionStateTable.hpp"
 
-#include "omrcomp.h"
 #include "Forge.hpp"
-
+#include "omrcfg.h"
+#include "omrcomp.h"
 #include <cstring>
 
-namespace OMR {
-namespace GC {
-
-HeapRegionStateTable *HeapRegionStateTable::newInstance(Forge *forge, uintptr_t heapBase, uintptr_t regionShift, uintptr_t regionCount)
+namespace OMR
 {
-	HeapRegionStateTable* table = ::new(forge, AllocationCategory::FIXED, OMR_GET_CALLSITE(), std::nothrow) HeapRegionStateTable();
-	if(NULL != table) {
+namespace GC
+{
+
+HeapRegionStateTable*
+HeapRegionStateTable::newInstance(Forge* forge, uintptr_t heapBase, uintptr_t regionShift, uintptr_t regionCount)
+{
+	HeapRegionStateTable* table = ::new (forge, AllocationCategory::FIXED, OMR_GET_CALLSITE(), std::nothrow)
+	        HeapRegionStateTable();
+	if (NULL != table) {
 		bool success = table->initialize(forge, heapBase, regionShift, regionCount);
-		if (! success) {
+		if (!success) {
 			table->kill(forge);
 			table = NULL;
 		}
@@ -45,13 +47,13 @@ HeapRegionStateTable *HeapRegionStateTable::newInstance(Forge *forge, uintptr_t 
 }
 
 bool
-HeapRegionStateTable::initialize(Forge *forge, uintptr_t heapBase, uintptr_t regionShift, uintptr_t regionCount)
+HeapRegionStateTable::initialize(Forge* forge, uintptr_t heapBase, uintptr_t regionShift, uintptr_t regionCount)
 {
 	_heapBase = heapBase;
-	_regionShift= regionShift;
+	_regionShift = regionShift;
 
 	/* 1 byte per region */
-	_table = (uint8_t *) forge->allocate(regionCount, AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	_table = (uint8_t*)forge->allocate(regionCount, AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (NULL == _table) {
 		return false;
 	}
@@ -62,14 +64,14 @@ HeapRegionStateTable::initialize(Forge *forge, uintptr_t heapBase, uintptr_t reg
 }
 
 void
-HeapRegionStateTable::kill(Forge *forge)
+HeapRegionStateTable::kill(Forge* forge)
 {
 	tearDown(forge);
 	forge->free(this);
 }
 
 void
-HeapRegionStateTable::tearDown(Forge *forge)
+HeapRegionStateTable::tearDown(Forge* forge)
 {
 	if (_table != NULL) {
 		forge->free(_table);

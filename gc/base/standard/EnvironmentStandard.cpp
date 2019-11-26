@@ -22,34 +22,34 @@
 
 #define J9_EXTERNAL_TO_VM
 
-#include "omrcfg.h"
-
 #include "EnvironmentStandard.hpp"
+
 #include "GCExtensionsBase.hpp"
+#include "omrcfg.h"
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 #include "Scavenger.hpp"
 #endif
 
-MM_EnvironmentStandard *
-MM_EnvironmentStandard::newInstance(MM_GCExtensionsBase *extensions, OMR_VMThread *omrVMThread)
+MM_EnvironmentStandard*
+MM_EnvironmentStandard::newInstance(MM_GCExtensionsBase* extensions, OMR_VMThread* omrVMThread)
 {
-	void *envPtr;
-	MM_EnvironmentStandard *env = NULL;
-	
-	envPtr = (void *)pool_newElement(extensions->environments);
+	void* envPtr;
+	MM_EnvironmentStandard* env = NULL;
+
+	envPtr = (void*)pool_newElement(extensions->environments);
 	if (envPtr) {
-		env = new(envPtr) MM_EnvironmentStandard(omrVMThread);
+		env = new (envPtr) MM_EnvironmentStandard(omrVMThread);
 		if (!env->initialize(extensions)) {
 			env->kill();
-			env = NULL;	
+			env = NULL;
 		}
-	}	
+	}
 
 	return env;
 }
 
 bool
-MM_EnvironmentStandard::initialize(MM_GCExtensionsBase *extensions)
+MM_EnvironmentStandard::initialize(MM_GCExtensionsBase* extensions)
 {
 #if defined(OMR_GC_MODRON_SCAVENGER)
 	_scavengerRememberedSet.count = 0;
@@ -70,7 +70,7 @@ MM_EnvironmentStandard::initialize(MM_GCExtensionsBase *extensions)
 }
 
 void
-MM_EnvironmentStandard::tearDown(MM_GCExtensionsBase *extensions)
+MM_EnvironmentStandard::tearDown(MM_GCExtensionsBase* extensions)
 {
 	/* If we are in a middle of a concurrent GC, we may want to flush GC caches (if thread happens to do GC work) */
 	flushGCCaches();

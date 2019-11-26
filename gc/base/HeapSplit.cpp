@@ -22,8 +22,6 @@
 
 #include "HeapSplit.hpp"
 
-#include "omrport.h"
-
 #include "EnvironmentBase.hpp"
 #include "Forge.hpp"
 #include "GCExtensionsBase.hpp"
@@ -33,6 +31,7 @@
 #include "ModronAssertions.h"
 #include "PhysicalArena.hpp"
 #include "PhysicalArenaVirtualMemory.hpp"
+#include "omrport.h"
 
 #if defined(OMR_GC_MODRON_SCAVENGER)
 
@@ -47,13 +46,18 @@ class MM_MemorySubSpace;
  * @note The actual heap size might be smaller than the requested size, in order to satisfy
  * alignment requirements. Use getMaximumSize() to get the actual allocation size.
  */
-MM_HeapSplit *
-MM_HeapSplit::newInstance(MM_EnvironmentBase *env, uintptr_t heapAlignment, uintptr_t lowExtentSize, uintptr_t highExtentSize, MM_HeapRegionManager *regionManager)
+MM_HeapSplit*
+MM_HeapSplit::newInstance(MM_EnvironmentBase* env,
+                          uintptr_t heapAlignment,
+                          uintptr_t lowExtentSize,
+                          uintptr_t highExtentSize,
+                          MM_HeapRegionManager* regionManager)
 {
-	MM_HeapSplit *heap = (MM_HeapSplit *)env->getForge()->allocate(sizeof(MM_HeapSplit), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
-	
+	MM_HeapSplit* heap = (MM_HeapSplit*)env->getForge()->allocate(
+	        sizeof(MM_HeapSplit), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+
 	if (NULL != heap) {
-		new(heap) MM_HeapSplit(env, lowExtentSize, highExtentSize, regionManager);
+		new (heap) MM_HeapSplit(env, lowExtentSize, highExtentSize, regionManager);
 		if (!heap->initialize(env, heapAlignment, lowExtentSize, highExtentSize, regionManager)) {
 			heap->kill(env);
 			heap = NULL;
@@ -62,14 +66,17 @@ MM_HeapSplit::newInstance(MM_EnvironmentBase *env, uintptr_t heapAlignment, uint
 	return heap;
 }
 
-
 bool
-MM_HeapSplit::initialize(MM_EnvironmentBase *env, uintptr_t heapAlignment, uintptr_t lowExtentSize, uintptr_t highExtentSize, MM_HeapRegionManager *regionManager)
+MM_HeapSplit::initialize(MM_EnvironmentBase* env,
+                         uintptr_t heapAlignment,
+                         uintptr_t lowExtentSize,
+                         uintptr_t highExtentSize,
+                         MM_HeapRegionManager* regionManager)
 {
 	bool success = MM_Heap::initialize(env);
-	
+
 	if (success) {
-		MM_GCExtensionsBase *extensions = env->getExtensions();
+		MM_GCExtensionsBase* extensions = env->getExtensions();
 
 		/* only the high extent can require overflow rounding (this will fail in ways which aren't helpful for debugging on the low extent)
 		 * so ensure that we only set that extension flag when initializing the high extent (of course, only do this if it was already set)
@@ -94,16 +101,20 @@ MM_HeapSplit::initialize(MM_EnvironmentBase *env, uintptr_t heapAlignment, uintp
 		extensions->splitHeapSection = MM_GCExtensionsBase::HEAP_INITIALIZATION_SPLIT_HEAP_UNKNOWN;
 
 		/* successful initialization of split heaps is defined as success in initializing both heap extents and them being in the right order */
-		success = (NULL != _lowExtent) && (NULL != _highExtent) && (_lowExtent->getHeapBase() < _highExtent->getHeapBase());
+		success = (NULL != _lowExtent) && (NULL != _highExtent)
+		        && (_lowExtent->getHeapBase() < _highExtent->getHeapBase());
 
 		if (!success) {
 			/* we failed again just decide what kind of verbose message to use (don't forget to pass these through NLS) */
 			if (NULL == _lowExtent) {
-				extensions->heapInitializationFailureReason = MM_GCExtensionsBase::HEAP_INITIALIZATION_FAILURE_REASON_CAN_NOT_INSTANTIATE_SPLIT_HEAP_OLD_SPACE;
+				extensions->heapInitializationFailureReason = MM_GCExtensionsBase::
+				        HEAP_INITIALIZATION_FAILURE_REASON_CAN_NOT_INSTANTIATE_SPLIT_HEAP_OLD_SPACE;
 			} else if (NULL == _highExtent) {
-				extensions->heapInitializationFailureReason = MM_GCExtensionsBase::HEAP_INITIALIZATION_FAILURE_REASON_CAN_NOT_INSTANTIATE_SPLIT_HEAP_NEW_SPACE;
+				extensions->heapInitializationFailureReason = MM_GCExtensionsBase::
+				        HEAP_INITIALIZATION_FAILURE_REASON_CAN_NOT_INSTANTIATE_SPLIT_HEAP_NEW_SPACE;
 			} else {
-				extensions->heapInitializationFailureReason = MM_GCExtensionsBase::HEAP_INITIALIZATION_FAILURE_REASON_CAN_NOT_INSTANTIATE_SPLIT_HEAP_GEOMETRY;
+				extensions->heapInitializationFailureReason = MM_GCExtensionsBase::
+				        HEAP_INITIALIZATION_FAILURE_REASON_CAN_NOT_INSTANTIATE_SPLIT_HEAP_GEOMETRY;
 			}
 
 			/* release memory back if necessary */
@@ -121,11 +132,10 @@ MM_HeapSplit::initialize(MM_EnvironmentBase *env, uintptr_t heapAlignment, uintp
 	return success;
 }
 
-
 void
-MM_HeapSplit::tearDown(MM_EnvironmentBase *env)
+MM_HeapSplit::tearDown(MM_EnvironmentBase* env)
 {
-	MM_HeapRegionManager *manager = getHeapRegionManager();
+	MM_HeapRegionManager* manager = getHeapRegionManager();
 	if (NULL != manager) {
 		manager->destroyRegionTable(env);
 	}
@@ -141,31 +151,28 @@ MM_HeapSplit::tearDown(MM_EnvironmentBase *env)
 	MM_Heap::tearDown(env);
 }
 
-
 void
-MM_HeapSplit::kill(MM_EnvironmentBase *env)
+MM_HeapSplit::kill(MM_EnvironmentBase* env)
 {
 	tearDown(env);
 	env->getForge()->free(this);
 }
 
-
 /**
  * Answer the lowest possible address for the heap that will ever be possible.
  * @return Lowest address possible for the heap.
  */
-void *
+void*
 MM_HeapSplit::getHeapBase()
 {
 	return _lowExtent->getHeapBase();
 }
 
-
 /**
  * Answer the highest possible address for the heap that will ever be possible.
  * @return Highest address possible for the heap.
  */
-void *
+void*
 MM_HeapSplit::getHeapTop()
 {
 	return _highExtent->getHeapTop();
@@ -174,18 +181,26 @@ MM_HeapSplit::getHeapTop()
 uintptr_t
 MM_HeapSplit::getPageSize()
 {
-	return (_lowExtent->getPageSize() < _highExtent->getPageSize()) ? _lowExtent->getPageSize() : _highExtent->getPageSize();
+	return (_lowExtent->getPageSize() < _highExtent->getPageSize()) ? _lowExtent->getPageSize()
+	                                                                : _highExtent->getPageSize();
 }
 
 uintptr_t
 MM_HeapSplit::getPageFlags()
 {
-	return (_lowExtent->getPageSize() < _highExtent->getPageSize()) ? _lowExtent->getPageFlags() : _highExtent->getPageFlags();
+	return (_lowExtent->getPageSize() < _highExtent->getPageSize()) ? _lowExtent->getPageFlags()
+	                                                                : _highExtent->getPageFlags();
 }
 
 #if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
 void*
-MM_HeapSplit::doubleMapArraylet(MM_EnvironmentBase *env, void* arrayletLeaves[], UDATA arrayletLeafCount, UDATA arrayletLeafSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize)
+MM_HeapSplit::doubleMapArraylet(MM_EnvironmentBase* env,
+                                void* arrayletLeaves[],
+                                UDATA arrayletLeafCount,
+                                UDATA arrayletLeafSize,
+                                UDATA byteAmount,
+                                struct J9PortVmemIdentifier* newIdentifier,
+                                UDATA pageSize)
 {
 	/* Unreachable */
 	return NULL;
@@ -205,17 +220,15 @@ MM_HeapSplit::getMaximumPhysicalRange()
 	return (uintptr_t)getHeapTop() - (uintptr_t)getHeapBase();
 }
 
-
 /**
  * Remove a physical arena from the receiver.
  */
 void
-MM_HeapSplit::detachArena(MM_EnvironmentBase *env, MM_PhysicalArena *arena)
+MM_HeapSplit::detachArena(MM_EnvironmentBase* env, MM_PhysicalArena* arena)
 {
 	/* Set the arena state to no longer being attached */
 	arena->setAttached(false);
 }
-
 
 /**
  * Attach a physical arena of the specified size to the receiver.
@@ -226,18 +239,17 @@ MM_HeapSplit::detachArena(MM_EnvironmentBase *env, MM_PhysicalArena *arena)
  * @note The memory reseved is not commited.
  */
 bool
-MM_HeapSplit::attachArena(MM_EnvironmentBase *env, MM_PhysicalArena *arena, uintptr_t size)
+MM_HeapSplit::attachArena(MM_EnvironmentBase* env, MM_PhysicalArena* arena, uintptr_t size)
 {
 	/* Since we don't presently support any notion of dynamic resizing of the heap, use this assertion to make sure that we don't accidentally try to use that functionality */
 	Assert_MM_true(size == (_lowExtent->getMaximumPhysicalRange() + _highExtent->getMaximumPhysicalRange()));
-	((MM_PhysicalArenaVirtualMemory *)arena)->setLowAddress(getHeapBase());
+	((MM_PhysicalArenaVirtualMemory*)arena)->setLowAddress(getHeapBase());
 	/* due to overflow rounding, we may ask for less than the entire physical region so ensure that we account for the gap when calculating the high address. */
 	uintptr_t gapSize = ((uintptr_t)_highExtent->getHeapBase() - (uintptr_t)_lowExtent->getHeapTop());
-	((MM_PhysicalArenaVirtualMemory *)arena)->setHighAddress((uint8_t *)getHeapBase() + gapSize + size);
+	((MM_PhysicalArenaVirtualMemory*)arena)->setHighAddress((uint8_t*)getHeapBase() + gapSize + size);
 	arena->setAttached(true);
 	return true;
 }
-
 
 /**
  * Commit the address range into physical memory.
@@ -245,10 +257,10 @@ MM_HeapSplit::attachArena(MM_EnvironmentBase *env, MM_PhysicalArena *arena, uint
  * @note This is a bit of a strange function to have as public API.  Should it be removed?
  */
 bool
-MM_HeapSplit::commitMemory(void *address, uintptr_t size)
+MM_HeapSplit::commitMemory(void* address, uintptr_t size)
 {
 	bool success = false;
-	
+
 	/* these need to be a perfect fit so assert that the committed size is equal to the total size of the region at that address (in both cases) */
 	if (_lowExtent->getHeapBase() == address) {
 		Assert_MM_true(_lowExtent->getMaximumPhysicalRange() == size);
@@ -263,17 +275,16 @@ MM_HeapSplit::commitMemory(void *address, uintptr_t size)
 	return success;
 }
 
-
 /**
  * Decommit the address range from physical memory.
  * @return true if successful, false otherwise.
  * @note This is a bit of a strange function to have as public API.  Should it be removed?
  */
 bool
-MM_HeapSplit::decommitMemory(void *address, uintptr_t size, void *lowValidAddress, void *highValidAddress)
+MM_HeapSplit::decommitMemory(void* address, uintptr_t size, void* lowValidAddress, void* highValidAddress)
 {
 	bool success = false;
-	
+
 	if (_lowExtent->getHeapBase() == address) {
 		Assert_MM_true(_lowExtent->getMaximumPhysicalRange() == size);
 		success = _lowExtent->decommitMemory(address, size, lowValidAddress, highValidAddress);
@@ -287,27 +298,25 @@ MM_HeapSplit::decommitMemory(void *address, uintptr_t size, void *lowValidAddres
 	return success;
 }
 
-
 /**
  * Calculate the offset of an address from the base of the heap.
  * @param The address which require the offset for.
  * @return The offset from heap base.
  */
 uintptr_t
-MM_HeapSplit::calculateOffsetFromHeapBase(void *address)
+MM_HeapSplit::calculateOffsetFromHeapBase(void* address)
 {
 	return _lowExtent->calculateOffsetFromHeapBase(address);
 }
 
 bool
-MM_HeapSplit::objectIsInGap(void *object)
+MM_HeapSplit::objectIsInGap(void* object)
 {
 	return (object > _lowExtent->getHeapTop()) && (object < _highExtent->getHeapBase());
 }
 
-
 bool
-MM_HeapSplit::initializeHeapRegionManager(MM_EnvironmentBase *env, MM_HeapRegionManager *manager)
+MM_HeapSplit::initializeHeapRegionManager(MM_EnvironmentBase* env, MM_HeapRegionManager* manager)
 {
 	if (!manager->setContiguousHeapRange(env, _lowExtent->getHeapBase(), _highExtent->getHeapTop())) {
 		return false;

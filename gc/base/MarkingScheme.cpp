@@ -20,10 +20,9 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "omrcfg.h"
-#include "omr.h"
 #include "GlobalCollector.hpp"
-
+#include "omr.h"
+#include "omrcfg.h"
 #include <string.h>
 
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
@@ -51,14 +50,15 @@
  * Allocate and initialize a new instance of the receiver.
  * @return a new instance of the receiver, or NULL on failure.
  */
-MM_MarkingScheme *
-MM_MarkingScheme::newInstance(MM_EnvironmentBase *env)
+MM_MarkingScheme*
+MM_MarkingScheme::newInstance(MM_EnvironmentBase* env)
 {
-	MM_MarkingScheme *markingScheme;
+	MM_MarkingScheme* markingScheme;
 
-	markingScheme = (MM_MarkingScheme *)env->getForge()->allocate(sizeof(MM_MarkingScheme), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	markingScheme = (MM_MarkingScheme*)env->getForge()->allocate(
+	        sizeof(MM_MarkingScheme), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (markingScheme) {
-		new(markingScheme) MM_MarkingScheme(env);
+		new (markingScheme) MM_MarkingScheme(env);
 		if (!markingScheme->initialize(env)) {
 			markingScheme->kill(env);
 			markingScheme = NULL;
@@ -72,7 +72,7 @@ MM_MarkingScheme::newInstance(MM_EnvironmentBase *env)
  * Free the receiver and all associated resources.
  */
 void
-MM_MarkingScheme::kill(MM_EnvironmentBase *env)
+MM_MarkingScheme::kill(MM_EnvironmentBase* env)
 {
 	tearDown(env);
 	env->getForge()->free(this);
@@ -83,7 +83,7 @@ MM_MarkingScheme::kill(MM_EnvironmentBase *env)
  * @return true if initialization is successful, false otherwise.
  */
 bool
-MM_MarkingScheme::initialize(MM_EnvironmentBase *env)
+MM_MarkingScheme::initialize(MM_EnvironmentBase* env)
 {
 	_markMap = MM_MarkMap::newInstance(env, _extensions->heap->getMaximumPhysicalRange());
 
@@ -106,14 +106,14 @@ error_no_memory:
  * Free the receivers internal structures and resources.
  */
 void
-MM_MarkingScheme::tearDown(MM_EnvironmentBase *env)
+MM_MarkingScheme::tearDown(MM_EnvironmentBase* env)
 {
 	if (_markMap) {
 		_markMap->kill(env);
 		_markMap = NULL;
 	}
 
-	if(_workPackets) {
+	if (_workPackets) {
 		_workPackets->kill(env);
 		_workPackets = NULL;
 	}
@@ -128,7 +128,11 @@ MM_MarkingScheme::tearDown(MM_EnvironmentBase *env)
  * @return true if operation completes with success
  */
 bool
-MM_MarkingScheme::heapAddRange(MM_EnvironmentBase *env, MM_MemorySubSpace *subspace, uintptr_t size, void *lowAddress, void *highAddress)
+MM_MarkingScheme::heapAddRange(MM_EnvironmentBase* env,
+                               MM_MemorySubSpace* subspace,
+                               uintptr_t size,
+                               void* lowAddress,
+                               void* highAddress)
 {
 	bool result = true;
 	/* Record the range in which valid objects appear */
@@ -152,7 +156,13 @@ MM_MarkingScheme::heapAddRange(MM_EnvironmentBase *env, MM_MemorySubSpace *subsp
  * @return true if operation completes with success
  */
 bool
-MM_MarkingScheme::heapRemoveRange(MM_EnvironmentBase *env, MM_MemorySubSpace *subspace, uintptr_t size, void *lowAddress, void *highAddress, void *lowValidAddress, void *highValidAddress)
+MM_MarkingScheme::heapRemoveRange(MM_EnvironmentBase* env,
+                                  MM_MemorySubSpace* subspace,
+                                  uintptr_t size,
+                                  void* lowAddress,
+                                  void* highAddress,
+                                  void* lowValidAddress,
+                                  void* highValidAddress)
 {
 	bool result = true;
 	/* Record the range in which valid objects appear */
@@ -170,7 +180,7 @@ MM_MarkingScheme::heapRemoveRange(MM_EnvironmentBase *env, MM_MemorySubSpace *su
  ****************************************
  */
 void
-MM_MarkingScheme::masterSetupForGC(MM_EnvironmentBase *env)
+MM_MarkingScheme::masterSetupForGC(MM_EnvironmentBase* env)
 {
 	/* Initialize the marking stack */
 	_workPackets->reset(env);
@@ -186,7 +196,7 @@ MM_MarkingScheme::masterSetupForGC(MM_EnvironmentBase *env)
  * @parm[in] env the current environment
  */
 void
-MM_MarkingScheme::masterSetupForWalk(MM_EnvironmentBase *env)
+MM_MarkingScheme::masterSetupForWalk(MM_EnvironmentBase* env)
 {
 	/* Initialize the marking stack */
 	_workPackets->reset(env);
@@ -195,13 +205,13 @@ MM_MarkingScheme::masterSetupForWalk(MM_EnvironmentBase *env)
 }
 
 void
-MM_MarkingScheme::masterCleanupAfterGC(MM_EnvironmentBase *env)
+MM_MarkingScheme::masterCleanupAfterGC(MM_EnvironmentBase* env)
 {
 	_delegate.masterCleanupAfterGC(env);
 }
 
 void
-MM_MarkingScheme::workerSetupForGC(MM_EnvironmentBase *env)
+MM_MarkingScheme::workerSetupForGC(MM_EnvironmentBase* env)
 {
 	env->_markStats.clear();
 	env->_workPacketStats.clear();
@@ -210,7 +220,7 @@ MM_MarkingScheme::workerSetupForGC(MM_EnvironmentBase *env)
 }
 
 void
-MM_MarkingScheme::workerCleanupAfterGC(MM_EnvironmentBase *env)
+MM_MarkingScheme::workerCleanupAfterGC(MM_EnvironmentBase* env)
 {
 	_delegate.workerCleanupAfterGC(env);
 #if defined(OMR_GC_MODRON_STANDARD) || defined(OMR_GC_REALTIME)
@@ -218,7 +228,6 @@ MM_MarkingScheme::workerCleanupAfterGC(MM_EnvironmentBase *env)
 	_extensions->globalGCStats.workPacketStats.merge(&env->_workPacketStats);
 #endif /* defined(OMR_GC_MODRON_STANDARD) || defined(OMR_GC_REALTIME) */
 }
-
 
 /****************************************
  * Marking Helpers
@@ -235,13 +244,13 @@ MM_MarkingScheme::isMarkedOutline(omrobjectptr_t objectPtr)
 }
 
 bool
-MM_MarkingScheme::markObjectNoCheck(MM_EnvironmentBase *env, omrobjectptr_t objectPtr, bool leafType)
+MM_MarkingScheme::markObjectNoCheck(MM_EnvironmentBase* env, omrobjectptr_t objectPtr, bool leafType)
 {
 	return inlineMarkObjectNoCheck(env, objectPtr, leafType);
 }
 
 bool
-MM_MarkingScheme::markObject(MM_EnvironmentBase *env, omrobjectptr_t objectPtr, bool leafType)
+MM_MarkingScheme::markObject(MM_EnvironmentBase* env, omrobjectptr_t objectPtr, bool leafType)
 {
 	return inlineMarkObject(env, objectPtr, leafType);
 }
@@ -260,9 +269,9 @@ MM_MarkingScheme::markObject(MM_EnvironmentBase *env, omrobjectptr_t objectPtr, 
  * 				 range
  * *************************************************************************/
 uintptr_t
-MM_MarkingScheme::numMarkBitsInRange(MM_EnvironmentBase *env, void *heapBase, void *heapTop)
+MM_MarkingScheme::numMarkBitsInRange(MM_EnvironmentBase* env, void* heapBase, void* heapTop)
 {
-	return  _markMap->numberBitsInRange(env, heapBase, heapTop);
+	return _markMap->numberBitsInRange(env, heapBase, heapTop);
 }
 
 /**************************************************************************
@@ -278,7 +287,7 @@ MM_MarkingScheme::numMarkBitsInRange(MM_EnvironmentBase *env, void *heapBase, vo
  * return      - the amount of memory actually cleard
  * *************************************************************************/
 uintptr_t
-MM_MarkingScheme::setMarkBitsInRange(MM_EnvironmentBase *env, void *heapBase, void *heapTop, bool clear)
+MM_MarkingScheme::setMarkBitsInRange(MM_EnvironmentBase* env, void* heapBase, void* heapTop, bool clear)
 {
 	return _markMap->setBitsInRange(env, heapBase, heapTop, clear);
 }
@@ -291,14 +300,15 @@ MM_MarkingScheme::setMarkBitsInRange(MM_EnvironmentBase *env, void *heapBase, vo
  * Private internal. Called exclusively from completeScan();
  */
 uintptr_t
-MM_MarkingScheme::scanObject(MM_EnvironmentBase *env, omrobjectptr_t objectPtr)
+MM_MarkingScheme::scanObject(MM_EnvironmentBase* env, omrobjectptr_t objectPtr)
 {
 	uintptr_t sizeToDo = UDATA_MAX;
 	GC_ObjectScannerState objectScannerState;
-	GC_ObjectScanner *objectScanner = _delegate.getObjectScanner(env, objectPtr, &objectScannerState, SCAN_REASON_PACKET, &sizeToDo);
+	GC_ObjectScanner* objectScanner =
+	        _delegate.getObjectScanner(env, objectPtr, &objectScannerState, SCAN_REASON_PACKET, &sizeToDo);
 	if (NULL != objectScanner) {
 		bool isLeafSlot = false;
-		GC_SlotObject *slotObject;
+		GC_SlotObject* slotObject;
 #if defined(OMR_GC_LEAF_BITS)
 		while (NULL != (slotObject = objectScanner->getNextSlot(&isLeafSlot))) {
 #else /* OMR_GC_LEAF_BITS */
@@ -312,18 +322,17 @@ MM_MarkingScheme::scanObject(MM_EnvironmentBase *env, omrobjectptr_t objectPtr)
 	return sizeToDo;
 }
 
-
 /**
  * Scan until there are no more work packets to be processed.
  * @note This is a joining scan: a thread will not exit this method until
  * all threads have entered and all work packets are empty.
  */
 void
-MM_MarkingScheme::completeScan(MM_EnvironmentBase *env)
+MM_MarkingScheme::completeScan(MM_EnvironmentBase* env)
 {
 	do {
 		omrobjectptr_t objectPtr = NULL;
-		while (NULL != (objectPtr = (omrobjectptr_t )env->_workStack.pop(env))) {
+		while (NULL != (objectPtr = (omrobjectptr_t)env->_workStack.pop(env))) {
 			env->_markStats._bytesScanned += scanObject(env, objectPtr);
 			env->_markStats._objectsScanned += 1;
 		}
@@ -341,11 +350,11 @@ MM_MarkingScheme::completeScan(MM_EnvironmentBase *env)
  *  @param[in] initMarkMap instruct should mark map be initialized too
  */
 void
-MM_MarkingScheme::markLiveObjectsInit(MM_EnvironmentBase *env, bool initMarkMap)
+MM_MarkingScheme::markLiveObjectsInit(MM_EnvironmentBase* env, bool initMarkMap)
 {
 	workerSetupForGC(env);
 
-	if(initMarkMap) {
+	if (initMarkMap) {
 		_markMap->initializeMarkMap(env);
 		env->_currentTask->synchronizeGCThreads(env, UNIQUE_ID);
 	}
@@ -358,19 +367,19 @@ MM_MarkingScheme::markLiveObjectsInit(MM_EnvironmentBase *env, bool initMarkMap)
  *  @param[in] shouldScan instruct should scanning also be active while roots are marked   
  */
 void
-MM_MarkingScheme::markLiveObjectsRoots(MM_EnvironmentBase *env)
+MM_MarkingScheme::markLiveObjectsRoots(MM_EnvironmentBase* env)
 {
 	_delegate.scanRoots(env);
 }
 
 void
-MM_MarkingScheme::markLiveObjectsScan(MM_EnvironmentBase *env)
+MM_MarkingScheme::markLiveObjectsScan(MM_EnvironmentBase* env)
 {
 	completeMarking(env);
 }
 
 void
-MM_MarkingScheme::completeMarking(MM_EnvironmentBase *env)
+MM_MarkingScheme::completeMarking(MM_EnvironmentBase* env)
 {
 	completeScan(env);
 
@@ -382,19 +391,19 @@ MM_MarkingScheme::completeMarking(MM_EnvironmentBase *env)
  *  @param[in] env - passed Environment 
  */
 void
-MM_MarkingScheme::markLiveObjectsComplete(MM_EnvironmentBase *env)
+MM_MarkingScheme::markLiveObjectsComplete(MM_EnvironmentBase* env)
 {
 	_delegate.workerCompleteGC(env);
 }
 
-MM_WorkPackets *
-MM_MarkingScheme::createWorkPackets(MM_EnvironmentBase *env)
+MM_WorkPackets*
+MM_MarkingScheme::createWorkPackets(MM_EnvironmentBase* env)
 {
-	MM_WorkPackets *workPackets = NULL;
+	MM_WorkPackets* workPackets = NULL;
 	if (_extensions->isConcurrentMarkEnabled()) {
 		if (_extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled()) {
 #if defined(OMR_GC_REALTIME)
-			MM_WorkPacketsSATB *workPacketsSATB = MM_WorkPacketsSATB::newInstance(env);
+			MM_WorkPacketsSATB* workPacketsSATB = MM_WorkPacketsSATB::newInstance(env);
 			_extensions->sATBBarrierRememberedSet = MM_RememberedSetSATB::newInstance(env, workPacketsSATB);
 			workPackets = workPacketsSATB;
 #endif /* defined(OMR_GC_REALTIME) */
@@ -411,7 +420,8 @@ MM_MarkingScheme::createWorkPackets(MM_EnvironmentBase *env)
 }
 
 void
-MM_MarkingScheme::fixupForwardedSlotOutline(GC_SlotObject *slotObject) {
+MM_MarkingScheme::fixupForwardedSlotOutline(GC_SlotObject* slotObject)
+{
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	if (_extensions->getGlobalCollector()->isStwCollectionInProgress()) {
 		MM_ForwardedHeader forwardHeader(slotObject->readReferenceFromSlot());

@@ -20,7 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 /**
  * @file
  * @ingroup GC_Base_Core
@@ -41,16 +40,22 @@ class MM_NUMAManager
 public:
 protected:
 private:
-	bool _physicalNumaEnabled;	/**< True if physical (as opposed to logical-only as is the case of simulated NUMA) NUMA support is enabled in the receiver */
-	bool _shouldSetCPUAffinity;  /**< False if we should not be modifying the affinity of mutator threads */
-	uintptr_t _simulatedNodeCount;	/**< The number of nodes being logically simulated by an fvtest option (changes affinity leaders, not physical nodes, and only honoured if NUMA is disabled) */
-	uintptr_t _maximumNodeNumber;	/**< The highest j9NodeNumber of all elements in the _activeNodes array or 0 if NUMA isn't available or being simulated */
-	J9MemoryNodeDetail *_activeNodes;	/**< The array of node details for the active (having either usable memory or CPUs) NUMA nodes on the system (might be simulated) */
-	uintptr_t _activeNodeCount;	/**< The number of nodes available (used for both affinity leaders and physical nodes - only non-zero if NUMA is enabled or being simulated) */
-	J9MemoryNodeDetail *_affinityLeaders;	/**< A subset of the nodes in _activeNodes which represent the nodes which are offering both physical memory and CPU */
-	uintptr_t _affinityLeaderCount;	/**< The number of elements in the _affinityLeaders array */
-	J9MemoryNodeDetail *_freeProcessorPoolNodes;	/**< A subset of the nodes in _activeNodes which represent the nodes which are offering ONLY CPU */
-	uintptr_t _freeProcessorPoolNodeCount;	/**< The number of elements in the _freeProcessorPoolNodes array */
+	bool _physicalNumaEnabled; /**< True if physical (as opposed to logical-only as is the case of simulated NUMA) NUMA support is enabled in the receiver */
+	bool _shouldSetCPUAffinity; /**< False if we should not be modifying the affinity of mutator threads */
+	uintptr_t
+	        _simulatedNodeCount; /**< The number of nodes being logically simulated by an fvtest option (changes affinity leaders, not physical nodes, and only honoured if NUMA is disabled) */
+	uintptr_t
+	        _maximumNodeNumber; /**< The highest j9NodeNumber of all elements in the _activeNodes array or 0 if NUMA isn't available or being simulated */
+	J9MemoryNodeDetail*
+	        _activeNodes; /**< The array of node details for the active (having either usable memory or CPUs) NUMA nodes on the system (might be simulated) */
+	uintptr_t
+	        _activeNodeCount; /**< The number of nodes available (used for both affinity leaders and physical nodes - only non-zero if NUMA is enabled or being simulated) */
+	J9MemoryNodeDetail*
+	        _affinityLeaders; /**< A subset of the nodes in _activeNodes which represent the nodes which are offering both physical memory and CPU */
+	uintptr_t _affinityLeaderCount; /**< The number of elements in the _affinityLeaders array */
+	J9MemoryNodeDetail*
+	        _freeProcessorPoolNodes; /**< A subset of the nodes in _activeNodes which represent the nodes which are offering ONLY CPU */
+	uintptr_t _freeProcessorPoolNodeCount; /**< The number of elements in the _freeProcessorPoolNodes array */
 
 	/* Member Functions */
 private:
@@ -65,7 +70,6 @@ public:
 
 	bool isPhysicalNUMAEnabled() const { return _physicalNumaEnabled; }
 
-
 	void shouldSetCPUAffinity(bool setAffinity) { _shouldSetCPUAffinity = setAffinity; }
 
 	bool shouldSetCPUAffinity() { return _shouldSetCPUAffinity; }
@@ -75,7 +79,8 @@ public:
 	 * @param numaNodeID starting from 1
 	 * If NUMA is explicitly disabled, or not available return 0.
 	 */
-	uintptr_t getJ9NodeNumber(uintptr_t numaNodeID) {
+	uintptr_t getJ9NodeNumber(uintptr_t numaNodeID)
+	{
 		uintptr_t j9NodeNumber = 0;
 
 		if (_physicalNumaEnabled && (numaNodeID > 0)) {
@@ -90,7 +95,7 @@ public:
 	 * @param env[in] The master GC thread
 	 * @return True if the recache failed, false otherwise (typically implies an allocation failure in a caching data structure)
 	 */
-	bool recacheNUMASupport(MM_EnvironmentBase *env);
+	bool recacheNUMASupport(MM_EnvironmentBase* env);
 
 	/**
 	 * Sets the number of affinity leaders to simulate for testing logical decision-making on non-NUMA hardware.
@@ -118,7 +123,7 @@ public:
 	 * @param arrayLength[out] The size of the array returned, in elements
 	 * @return A pointer to the internal array describing affinity leader nodes (invalidated by any call to recacheNUMASupport)
 	 */
-	J9MemoryNodeDetail const *getAffinityLeaders(uintptr_t *arrayLength) const;
+	J9MemoryNodeDetail const* getAffinityLeaders(uintptr_t* arrayLength) const;
 
 	/**
 	 * Returns access to the array of nodes which the receiver has determined make up the "free processor pool" (that is, nodes with CPU resources
@@ -128,7 +133,7 @@ public:
 	 * @param arrayLength[out] The size of the array returned, in elements
 	 * @return A pointer to the internal array describing free processor pool's nodes (invalidated by any call to recacheNUMASupport)
 	 */
-	J9MemoryNodeDetail const *getFreeProcessorPool(uintptr_t *arrayLength) const;
+	J9MemoryNodeDetail const* getFreeProcessorPool(uintptr_t* arrayLength) const;
 
 	/**
 	 * Returns the sum of Computational Resources Available across all nodes
@@ -145,24 +150,23 @@ public:
 	 * Called to disable NUMA support and clear any caches allocated to track NUMA support
 	 * @param env[in] The master GC thread
 	 */
-	void shutdownNUMASupport(MM_EnvironmentBase *env);
+	void shutdownNUMASupport(MM_EnvironmentBase* env);
 
 	/**
 	 * Create NUMAManager object.
 	 */
 	MM_NUMAManager()
-		: _physicalNumaEnabled(false)
-		, _shouldSetCPUAffinity(true)
-		, _simulatedNodeCount(0)
-		, _maximumNodeNumber(0)
-		, _activeNodes(NULL)
-		, _activeNodeCount(0)
-		, _affinityLeaders(NULL)
-		, _affinityLeaderCount(0)
-		, _freeProcessorPoolNodes(NULL)
-		, _freeProcessorPoolNodeCount(0)
+	        : _physicalNumaEnabled(false),
+	          _shouldSetCPUAffinity(true),
+	          _simulatedNodeCount(0),
+	          _maximumNodeNumber(0),
+	          _activeNodes(NULL),
+	          _activeNodeCount(0),
+	          _affinityLeaders(NULL),
+	          _affinityLeaderCount(0),
+	          _freeProcessorPoolNodes(NULL),
+	          _freeProcessorPoolNodeCount(0)
 	{}
 };
 
 #endif /* NUMAMANAGER_HPP_ */
-

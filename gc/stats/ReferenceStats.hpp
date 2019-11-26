@@ -23,7 +23,8 @@
 #if !defined(REFERENCESTATS_HPP_)
 #define REFERENCESTATS_HPP_
 
-class MM_ReferenceStats {
+class MM_ReferenceStats
+{
 public:
 	uintptr_t _candidates; /**< reference objects that are candidates to be transitioned and possibly enqueued */
 	uintptr_t _cleared; /**< reference objects that are being transitioned into the cleared state */
@@ -52,10 +53,7 @@ public:
 		_enqueued += stats->_enqueued;
 	}
 
-	MM_ReferenceStats()
-		: _candidates(0)
-		, _cleared(0)
-		, _enqueued(0) {};
+	MM_ReferenceStats() : _candidates(0), _cleared(0), _enqueued(0){};
 };
 
 #endif /* REFERENCESTATS_HPP_ */

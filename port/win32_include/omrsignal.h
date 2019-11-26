@@ -26,17 +26,15 @@
 #include "omrcomp.h"
 
 typedef struct OMRWin32SignalInfo {
-	uint32_t type;
-	void *handlerAddress;
-	void *handlerAddress2;
-	struct _EXCEPTION_RECORD *ExceptionRecord;
-	struct _CONTEXT *ContextRecord;
-	void *moduleBaseAddress;
-	uint32_t offsetInDLL;
-	uint32_t threadId;
-	char moduleName[_MAX_PATH];
+    uint32_t type;
+    void* handlerAddress;
+    void* handlerAddress2;
+    struct _EXCEPTION_RECORD* ExceptionRecord;
+    struct _CONTEXT* ContextRecord;
+    void* moduleBaseAddress;
+    uint32_t offsetInDLL;
+    uint32_t threadId;
+    char moduleName[_MAX_PATH];
 } OMRWin32SignalInfo;
 
-#endif     /* omrsignal_h */
-
-
+#endif /* omrsignal_h */

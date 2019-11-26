@@ -23,9 +23,8 @@
 #if !defined(ALLOCATIONINTERFACEGENERiC_HPP_)
 #define ALLOCATIONINTERFACEGENERiC_HPP_
 
-#include "omr.h"
-
 #include "ObjectAllocationInterface.hpp"
+#include "omr.h"
 
 class MM_AllocationInterfaceGeneric : public MM_ObjectAllocationInterface
 {
@@ -35,33 +34,43 @@ private:
 	bool _cachedAllocationsEnabled; /**< Are cached allocations enabled? */
 
 public:
-	static MM_AllocationInterfaceGeneric* newInstance(MM_EnvironmentBase *env);
-	virtual void kill(MM_EnvironmentBase *env);
+	static MM_AllocationInterfaceGeneric* newInstance(MM_EnvironmentBase* env);
+	virtual void kill(MM_EnvironmentBase* env);
 
-	virtual void *allocateObject(MM_EnvironmentBase *env, MM_AllocateDescription *allocateDescription, MM_MemorySpace *memorySpace, bool shouldCollectOnFailure);
-	virtual void *allocateArray(MM_EnvironmentBase *env, MM_AllocateDescription *allocateDescription, MM_MemorySpace *memorySpace, bool shouldCollectOnFailure);
-	virtual void *allocateArrayletSpine(MM_EnvironmentBase *env, MM_AllocateDescription *allocateDescription, MM_MemorySpace *memorySpace, bool shouldCollectOnFailure);
-	virtual void *allocateArrayletLeaf(MM_EnvironmentBase *env, MM_AllocateDescription *allocateDescription, MM_MemorySpace *memorySpace, bool shouldCollectOnFailure);
+	virtual void* allocateObject(MM_EnvironmentBase* env,
+	                             MM_AllocateDescription* allocateDescription,
+	                             MM_MemorySpace* memorySpace,
+	                             bool shouldCollectOnFailure);
+	virtual void* allocateArray(MM_EnvironmentBase* env,
+	                            MM_AllocateDescription* allocateDescription,
+	                            MM_MemorySpace* memorySpace,
+	                            bool shouldCollectOnFailure);
+	virtual void* allocateArrayletSpine(MM_EnvironmentBase* env,
+	                                    MM_AllocateDescription* allocateDescription,
+	                                    MM_MemorySpace* memorySpace,
+	                                    bool shouldCollectOnFailure);
+	virtual void* allocateArrayletLeaf(MM_EnvironmentBase* env,
+	                                   MM_AllocateDescription* allocateDescription,
+	                                   MM_MemorySpace* memorySpace,
+	                                   bool shouldCollectOnFailure);
 
-	virtual void flushCache(MM_EnvironmentBase *env);
+	virtual void flushCache(MM_EnvironmentBase* env);
 
 	virtual void enableCachedAllocations(MM_EnvironmentBase* env);
 	virtual void disableCachedAllocations(MM_EnvironmentBase* env);
 	virtual bool cachedAllocationsEnabled(MM_EnvironmentBase* env) { return _cachedAllocationsEnabled; }
 
 protected:
-	virtual bool initialize(MM_EnvironmentBase *env);
-	virtual void tearDown(MM_EnvironmentBase *env);
+	virtual bool initialize(MM_EnvironmentBase* env);
+	virtual void tearDown(MM_EnvironmentBase* env);
 
-	MM_AllocationInterfaceGeneric(MM_EnvironmentBase *env) :
-		MM_ObjectAllocationInterface(env),
-		_cachedAllocationsEnabled(false)
+	MM_AllocationInterfaceGeneric(MM_EnvironmentBase* env)
+	        : MM_ObjectAllocationInterface(env), _cachedAllocationsEnabled(false)
 	{
 		_typeId = __FUNCTION__;
 	};
 
 private:
-
 };
 
 #endif /*ALLOCATIONINTERFACEGENERiC_HPP_*/

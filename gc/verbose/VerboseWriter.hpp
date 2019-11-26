@@ -23,14 +23,13 @@
 #if !defined(VERBOSEWRITER_HPP_)
 #define VERBOSEWRITER_HPP_
 
-#include "omrcfg.h"
-#include "modronbase.h"
-
 #include "Base.hpp"
-
 #include "EnvironmentBase.hpp"
+#include "modronbase.h"
+#include "omrcfg.h"
 
-typedef enum {
+typedef enum
+{
 	VERBOSE_WRITER_STANDARD_STREAM = 1,
 	VERBOSE_WRITER_FILE_LOGGING_SYNCHRONOUS = 2,
 	VERBOSE_WRITER_FILE_LOGGING_BUFFERED = 3,
@@ -50,7 +49,7 @@ class MM_VerboseWriter : public MM_Base
 public:
 protected:
 private:
-	MM_VerboseWriter *_nextWriter;
+	MM_VerboseWriter* _nextWriter;
 
 	char* _header;
 	char* _footer;
@@ -62,18 +61,19 @@ private:
 	 * Function members
 	 */
 public:
-	virtual void kill(MM_EnvironmentBase *env);
+	virtual void kill(MM_EnvironmentBase* env);
 
 	MM_VerboseWriter* getNextWriter();
 	void setNextWriter(MM_VerboseWriter* writer);
 
-	virtual void outputString(MM_EnvironmentBase *env, const char* string) = 0;
+	virtual void outputString(MM_EnvironmentBase* env, const char* string) = 0;
 
-	virtual bool reconfigure(MM_EnvironmentBase *env, const char *filename, uintptr_t fileCount, uintptr_t iterations) = 0;
+	virtual bool
+	reconfigure(MM_EnvironmentBase* env, const char* filename, uintptr_t fileCount, uintptr_t iterations) = 0;
 
-	virtual void endOfCycle(MM_EnvironmentBase *env) = 0;
+	virtual void endOfCycle(MM_EnvironmentBase* env) = 0;
 
-	virtual void closeStream(MM_EnvironmentBase *env) = 0;
+	virtual void closeStream(MM_EnvironmentBase* env) = 0;
 
 	MMINLINE WriterType getType(void) { return _type; }
 
@@ -83,12 +83,13 @@ public:
 protected:
 	MM_VerboseWriter(WriterType type);
 
-	virtual void tearDown(MM_EnvironmentBase *env);
+	virtual void tearDown(MM_EnvironmentBase* env);
 
 	bool initialize(MM_EnvironmentBase* env);
 
-	const char* getHeader(MM_EnvironmentBase *env);
-	const char* getFooter(MM_EnvironmentBase *env);
+	const char* getHeader(MM_EnvironmentBase* env);
+	const char* getFooter(MM_EnvironmentBase* env);
+
 private:
 };
 

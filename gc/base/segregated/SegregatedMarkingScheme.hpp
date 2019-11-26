@@ -23,14 +23,12 @@
 #if !defined(SEGREGATEDMARKINGSCHEME_HPP_)
 #define SEGREGATEDMARKINGSCHEME_HPP_
 
-#include "omrcomp.h"
-#include "objectdescription.h"
-
+#include "BaseVirtual.hpp"
 #include "GCExtensionsBase.hpp"
 #include "HeapRegionDescriptorSegregated.hpp"
 #include "MarkingScheme.hpp"
-
-#include "BaseVirtual.hpp"
+#include "objectdescription.h"
+#include "omrcomp.h"
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
 
@@ -48,25 +46,29 @@ private:
 	 * Function members
 	 */
 public:
-	static MM_SegregatedMarkingScheme *newInstance(MM_EnvironmentBase *env);
-	void kill(MM_EnvironmentBase *env);
-	
-	MMINLINE void
-	preMarkSmallCells(MM_EnvironmentBase* env, MM_HeapRegionDescriptorSegregated *containingRegion, uintptr_t *cellList, uintptr_t preAllocatedBytes)
+	static MM_SegregatedMarkingScheme* newInstance(MM_EnvironmentBase* env);
+	void kill(MM_EnvironmentBase* env);
+
+	MMINLINE void preMarkSmallCells(MM_EnvironmentBase* env,
+	                                MM_HeapRegionDescriptorSegregated* containingRegion,
+	                                uintptr_t* cellList,
+	                                uintptr_t preAllocatedBytes)
 	{
 		if (NULL != cellList) {
 			uintptr_t cellSize = containingRegion->getCellSize();
 
-			uint8_t *objPtrLow = (uint8_t *)cellList;
+			uint8_t* objPtrLow = (uint8_t*)cellList;
 			/* objPtrHigh is the last object (cell) to be premarked.
 			 * => if there is only one object to premark than low will be equal to high
 			 */
-			uint8_t *objPtrHigh = (uint8_t *)cellList + preAllocatedBytes - cellSize;
+			uint8_t* objPtrHigh = (uint8_t*)cellList + preAllocatedBytes - cellSize;
 			uintptr_t slotIndexLow, slotIndexHigh;
 			uintptr_t bitMaskLow, bitMaskHigh;
 
-			_markMap->getSlotIndexAndBlockMask((omrobjectptr_t)objPtrLow, &slotIndexLow, &bitMaskLow, false /* high bit block mask for low slot word */);
-			_markMap->getSlotIndexAndBlockMask((omrobjectptr_t)objPtrHigh, &slotIndexHigh, &bitMaskHigh, true /* low bit block mask for high slot word */);
+			_markMap->getSlotIndexAndBlockMask((omrobjectptr_t)objPtrLow, &slotIndexLow, &bitMaskLow,
+			                                   false /* high bit block mask for low slot word */);
+			_markMap->getSlotIndexAndBlockMask((omrobjectptr_t)objPtrHigh, &slotIndexHigh, &bitMaskHigh,
+			                                   true /* low bit block mask for high slot word */);
 
 			if (slotIndexLow == slotIndexHigh) {
 				_markMap->markBlockAtomic(slotIndexLow, bitMaskLow & bitMaskHigh);
@@ -77,15 +79,13 @@ public:
 			}
 		}
 	}
+
 protected:
 	/**
 	 * Create a MM_RealtimeMarkingScheme object
 	 */
-	MM_SegregatedMarkingScheme(MM_EnvironmentBase *env)
-		: MM_MarkingScheme(env)
-	{
-		_typeId = __FUNCTION__;
-	}
+	MM_SegregatedMarkingScheme(MM_EnvironmentBase* env) : MM_MarkingScheme(env) { _typeId = __FUNCTION__; }
+
 private:
 };
 

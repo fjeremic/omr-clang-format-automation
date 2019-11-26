@@ -32,7 +32,8 @@
 /**
  * Defines data which is common to all types of GC start and end events.
  */
-typedef struct MM_CommonGCData {
+typedef struct MM_CommonGCData
+{
 	uintptr_t nurseryFreeBytes; /**&lt; number of bytes free in the nursery */
 	uintptr_t nurseryTotalBytes; /**&lt; total number of bytes in the nursery */
 	uintptr_t tenureFreeBytes; /**&lt; number of bytes free in the tenure area */
@@ -54,11 +55,13 @@ typedef struct MM_CommonGCData {
  * structs like this to avoid the large amount of duplicated code
  * we currently have)
  */
-typedef struct MM_CommonGCStartData {
+typedef struct MM_CommonGCStartData
+{
 	MM_CommonGCData commonData; /**&lt; common data to GC start and GC end */
 
 	uint64_t exclusiveAccessTime; /**&lt; time taken to get exclusive access (in ticks) */
-	uint64_t meanExclusiveAccessIdleTime; /**&lt; the average time each thread (including the requester) spent idle until the last thread checked in (in ticks) */
+	uint64_t
+	        meanExclusiveAccessIdleTime; /**&lt; the average time each thread (including the requester) spent idle until the last thread checked in (in ticks) */
 	uintptr_t haltedThreads; /**&lt; the number of threads which had to be halted to acquire exclusive access */
 	struct OMR_VMThread* lastResponder; /**&lt; the last thread to respond the the exclusive request */
 	uintptr_t beatenByOtherThread; /**&lt; flag to indicate if another thread beat us to exclusive access */
@@ -75,10 +78,9 @@ typedef struct MM_CommonGCStartData {
  * This generally describes the state of the heap during the last
  * GC cycle.
  */
-typedef struct MM_CommonGCEndData {
+typedef struct MM_CommonGCEndData
+{
 	MM_CommonGCData commonData; /**&lt; common data to GC start and GC end */
 } MM_CommonGCEndData;
-
-
 
 #endif /* MMHOOK_H_ */

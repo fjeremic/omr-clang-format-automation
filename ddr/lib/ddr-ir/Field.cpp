@@ -23,21 +23,17 @@
 #include "ddr/ir/Type.hpp"
 
 Field::Field()
-	: Members()
-	, _fieldType(NULL)
-	, _offset(0)
-	, _modifiers()
-	, _bitField(0)
-	, _isStatic(false)
-{
-}
+    : Members()
+    , _fieldType(NULL)
+    , _offset(0)
+    , _modifiers()
+    , _bitField(0)
+    , _isStatic(false)
+{}
 
-Field::~Field()
-{
-}
+Field::~Field() {}
 
-const string &
-Field::getTypeName() const
+const string& Field::getTypeName() const
 {
-	return _fieldType->_name;
+    return _fieldType->_name;
 }

@@ -28,12 +28,11 @@
 #if !defined(MARKMAP_HPP_)
 #define MARKMAP_HPP_
 
-#include "omrcfg.h"
-#include "omr.h"
-
 #include "HeapMap.hpp"
+#include "omr.h"
+#include "omrcfg.h"
 
-#define J9MODRON_HEAP_SLOTS_PER_MARK_BIT  J9MODRON_HEAP_SLOTS_PER_HEAPMAP_BIT
+#define J9MODRON_HEAP_SLOTS_PER_MARK_BIT J9MODRON_HEAP_SLOTS_PER_HEAPMAP_BIT
 #define J9MODRON_HEAP_SLOTS_PER_MARK_SLOT J9MODRON_HEAP_SLOTS_PER_HEAPMAP_SLOT
 #define J9MODRON_HEAP_BYTES_PER_MARK_BYTE J9MODRON_HEAP_BYTES_PER_HEAPMAP_BYTE
 
@@ -45,21 +44,21 @@ class MM_MarkMap : public MM_HeapMap
 {
 private:
 	bool _isMarkMapValid; /** < Is this mark map valid */
-	
+
 public:
 	MMINLINE bool isMarkMapValid() const { return _isMarkMapValid; }
-	MMINLINE void setMarkMapValid(bool isMarkMapValid) {  _isMarkMapValid = isMarkMapValid; }
+	MMINLINE void setMarkMapValid(bool isMarkMapValid) { _isMarkMapValid = isMarkMapValid; }
 
- 	static MM_MarkMap *newInstance(MM_EnvironmentBase *env, uintptr_t maxHeapSize);
- 	
- 	void initializeMarkMap(MM_EnvironmentBase *env);
+	static MM_MarkMap* newInstance(MM_EnvironmentBase* env, uintptr_t maxHeapSize);
 
-	MMINLINE void *getMarkBits() { return _heapMapBits; };
- 	
+	void initializeMarkMap(MM_EnvironmentBase* env);
+
+	MMINLINE void* getMarkBits() { return _heapMapBits; };
+
 	MMINLINE uintptr_t getHeapMapBaseRegionRounded() { return _heapMapBaseDelta; }
 
 	MMINLINE void
-	getSlotIndexAndBlockMask(omrobjectptr_t objectPtr, uintptr_t *slotIndex, uintptr_t *bitMask, bool lowBlock)
+	getSlotIndexAndBlockMask(omrobjectptr_t objectPtr, uintptr_t* slotIndex, uintptr_t* bitMask, bool lowBlock)
 	{
 		uintptr_t slot = ((uintptr_t)objectPtr) - _heapMapBaseDelta;
 		uintptr_t bitIndex = (slot & _heapMapBitMask) >> _heapMapBitShift;
@@ -71,8 +70,7 @@ public:
 		*slotIndex = slot >> _heapMapIndexShift;
 	}
 
-	MMINLINE void
-	setMarkBlock(uintptr_t slotIndexLow, uintptr_t slotIndexHigh, uintptr_t value)
+	MMINLINE void setMarkBlock(uintptr_t slotIndexLow, uintptr_t slotIndexHigh, uintptr_t value)
 	{
 		uintptr_t slotIndex;
 
@@ -81,23 +79,20 @@ public:
 		}
 	}
 
-	MMINLINE void
-	markBlockAtomic(uintptr_t slotIndex, uintptr_t bitMask)
+	MMINLINE void markBlockAtomic(uintptr_t slotIndex, uintptr_t bitMask)
 	{
-		volatile uintptr_t *slotAddress;
+		volatile uintptr_t* slotAddress;
 		uintptr_t oldValue;
 
 		slotAddress = &(_heapMapBits[slotIndex]);
 
 		do {
 			oldValue = *slotAddress;
-		} while(oldValue != MM_AtomicOperations::lockCompareExchange(slotAddress,
-			oldValue,
-			oldValue | bitMask));
+		} while (oldValue
+		         != MM_AtomicOperations::lockCompareExchange(slotAddress, oldValue, oldValue | bitMask));
 	}
 
-	MMINLINE uintptr_t
-	getFirstCellByMarkSlotIndex(uintptr_t slotIndex)
+	MMINLINE uintptr_t getFirstCellByMarkSlotIndex(uintptr_t slotIndex)
 	{
 		return _heapMapBaseDelta + (slotIndex << _heapMapIndexShift);
 	}
@@ -105,9 +100,8 @@ public:
 	/**
 	 * Create a MarkMap object.
 	 */
-	MM_MarkMap(MM_EnvironmentBase *env, uintptr_t maxHeapSize) :
-		MM_HeapMap(env, maxHeapSize, env->getExtensions()->isSegregatedHeap())
-		, _isMarkMapValid(false)
+	MM_MarkMap(MM_EnvironmentBase* env, uintptr_t maxHeapSize)
+	        : MM_HeapMap(env, maxHeapSize, env->getExtensions()->isSegregatedHeap()), _isMarkMapValid(false)
 	{
 		_typeId = __FUNCTION__;
 	};

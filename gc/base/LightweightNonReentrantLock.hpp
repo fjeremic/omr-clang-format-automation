@@ -23,13 +23,12 @@
 #if !defined(LIGHTWEIGHT_NON_REENTRANT_LOCK_HPP_)
 #define LIGHTWEIGHT_NON_REENTRANT_LOCK_HPP_
 
-#include "omrcfg.h"
+#include "BaseNonVirtual.hpp"
 #include "gcspinlock.h"
+#include "modronbase.h"
+#include "omrcfg.h"
 #include "omrcomp.h"
 #include "omrmutex.h"
-#include "modronbase.h"
-
-#include "BaseNonVirtual.hpp"
 
 #define MAX_LWNR_LOCK_NAME_SIZE 256
 
@@ -50,8 +49,8 @@ class MM_LightweightNonReentrantLock : public MM_BaseNonVirtual
 private:
 	bool _initialized; /**< initialized state */
 	char _nameBuf[MAX_LWNR_LOCK_NAME_SIZE]; /* LWNR lock name */
-	J9ThreadMonitorTracing *_tracing; /**< lock statistics */
-	MM_GCExtensionsBase *_extensions; /**< cache extensions for use in teardown() */
+	J9ThreadMonitorTracing* _tracing; /**< lock statistics */
+	MM_GCExtensionsBase* _extensions; /**< cache extensions for use in teardown() */
 
 #if defined(J9MODRON_USE_CUSTOM_SPINLOCKS)
 	J9GCSpinlock _spinlock;
@@ -60,16 +59,12 @@ private:
 #endif /* J9MODRON_USE_CUSTOM_SPINLOCKS */
 
 protected:
-
 public:
-
 private:
-
 protected:
-
 public:
-	bool initialize(MM_EnvironmentBase *env, ModronLnrlOptions *options, const char * name);
-	void tearDown() ;
+	bool initialize(MM_EnvironmentBase* env, ModronLnrlOptions* options, const char* name);
+	void tearDown();
 
 	/**
 	 * Acquire the lock.
@@ -80,7 +75,7 @@ public:
 	 * @return TRUE on success
 	 * @note Creates a load/store barrier.
 	 */
-	MMINLINE bool acquire() 
+	MMINLINE bool acquire()
 	{
 #if defined(J9MODRON_USE_CUSTOM_SPINLOCKS)
 		omrgc_spinlock_acquire(&_spinlock, _tracing);
@@ -98,7 +93,7 @@ public:
 	 * @return TRUE on success
 	 * @note Creates a store barrier.
 	 */
-	MMINLINE bool release() 
+	MMINLINE bool release()
 	{
 #if defined(J9MODRON_USE_CUSTOM_SPINLOCKS)
 		omrgc_spinlock_release(&_spinlock);
@@ -108,11 +103,7 @@ public:
 		return true;
 	};
 
-	MM_LightweightNonReentrantLock() : 
-		MM_BaseNonVirtual(),
-		_initialized(false),
-		_tracing(NULL),
-		_extensions(NULL)
+	MM_LightweightNonReentrantLock() : MM_BaseNonVirtual(), _initialized(false), _tracing(NULL), _extensions(NULL)
 	{
 		_typeId = __FUNCTION__;
 	};

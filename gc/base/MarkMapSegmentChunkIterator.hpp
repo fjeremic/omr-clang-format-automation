@@ -28,11 +28,10 @@
 #if !defined(MARKMAPSEGMENTCHUNKITERATOR_HPP_)
 #define MARKMAPSEGMENTCHUNKITERATOR_HPP_
 
-#include "omr.h"
-#include "omrcfg.h"
-
 #include "GCExtensionsBase.hpp"
 #include "HeapMapIterator.hpp"
+#include "omr.h"
+#include "omrcfg.h"
 
 class MM_GCExtensionsBase;
 class MM_HeapMap;
@@ -46,22 +45,24 @@ class MM_HeapMap;
 class GC_MarkMapSegmentChunkIterator
 {
 private:
-	MM_GCExtensionsBase * const _extensions; /**< the GC extensions for the JVM */
+	MM_GCExtensionsBase* const _extensions; /**< the GC extensions for the JVM */
 	UDATA _chunkSize;
 	UDATA _segmentBytesRemaining;
 	MM_HeapMapIterator _markedObjectIterator;
-	UDATA *_nextChunkBase;
+	UDATA* _nextChunkBase;
 
 public:
-	void *operator new(size_t size, void *memoryPtr) { return memoryPtr; };
+	void* operator new(size_t size, void* memoryPtr) { return memoryPtr; };
 
-	GC_MarkMapSegmentChunkIterator(MM_GCExtensionsBase *extensions, void *lowAddress, void *highAddress, UDATA chunkSize) :
-		_extensions(extensions),
-		_chunkSize(chunkSize),
-		_segmentBytesRemaining((UDATA)highAddress - (UDATA)lowAddress),
-		_markedObjectIterator(extensions),
-		_nextChunkBase((UDATA *)lowAddress)
-	{};
+	GC_MarkMapSegmentChunkIterator(MM_GCExtensionsBase* extensions,
+	                               void* lowAddress,
+	                               void* highAddress,
+	                               UDATA chunkSize)
+	        : _extensions(extensions),
+	          _chunkSize(chunkSize),
+	          _segmentBytesRemaining((UDATA)highAddress - (UDATA)lowAddress),
+	          _markedObjectIterator(extensions),
+	          _nextChunkBase((UDATA*)lowAddress){};
 
 	/**
 	 * @note Any chunk returned from this method must have either an object or a free header beginning at
@@ -73,8 +74,7 @@ public:
 	 * @return true if there was a chunk available
 	 * @return false if there were no more chunks
 	 */
-	bool nextChunk(MM_HeapMap *markMap, UDATA **base, UDATA **top);
+	bool nextChunk(MM_HeapMap* markMap, UDATA** base, UDATA** top);
 };
 
 #endif /* MARKMAPSEGMENTCHUNKITERATOR_HPP_ */
-

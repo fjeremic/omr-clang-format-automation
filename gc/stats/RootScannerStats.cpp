@@ -25,10 +25,10 @@
  * @ingroup GC_Stats
  */
 
+#include "RootScannerStats.hpp"
+
 #include "omrcfg.h"
 #include "omrcomp.h"
-
-#include "RootScannerStats.hpp"
 
 void
 MM_RootScannerStats::clear()
@@ -42,7 +42,7 @@ MM_RootScannerStats::clear()
 }
 
 void
-MM_RootScannerStats::merge(MM_RootScannerStats *statsToMerge)
+MM_RootScannerStats::merge(MM_RootScannerStats* statsToMerge)
 {
 	for (uintptr_t i = 0; i < RootScannerEntity_Count; i++) {
 		_entityScanTime[i] += statsToMerge->_entityScanTime[i];

@@ -20,17 +20,16 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "omrcfg.h"
+#include "LightweightNonReentrantLock.hpp"
+
+#include "EnvironmentBase.hpp"
+#include "GCExtensionsBase.hpp"
+#include "modronbase.h"
 #include "omr.h"
+#include "omrcfg.h"
 #include "omrcomp.h"
 #include "omrmutex.h"
-#include "modronbase.h"
-
-#include "LightweightNonReentrantLock.hpp"
 #include "pool_api.h"
-
-#include "GCExtensionsBase.hpp"
-#include "EnvironmentBase.hpp"
 
 /**
  * Initialize a new lock object.
@@ -43,7 +42,7 @@
  * @note Creates a store barrier.
  */
 bool
-MM_LightweightNonReentrantLock::initialize(MM_EnvironmentBase *env, ModronLnrlOptions *options, const char * name)
+MM_LightweightNonReentrantLock::initialize(MM_EnvironmentBase* env, ModronLnrlOptions* options, const char* name)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
@@ -56,7 +55,7 @@ MM_LightweightNonReentrantLock::initialize(MM_EnvironmentBase *env, ModronLnrlOp
 		J9Pool* tracingPool = _extensions->_lightweightNonReentrantLockPool;
 		if (NULL != tracingPool) {
 			omrthread_monitor_enter(_extensions->_lightweightNonReentrantLockPoolMutex);
-			_tracing = (J9ThreadMonitorTracing *)pool_newElement(tracingPool);
+			_tracing = (J9ThreadMonitorTracing*)pool_newElement(tracingPool);
 			omrthread_monitor_exit(_extensions->_lightweightNonReentrantLockPoolMutex);
 
 			if (NULL == _tracing) {
@@ -79,7 +78,7 @@ MM_LightweightNonReentrantLock::initialize(MM_EnvironmentBase *env, ModronLnrlOp
 	}
 
 #if defined(OMR_ENV_DATA64)
-	if(0 != (((uintptr_t)this) % sizeof(uintptr_t))) {
+	if (0 != (((uintptr_t)this) % sizeof(uintptr_t))) {
 		omrtty_printf("GC FATAL: LWNRL misaligned.\n");
 		abort();
 	}
@@ -112,14 +111,14 @@ error_no_memory:
 void
 MM_LightweightNonReentrantLock::tearDown()
 {
-	if(NULL != _extensions) {
-		if(NULL != _tracing) {
+	if (NULL != _extensions) {
+		if (NULL != _tracing) {
 			if (NULL != _tracing->monitor_name) {
 				_tracing->monitor_name = NULL;
 			}
 
 			J9Pool* tracingPool = _extensions->_lightweightNonReentrantLockPool;
-			if(NULL != tracingPool) {
+			if (NULL != tracingPool) {
 				omrthread_monitor_enter(_extensions->_lightweightNonReentrantLockPoolMutex);
 				pool_removeElement(tracingPool, _tracing);
 				omrthread_monitor_exit(_extensions->_lightweightNonReentrantLockPoolMutex);
@@ -137,4 +136,3 @@ MM_LightweightNonReentrantLock::tearDown()
 		_initialized = false;
 	}
 }
-

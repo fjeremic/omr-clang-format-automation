@@ -20,14 +20,12 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 #if !defined(SWEEPSCHEMESECTIONING_HPP_)
 #define SWEEPSCHEMESECTIONING_HPP_
 
 #include "BaseVirtual.hpp"
-
-#include "GCExtensionsBase.hpp"
 #include "EnvironmentBase.hpp"
+#include "GCExtensionsBase.hpp"
 
 class MM_ParallelSweepChunk;
 class MM_ParallelSweepChunkArray;
@@ -37,7 +35,8 @@ class MM_ParallelSweepChunkArray;
  * 
  * @ingroup GC_Base_Core
  */
-class MM_SweepHeapSectioning : public MM_BaseVirtual {
+class MM_SweepHeapSectioning : public MM_BaseVirtual
+{
 private:
 protected:
 	MM_ParallelSweepChunkArray* _head; /**< head pointer to a list of Chunk arrays */
@@ -67,11 +66,7 @@ public:
 	uintptr_t getBackingStoreSize();
 
 	MM_SweepHeapSectioning(MM_EnvironmentBase* env)
-		: _head(NULL)
-		, _totalUsed(0)
-		, _totalSize(0)
-		, _baseArray(NULL)
-		, _extensions(env->getExtensions())
+	        : _head(NULL), _totalUsed(0), _totalSize(0), _baseArray(NULL), _extensions(env->getExtensions())
 	{
 		_typeId = __FUNCTION__;
 	}
@@ -82,23 +77,18 @@ public:
  * 
  * @ingroup GC_Base
  */
-class MM_SweepHeapSectioningIterator {
+class MM_SweepHeapSectioningIterator
+{
 private:
 	MM_ParallelSweepChunkArray* _currentArray; /**< Current chunk array being traversed */
 	uint32_t _currentIndex; /**< Current index of chunk within the current array being traversed */
 
 public:
 	MM_SweepHeapSectioningIterator(const MM_SweepHeapSectioning* sweepHeapSectioning)
-		: _currentArray(sweepHeapSectioning->_head)
-		, _currentIndex(0)
-	{
-	}
+	        : _currentArray(sweepHeapSectioning->_head), _currentIndex(0)
+	{}
 
-	MM_SweepHeapSectioningIterator()
-		: _currentArray(NULL)
-		, _currentIndex(0)
-	{
-	}
+	MM_SweepHeapSectioningIterator() : _currentArray(NULL), _currentIndex(0) {}
 
 	/**
 	 * Reinitialize the heap iterator with the given heap sectioning.

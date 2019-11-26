@@ -25,12 +25,11 @@
 
 #include "omrcfg.h"
 //#include "omrcomp.h"
-#include "modronopt.h"
-
+#include "EnvironmentBase.hpp"
 #include "HeapLinkedFreeHeader.hpp"
 #include "LightweightNonReentrantLock.hpp"
 #include "MemoryPool.hpp"
-#include "EnvironmentBase.hpp"
+#include "modronopt.h"
 
 #if defined(OMR_VALGRIND_MEMCHECK)
 #include "MemcheckWrapper.hpp"
@@ -45,7 +44,7 @@ class MM_SweepPoolState;
  */
 class MM_MemoryPoolAddressOrderedListBase : public MM_MemoryPool
 {
-/*
+	/*
  * Data members
  */
 private:
@@ -53,34 +52,36 @@ protected:
 	/* Basic free list support */
 	MM_LightweightNonReentrantLock _resetLock;
 
-	MM_HeapLinkedFreeHeader ** _referenceHeapFreeList;
-	MM_SweepPoolState* _sweepPoolState;	/**< GC Sweep Pool State */
-	MM_SweepPoolManagerAddressOrderedListBase* _sweepPoolManager;		/**< pointer to SweepPoolManager class */
-	MM_HeapLinkedFreeHeader *_lastFreeEntry;							/**< address of the last free entry in the pool; valid after compact; NOT maintained during allocation */ 
+	MM_HeapLinkedFreeHeader** _referenceHeapFreeList;
+	MM_SweepPoolState* _sweepPoolState; /**< GC Sweep Pool State */
+	MM_SweepPoolManagerAddressOrderedListBase* _sweepPoolManager; /**< pointer to SweepPoolManager class */
+	MM_HeapLinkedFreeHeader*
+	        _lastFreeEntry; /**< address of the last free entry in the pool; valid after compact; NOT maintained during allocation */
 
 public:
-	
-/*
+	/*
  * Function members
- */	
+ */
 private:
-
 protected:
-/**
+	/**
  * Update memory pool statistical data
  * 
  * @param freeBytes free bytes added
  * @param freeEntryCount free memory elements added
  * @param largestFreeEntry largest free memory element size 
  */
- 	void updateMemoryPoolStatistics(MM_EnvironmentBase *env, uintptr_t freeBytes, uintptr_t freeEntryCount, uintptr_t largestFreeEntry)
+	void updateMemoryPoolStatistics(MM_EnvironmentBase* env,
+	                                uintptr_t freeBytes,
+	                                uintptr_t freeEntryCount,
+	                                uintptr_t largestFreeEntry)
 	{
 		setFreeMemorySize(freeBytes);
 		setFreeEntryCount(freeEntryCount);
 		setLargestFreeEntry(largestFreeEntry);
 	}
 
-	MMINLINE bool internalRecycleHeapChunk(void *addrBase, void *addrTop, MM_HeapLinkedFreeHeader *next)
+	MMINLINE bool internalRecycleHeapChunk(void* addrBase, void* addrTop, MM_HeapLinkedFreeHeader* next)
 	{
 		/* Determine if the heap chunk belongs in the free list */
 		uintptr_t freeEntrySize = ((uintptr_t)addrTop) - ((uintptr_t)addrBase);
@@ -88,10 +89,11 @@ protected:
 		bool const compressed = compressObjectReferences();
 
 #if defined(OMR_VALGRIND_MEMCHECK)
-		valgrindMakeMemUndefined((uintptr_t) addrBase, freeEntrySize);
+		valgrindMakeMemUndefined((uintptr_t)addrBase, freeEntrySize);
 #endif /* defined(OMR_VALGRIND_MEMCHECK) */
 
-		MM_HeapLinkedFreeHeader *freeEntry = MM_HeapLinkedFreeHeader::fillWithHoles(addrBase, freeEntrySize, compressed);
+		MM_HeapLinkedFreeHeader* freeEntry =
+		        MM_HeapLinkedFreeHeader::fillWithHoles(addrBase, freeEntrySize, compressed);
 		if ((NULL != freeEntry) && (freeEntrySize >= _minimumFreeEntrySize)) {
 			Assert_MM_true(freeEntry == addrBase);
 			Assert_MM_true((NULL == next) || (freeEntry < next));
@@ -101,17 +103,17 @@ protected:
 			return false;
 		}
 	}
-	
+
 	/**
 	 * set the address of the last free entry in the pool
 	 */
-	virtual void setLastFreeEntry(void * addr) { _lastFreeEntry = (MM_HeapLinkedFreeHeader *)addr; }
-	
+	virtual void setLastFreeEntry(void* addr) { _lastFreeEntry = (MM_HeapLinkedFreeHeader*)addr; }
+
 	/**
 	 * get the address of the last free entry in the pool
 	 */
-	virtual MM_HeapLinkedFreeHeader *getLastFreeEntry() { return _lastFreeEntry; }
-	
+	virtual MM_HeapLinkedFreeHeader* getLastFreeEntry() { return _lastFreeEntry; }
+
 #if defined(OMR_GC_LARGE_OBJECT_AREA)
 	/**
 	 * Append a free entry to an address ordered list
@@ -125,12 +127,18 @@ protected:
 	 * @return TRUE if free entry appended; FALSE otherwise
 	 */
 
-	MMINLINE bool appendToList(MM_EnvironmentBase* env, void* addrBase, void* addrTop, uintptr_t minimumSize, MM_HeapLinkedFreeHeader*& freeListHead, MM_HeapLinkedFreeHeader*& freeListTail)
+	MMINLINE bool appendToList(MM_EnvironmentBase* env,
+	                           void* addrBase,
+	                           void* addrTop,
+	                           uintptr_t minimumSize,
+	                           MM_HeapLinkedFreeHeader*& freeListHead,
+	                           MM_HeapLinkedFreeHeader*& freeListTail)
 	{
 		bool const compressed = compressObjectReferences();
 		uintptr_t freeEntrySize = ((uint8_t*)addrTop - (uint8_t*)addrBase);
 
-		MM_HeapLinkedFreeHeader* freeEntry = MM_HeapLinkedFreeHeader::fillWithHoles(addrBase, freeEntrySize, compressed);
+		MM_HeapLinkedFreeHeader* freeEntry =
+		        MM_HeapLinkedFreeHeader::fillWithHoles(addrBase, freeEntrySize, compressed);
 		if ((NULL != freeEntry) && (freeEntrySize >= minimumSize)) {
 			/* If the list is not empty, add the entry to the tail. */
 			if (NULL != freeListHead) {
@@ -148,12 +156,18 @@ protected:
 		}
 	}
 
-	MMINLINE bool insertToList(MM_EnvironmentBase* env, void* addrBase, void* addrTop, uintptr_t minimumSize, MM_HeapLinkedFreeHeader*& freeListHead, MM_HeapLinkedFreeHeader*& freeListTail)
+	MMINLINE bool insertToList(MM_EnvironmentBase* env,
+	                           void* addrBase,
+	                           void* addrTop,
+	                           uintptr_t minimumSize,
+	                           MM_HeapLinkedFreeHeader*& freeListHead,
+	                           MM_HeapLinkedFreeHeader*& freeListTail)
 	{
 		bool const compressed = compressObjectReferences();
 		uintptr_t freeEntrySize = ((uint8_t*)addrTop - (uint8_t*)addrBase);
 
-		MM_HeapLinkedFreeHeader* freeEntry = MM_HeapLinkedFreeHeader::fillWithHoles(addrBase, freeEntrySize, compressed);
+		MM_HeapLinkedFreeHeader* freeEntry =
+		        MM_HeapLinkedFreeHeader::fillWithHoles(addrBase, freeEntrySize, compressed);
 		if ((NULL != freeEntry) && (freeEntrySize >= minimumSize)) {
 			/* If the list is not empty, add the entry to the tail. */
 			if (NULL != freeListHead) {
@@ -177,16 +191,14 @@ protected:
 			/* Abandon entry */
 			return false;
 		}
-
 	}
 
 #endif /* OMR_GC_LARGE_OBJECT_AREA */
 
 	bool connectInnerMemoryToPool(MM_EnvironmentBase* env, void* address, uintptr_t size, void* previousFreeEntry);
-	void connectOuterMemoryToPool(MM_EnvironmentBase *env, void *address, uintptr_t size, void *nextFreeEntry);
-	void connectFinalMemoryToPool(MM_EnvironmentBase *env, void *address, uintptr_t size);
-	void abandonMemoryInPool(MM_EnvironmentBase *env, void *address, uintptr_t size);
-
+	void connectOuterMemoryToPool(MM_EnvironmentBase* env, void* address, uintptr_t size, void* nextFreeEntry);
+	void connectFinalMemoryToPool(MM_EnvironmentBase* env, void* address, uintptr_t size);
+	void abandonMemoryInPool(MM_EnvironmentBase* env, void* address, uintptr_t size);
 
 	/**
 	 * Check, can free memory element be connected to memory pool
@@ -199,37 +211,38 @@ protected:
 	{
 		return size >= getMinimumFreeEntrySize();
 	}
-	
+
 public:
 	virtual void acquireResetLock(MM_EnvironmentBase* env);
 	virtual void releaseResetLock(MM_EnvironmentBase* env);
 
-	virtual bool createFreeEntry(MM_EnvironmentBase* env, void* addrBase, void* addrTop,
-								 MM_HeapLinkedFreeHeader* previousFreeEntry, MM_HeapLinkedFreeHeader* nextFreeEntry);
+	virtual bool createFreeEntry(MM_EnvironmentBase* env,
+	                             void* addrBase,
+	                             void* addrTop,
+	                             MM_HeapLinkedFreeHeader* previousFreeEntry,
+	                             MM_HeapLinkedFreeHeader* nextFreeEntry);
 
 	virtual bool createFreeEntry(MM_EnvironmentBase* env, void* addrBase, void* addrTop);
 
-
-
-	MMINLINE bool abandonHeapChunk(void *addrBase, void *addrTop)
+	MMINLINE bool abandonHeapChunk(void* addrBase, void* addrTop)
 	{
 		Assert_MM_true(addrTop >= addrBase);
 		return internalRecycleHeapChunk(addrBase, addrTop, NULL);
 	}
-	
-	MMINLINE MM_SweepPoolState * getSweepPoolState()
+
+	MMINLINE MM_SweepPoolState* getSweepPoolState()
 	{
 		Assert_MM_true(NULL != _sweepPoolState);
 		return _sweepPoolState;
 	}
-	
+
 	/**
 	 * Get access to Sweep Pool Manager
 	 * @return pointer to Sweep Pool Manager associated with this pool
 	 * or NULL for superpools
 	 */
-	MMINLINE MM_SweepPoolManager *getSweepPoolManager()
-//	MMINLINE MM_SweepPoolManagerAddressOrderedListBase *getSweepPoolManager()
+	MMINLINE MM_SweepPoolManager* getSweepPoolManager()
+	//	MMINLINE MM_SweepPoolManagerAddressOrderedListBase *getSweepPoolManager()
 	{
 		/*
 		 * This function must be called for leaf pools only
@@ -239,35 +252,33 @@ public:
 		Assert_MM_true(NULL != _sweepPoolManager);
 		return (MM_SweepPoolManager*)_sweepPoolManager;
 	}
-	
-	virtual void printCurrentFreeList(MM_EnvironmentBase* env, const char* area)=0;
 
-	virtual void recalculateMemoryPoolStatistics(MM_EnvironmentBase* env)=0;
+	virtual void printCurrentFreeList(MM_EnvironmentBase* env, const char* area) = 0;
+
+	virtual void recalculateMemoryPoolStatistics(MM_EnvironmentBase* env) = 0;
 #if defined(OMR_GC_IDLE_HEAP_MANAGER)
 	uintptr_t releaseFreeEntryMemoryPages(MM_EnvironmentBase* env, MM_HeapLinkedFreeHeader* freeEntry);
 #endif
 	/**
 	 * Create a MemoryPoolAddressOrderedList object.
 	 */
-	MM_MemoryPoolAddressOrderedListBase(MM_EnvironmentBase *env, uintptr_t minimumFreeEntrySize) :
-		MM_MemoryPool(env, minimumFreeEntrySize)
-		,_referenceHeapFreeList(NULL)
-		,_sweepPoolState(NULL)
-		,_sweepPoolManager(NULL)
-		,_lastFreeEntry(NULL)
-	{
-//		_typeId = __FUNCTION__;
-	};
+	MM_MemoryPoolAddressOrderedListBase(MM_EnvironmentBase* env, uintptr_t minimumFreeEntrySize)
+	        : MM_MemoryPool(env, minimumFreeEntrySize),
+	          _referenceHeapFreeList(NULL),
+	          _sweepPoolState(NULL),
+	          _sweepPoolManager(NULL),
+	          _lastFreeEntry(NULL){
+	                  //		_typeId = __FUNCTION__;
+	          };
 
-	MM_MemoryPoolAddressOrderedListBase(MM_EnvironmentBase *env, uintptr_t minimumFreeEntrySize, const char *name) :
-		MM_MemoryPool(env, minimumFreeEntrySize, name)
-		,_referenceHeapFreeList(NULL)
-		,_sweepPoolState(NULL)
-		,_sweepPoolManager(NULL)
-		,_lastFreeEntry(NULL)
-	{
-//		_typeId = __FUNCTION__;
-	};
+	MM_MemoryPoolAddressOrderedListBase(MM_EnvironmentBase* env, uintptr_t minimumFreeEntrySize, const char* name)
+	        : MM_MemoryPool(env, minimumFreeEntrySize, name),
+	          _referenceHeapFreeList(NULL),
+	          _sweepPoolState(NULL),
+	          _sweepPoolManager(NULL),
+	          _lastFreeEntry(NULL){
+	                  //		_typeId = __FUNCTION__;
+	          };
 
 	friend class MM_SweepPoolManagerAddressOrderedListBase;
 };

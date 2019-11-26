@@ -26,13 +26,14 @@
 #include <cstring>
 #include <stdio.h>
 
-typedef void (MandelbrotFunction) (int32_t, int32_t, int32_t*);
+typedef void(MandelbrotFunction)(int32_t, int32_t, int32_t*);
 
-int main(int argc, char const * const * const argv) {
+int main(int argc, char const* const* const argv)
+{
     assert(argc == 2);
 
-   bool initialized = initializeJit();
-   if (!initialized) {
+    bool initialized = initializeJit();
+    if (!initialized) {
         fprintf(stderr, "FAIL: could not initialize JIT\n");
         exit(-1);
     }
@@ -51,15 +52,15 @@ int main(int argc, char const * const * const argv) {
 
     int32_t rc = mandelbrotCompiler.compile();
     if (rc != 0) {
-      fprintf(stderr,"FAIL: compilation error %d\n", rc);
-      exit(-2);
+        fprintf(stderr, "FAIL: compilation error %d\n", rc);
+        exit(-2);
     }
 
     auto mandelbrot = mandelbrotCompiler.getEntryPoint<MandelbrotFunction*>();
 
-    const auto size = 80;                   // number of rows/columns in the output table
-    const auto iterations = 1000;           // number of iterations to be performed
-    int32_t table[size][size];              // the output table
+    const auto size = 80; // number of rows/columns in the output table
+    const auto iterations = 1000; // number of iterations to be performed
+    int32_t table[size][size]; // the output table
 
     std::memset(table, 0, sizeof(table));
 
@@ -75,7 +76,7 @@ int main(int argc, char const * const * const argv) {
             auto c = table[y][x] < iterations ? '#' : ' ';
 
             // map the modulus of the cell's value to a terminal color
-            int colors[] = {1, 1, 5, 4, 6, 2, 3, 3, 3, 3};
+            int colors[] = { 1, 1, 5, 4, 6, 2, 3, 3, 3, 3 };
             auto color = colors[table[y][x] % 10];
 
             // print the selected character in the calculated color
@@ -87,25 +88,24 @@ int main(int argc, char const * const * const argv) {
             auto c = table[y][x] >= 1000 ? '#' : ' ';
 
             // map the cell's x-coordinate to a color
-            int colors[] = {0, 1, 3, 2, 6, 4, 5, 5, 5};
+            int colors[] = { 0, 1, 3, 2, 6, 4, 5, 5, 5 };
             auto color = colors[x / 10];
 
             // print the selected character in the calculated color
             // using ANSI escape codes
-            printf(" \e[0;3%dm%c\e[0m ", color , c);
+            printf(" \e[0;3%dm%c\e[0m ", color, c);
 #else
             // if the current cell is *inside* the Mandelbrot set, print a '#',
             // other wise print ' ' (blank space)
             auto c = table[y][x] >= 1000 ? '#' : ' ';
 
             // print the selected character
-            printf(" %c ", c );
+            printf(" %c ", c);
 #endif
-
         }
         printf("\n");
     }
 
-   shutdownJit();
-   return 0;
+    shutdownJit();
+    return 0;
 }

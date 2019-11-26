@@ -28,9 +28,6 @@
 #if !defined(PARALLELOBJECTHEAPITERATOR_HPP_)
 #define PARALLELOBJECTHEAPITERATOR_HPP_
 
-#include "omr.h"
-#include "omrcfg.h"
-
 #include "Dispatcher.hpp"
 #include "EnvironmentBase.hpp"
 #include "GCExtensionsBase.hpp"
@@ -39,6 +36,8 @@
 #include "ObjectHeapBufferedIterator.hpp"
 #include "ObjectHeapIterator.hpp"
 #include "Task.hpp"
+#include "omr.h"
+#include "omrcfg.h"
 
 class MM_MarkMap;
 
@@ -56,38 +55,43 @@ class GC_ParallelObjectHeapIterator : public GC_ObjectHeapIterator
 	 * Data members
 	 */
 private:
-	MM_EnvironmentBase *_env;
+	MM_EnvironmentBase* _env;
 	GC_ObjectHeapBufferedIterator _objectHeapIterator;
 	GC_MarkMapSegmentChunkIterator _segmentChunkIterator;
-	void *_topAddress;
-	MM_MarkMap *_markMap;
-	UDATA *_chunkBase;
-	UDATA *_chunkTop;
+	void* _topAddress;
+	MM_MarkMap* _markMap;
+	UDATA* _chunkBase;
+	UDATA* _chunkTop;
 
 protected:
 public:
-	
 	/* 
 	 * Function members
 	 */
 private:
 	bool getNextChunk();
+
 protected:
 public:
 	virtual omrobjectptr_t nextObject();
 	virtual omrobjectptr_t nextObjectNoAdvance();
 	virtual void advance(UDATA size);
-	virtual void reset(UDATA *base, UDATA *top);
-	
-	GC_ParallelObjectHeapIterator(MM_EnvironmentBase *env, MM_HeapRegionDescriptor *region, void *base, void *top, MM_MarkMap *markMap, UDATA parallelChunkSize)
-		: GC_ObjectHeapIterator()
-		, _env(env)
-		, _objectHeapIterator(env->getExtensions(), region, base, top, false, 1)
-		, _segmentChunkIterator(env->getExtensions(), base, top, parallelChunkSize)
-		, _topAddress(top)
-		, _markMap(markMap)
-		, _chunkBase(NULL)
-		, _chunkTop(NULL)
+	virtual void reset(UDATA* base, UDATA* top);
+
+	GC_ParallelObjectHeapIterator(MM_EnvironmentBase* env,
+	                              MM_HeapRegionDescriptor* region,
+	                              void* base,
+	                              void* top,
+	                              MM_MarkMap* markMap,
+	                              UDATA parallelChunkSize)
+	        : GC_ObjectHeapIterator(),
+	          _env(env),
+	          _objectHeapIterator(env->getExtensions(), region, base, top, false, 1),
+	          _segmentChunkIterator(env->getExtensions(), base, top, parallelChunkSize),
+	          _topAddress(top),
+	          _markMap(markMap),
+	          _chunkBase(NULL),
+	          _chunkTop(NULL)
 	{
 		/* Metronome currently has no notion of address-ordered-list */
 		Assert_MM_true(!env->getExtensions()->isMetronomeGC());
@@ -98,4 +102,3 @@ public:
 };
 
 #endif /* PARALLELOBJECTHEAPITERATOR_HPP_ */
-

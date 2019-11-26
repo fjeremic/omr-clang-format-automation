@@ -20,14 +20,13 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "ModronAssertions.h"
+#include "ScavengerCopyScanRatio.hpp"
 
 #include "Dispatcher.hpp"
 #include "EnvironmentBase.hpp"
 #include "GCExtensionsBase.hpp"
+#include "ModronAssertions.h"
 #include "ScavengerStats.hpp"
-
-#include "ScavengerCopyScanRatio.hpp"
 
 void
 MM_ScavengerCopyScanRatio::reset(MM_EnvironmentBase* env, bool resetHistory)
@@ -54,11 +53,11 @@ MM_ScavengerCopyScanRatio::record(MM_EnvironmentBase* env, uintptr_t nonEmptySca
 	if (SCAVENGER_UPDATE_HISTORY_SIZE <= _historyTableIndex) {
 		Assert_MM_true(SCAVENGER_UPDATE_HISTORY_SIZE == _historyTableIndex);
 		/* table full -- sum adjacent pairs of records and shift results to top half of table */
-		UpdateHistory *head = &(_historyTable[0]);
-		UpdateHistory *tail = &(_historyTable[1]);
-		UpdateHistory *stop = &(_historyTable[SCAVENGER_UPDATE_HISTORY_SIZE]);
+		UpdateHistory* head = &(_historyTable[0]);
+		UpdateHistory* tail = &(_historyTable[1]);
+		UpdateHistory* stop = &(_historyTable[SCAVENGER_UPDATE_HISTORY_SIZE]);
 		while (tail < stop) {
-			UpdateHistory *prev = tail - 1;
+			UpdateHistory* prev = tail - 1;
 			prev->waits += tail->waits;
 			prev->copied += tail->copied;
 			prev->scanned += tail->scanned;
@@ -85,7 +84,7 @@ MM_ScavengerCopyScanRatio::record(MM_EnvironmentBase* env, uintptr_t nonEmptySca
 
 	/* update record at current table index from fields in current acculumator */
 	uintptr_t threadCount = env->getExtensions()->dispatcher->threadCount();
-	UpdateHistory *historyRecord = &(_historyTable[_historyTableIndex]);
+	UpdateHistory* historyRecord = &(_historyTable[_historyTableIndex]);
 	uint64_t accumulatedSamples = _accumulatedSamples;
 	historyRecord->waits += waits(accumulatedSamples);
 	historyRecord->copied += copied(accumulatedSamples);
@@ -96,7 +95,7 @@ MM_ScavengerCopyScanRatio::record(MM_EnvironmentBase* env, uintptr_t nonEmptySca
 	historyRecord->caches += cachesQueued;
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	/* record current read barries values (we do not want to sum them up and average, we want last value) */
-	MM_GCExtensionsBase *ext = env->getExtensions();
+	MM_GCExtensionsBase* ext = env->getExtensions();
 	historyRecord->readObjectBarrierUpdate = ext->scavengerStats._readObjectBarrierUpdate;
 	historyRecord->readObjectBarrierCopy = ext->scavengerStats._readObjectBarrierCopy;
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
@@ -110,7 +109,7 @@ MM_ScavengerCopyScanRatio::record(MM_EnvironmentBase* env, uintptr_t nonEmptySca
 }
 
 uint64_t
-MM_ScavengerCopyScanRatio::getSpannedMicros(MM_EnvironmentBase* env, UpdateHistory *historyRecord)
+MM_ScavengerCopyScanRatio::getSpannedMicros(MM_EnvironmentBase* env, UpdateHistory* historyRecord)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 	uint64_t start = (historyRecord == _historyTable) ? _resetTimestamp : (historyRecord - 1)->time;
@@ -120,6 +119,8 @@ MM_ScavengerCopyScanRatio::getSpannedMicros(MM_EnvironmentBase* env, UpdateHisto
 void
 MM_ScavengerCopyScanRatio::failedUpdate(MM_EnvironmentBase* env, uint64_t copied, uint64_t scanned)
 {
-	Assert_GC_true_with_message2(env, copied <= scanned, "MM_ScavengerCopyScanRatio::getScalingFactor(): copied (=%llu) exceeds scanned (=%llu) -- non-atomic 64-bit read\n", copied, scanned);
+	Assert_GC_true_with_message2(env, copied <= scanned,
+	                             "MM_ScavengerCopyScanRatio::getScalingFactor(): copied (=%llu) exceeds scanned "
+	                             "(=%llu) -- non-atomic 64-bit read\n",
+	                             copied, scanned);
 }
-

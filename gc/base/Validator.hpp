@@ -28,19 +28,19 @@
 #ifndef VALIDATOR_HPP_
 #define VALIDATOR_HPP_
 
+#include "BaseVirtual.hpp"
 #include "omrcfg.h"
 #include "omrcomp.h"
-#include "BaseVirtual.hpp"
 
 class MM_EnvironmentBase;
 
-class MM_Validator : public MM_BaseVirtual {
-/* data members */
+class MM_Validator : public MM_BaseVirtual
+{
+	/* data members */
 private:
 protected:
 public:
-	
-/* function members */
+	/* function members */
 private:
 protected:
 public:
@@ -50,11 +50,7 @@ public:
 	 */
 	virtual void threadCrash(MM_EnvironmentBase* env) = 0;
 
-	MM_Validator() 
-		: MM_BaseVirtual()
-	{
-		_typeId = __FUNCTION__;
-	}
+	MM_Validator() : MM_BaseVirtual() { _typeId = __FUNCTION__; }
 };
 
 #endif /* VALIDATOR_HPP_ */

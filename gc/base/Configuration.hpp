@@ -23,11 +23,6 @@
 #if !defined(CONFIGURATION_HPP_)
 #define CONFIGURATION_HPP_
 
-#include "omrcfg.h"
-#include "omrgcconsts.h"
-#include "omrpool.h"
-#include "omrport.h"
-
 #include "BaseVirtual.hpp"
 #include "CardTable.hpp"
 #include "ConfigurationDelegate.hpp"
@@ -36,6 +31,10 @@
 #include "InitializationParameters.hpp"
 #include "Scavenger.hpp"
 #include "SlotObject.hpp"
+#include "omrcfg.h"
+#include "omrgcconsts.h"
+#include "omrpool.h"
+#include "omrport.h"
 
 class MM_Dispatcher;
 class MM_GCExtensionsBase;
@@ -54,66 +53,77 @@ struct OMR_VMThread;
  */
 class MM_Configuration : public MM_BaseVirtual
 {
-/* Data members / types */
+	/* Data members / types */
 public:
-
 protected:
 	MM_ConfigurationDelegate _delegate;
-	const MM_AlignmentType _alignmentType;			/**< the alignment type must be applied to memory settings */
-	const uintptr_t _defaultRegionSize;				/**< default region size, in bytes */
-	const uintptr_t _defaultArrayletLeafSize;		/**< default arraylet leaf size, in bytes */
-	const MM_GCWriteBarrierType _writeBarrierType;	/**< write barrier to install for GC */
-	const MM_GCAllocationType _allocationType;		/**< allocation type */
+	const MM_AlignmentType _alignmentType; /**< the alignment type must be applied to memory settings */
+	const uintptr_t _defaultRegionSize; /**< default region size, in bytes */
+	const uintptr_t _defaultArrayletLeafSize; /**< default arraylet leaf size, in bytes */
+	const MM_GCWriteBarrierType _writeBarrierType; /**< write barrier to install for GC */
+	const MM_GCAllocationType _allocationType; /**< allocation type */
 
 private:
-
-/* Methods */
+	/* Methods */
 public:
 	virtual void prepareParameters(OMR_VM* omrVM,
-								   uintptr_t minimumSpaceSize,
-								   uintptr_t minimumNewSpaceSize,
-								   uintptr_t initialNewSpaceSize,
-								   uintptr_t maximumNewSpaceSize,
-								   uintptr_t minimumTenureSpaceSize,
-								   uintptr_t initialTenureSpaceSize,
-								   uintptr_t maximumTenureSpaceSize,
-								   uintptr_t memoryMax,
-								   uintptr_t tenureFlags,
-								   MM_InitializationParameters* parameters);
+	                               uintptr_t minimumSpaceSize,
+	                               uintptr_t minimumNewSpaceSize,
+	                               uintptr_t initialNewSpaceSize,
+	                               uintptr_t maximumNewSpaceSize,
+	                               uintptr_t minimumTenureSpaceSize,
+	                               uintptr_t initialTenureSpaceSize,
+	                               uintptr_t maximumTenureSpaceSize,
+	                               uintptr_t memoryMax,
+	                               uintptr_t tenureFlags,
+	                               MM_InitializationParameters* parameters);
 
 	virtual MM_GlobalCollector* createGlobalCollector(MM_EnvironmentBase* env) = 0;
 	MM_Heap* createHeap(MM_EnvironmentBase* env, uintptr_t heapBytesRequested);
-	virtual MM_Heap* createHeapWithManager(MM_EnvironmentBase* env, uintptr_t heapBytesRequested, MM_HeapRegionManager* regionManager) = 0;
+	virtual MM_Heap* createHeapWithManager(MM_EnvironmentBase* env,
+	                                       uintptr_t heapBytesRequested,
+	                                       MM_HeapRegionManager* regionManager) = 0;
 	virtual MM_HeapRegionManager* createHeapRegionManager(MM_EnvironmentBase* env) = 0;
-	virtual MM_MemorySpace* createDefaultMemorySpace(MM_EnvironmentBase* env, MM_Heap* heap, MM_InitializationParameters* parameters) = 0;
+	virtual MM_MemorySpace*
+	createDefaultMemorySpace(MM_EnvironmentBase* env, MM_Heap* heap, MM_InitializationParameters* parameters) = 0;
 	MM_EnvironmentBase* createEnvironment(MM_GCExtensionsBase* extensions, OMR_VMThread* vmThread);
 	virtual J9Pool* createEnvironmentPool(MM_EnvironmentBase* env) = 0;
-	virtual MM_Dispatcher *createDispatcher(MM_EnvironmentBase *env, omrsig_handler_fn handler, void* handler_arg, uintptr_t defaultOSStackSize);
+	virtual MM_Dispatcher* createDispatcher(MM_EnvironmentBase* env,
+	                                        omrsig_handler_fn handler,
+	                                        void* handler_arg,
+	                                        uintptr_t defaultOSStackSize);
 
-	bool initializeHeapRegionDescriptor(MM_EnvironmentBase *env, MM_HeapRegionDescriptor *region) { return _delegate.initializeHeapRegionDescriptorExtension(env, region); }
-	void teardownHeapRegionDescriptor(MM_EnvironmentBase *env, MM_HeapRegionDescriptor *region) { _delegate.teardownHeapRegionDescriptorExtension(env, region); }
+	bool initializeHeapRegionDescriptor(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* region)
+	{
+		return _delegate.initializeHeapRegionDescriptorExtension(env, region);
+	}
+	void teardownHeapRegionDescriptor(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* region)
+	{
+		_delegate.teardownHeapRegionDescriptorExtension(env, region);
+	}
 
 	MMINLINE MM_GCWriteBarrierType getBarrierType() { return _writeBarrierType; }
 
-	MMINLINE bool
-	isSnapshotAtTheBeginningBarrierEnabled()
+	MMINLINE bool isSnapshotAtTheBeginningBarrierEnabled()
 	{
-		return (getBarrierType() == gc_modron_wrtbar_satb_and_oldcheck) ||
-				(getBarrierType() == gc_modron_wrtbar_satb);
+		return (getBarrierType() == gc_modron_wrtbar_satb_and_oldcheck)
+		        || (getBarrierType() == gc_modron_wrtbar_satb);
 	}
 
-	MMINLINE bool
-	isIncrementalUpdateBarrierEnabled()
+	MMINLINE bool isIncrementalUpdateBarrierEnabled()
 	{
-		return (getBarrierType() == gc_modron_wrtbar_cardmark_and_oldcheck) ||
-				(getBarrierType() == gc_modron_wrtbar_cardmark);
+		return (getBarrierType() == gc_modron_wrtbar_cardmark_and_oldcheck)
+		        || (getBarrierType() == gc_modron_wrtbar_cardmark);
 	}
 
 	/**
 	 * Delegated method to determine when to start tracking heap fragmentation, which should be inhibited
 	 * until the heap has grown to a stable operational size.
 	 */
-	MMINLINE bool canCollectFragmentationStats(MM_EnvironmentBase *env) { return _delegate.canCollectFragmentationStats(env); }
+	MMINLINE bool canCollectFragmentationStats(MM_EnvironmentBase* env)
+	{
+		return _delegate.canCollectFragmentationStats(env);
+	}
 
 	/**
 	 * Called once during startup to indicate that the default memory space has been allocated.
@@ -126,25 +136,32 @@ public:
 
 	virtual void kill(MM_EnvironmentBase* env);
 
-	MM_Configuration(MM_EnvironmentBase* env, MM_GCPolicy gcPolicy, MM_AlignmentType alignmentType, uintptr_t defaultRegionSize, uintptr_t defaultArrayletLeafSize, MM_GCWriteBarrierType writeBarrierType, MM_GCAllocationType allocationType)
-		: MM_BaseVirtual()
-		, _delegate(gcPolicy)
-		, _alignmentType(alignmentType)
-		, _defaultRegionSize(defaultRegionSize)
-		, _defaultArrayletLeafSize(defaultArrayletLeafSize)
-		, _writeBarrierType(writeBarrierType)
-		, _allocationType(allocationType)
+	MM_Configuration(MM_EnvironmentBase* env,
+	                 MM_GCPolicy gcPolicy,
+	                 MM_AlignmentType alignmentType,
+	                 uintptr_t defaultRegionSize,
+	                 uintptr_t defaultArrayletLeafSize,
+	                 MM_GCWriteBarrierType writeBarrierType,
+	                 MM_GCAllocationType allocationType)
+	        : MM_BaseVirtual(),
+	          _delegate(gcPolicy),
+	          _alignmentType(alignmentType),
+	          _defaultRegionSize(defaultRegionSize),
+	          _defaultArrayletLeafSize(defaultArrayletLeafSize),
+	          _writeBarrierType(writeBarrierType),
+	          _allocationType(allocationType)
 	{
 		_typeId = __FUNCTION__;
 	}
 
 protected:
-	MM_ConfigurationDelegate *getConfigurationDelegate() { return &_delegate; }
+	MM_ConfigurationDelegate* getConfigurationDelegate() { return &_delegate; }
 
 	virtual bool initialize(MM_EnvironmentBase* env);
 	virtual void tearDown(MM_EnvironmentBase* env);
 
-	virtual MM_EnvironmentBase* allocateNewEnvironment(MM_GCExtensionsBase* extensions, OMR_VMThread* omrVMThread) = 0;
+	virtual MM_EnvironmentBase*
+	allocateNewEnvironment(MM_GCExtensionsBase* extensions, OMR_VMThread* omrVMThread) = 0;
 	virtual bool initializeEnvironment(MM_EnvironmentBase* env);
 
 	/**
@@ -164,16 +181,15 @@ protected:
 	 * @return whether NUMAMAnager was initialized or not.  False implies startup failure.
 	 */
 	virtual bool initializeNUMAManager(MM_EnvironmentBase* env);
-	
+
 	/**
 	 * Sets the number of gc threads
 	 *
 	 * @param env[in] - the current environment
 	 */
 	virtual void initializeGCThreadCount(MM_EnvironmentBase* env);
-	
-private:
 
+private:
 	/**
 	 * Sets GC parameters that are dependent on the number of gc threads (if not previously initialized):
 	 *

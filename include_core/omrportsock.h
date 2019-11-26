@@ -24,12 +24,12 @@
 #define OMRPORTSOCK_H_
 
 /* Pointer to OMRAddInfoNode, a struct that contains addrinfo information. */
-typedef struct OMRAddrInfoNode *omrsock_addrinfo_t;
+typedef struct OMRAddrInfoNode* omrsock_addrinfo_t;
 
 /* Pointer to ip address. It has enough space for Ipv4 or IPv6 addresses. */
-typedef struct OMRSockAddrStorage *omrsock_sockaddr_t;
+typedef struct OMRSockAddrStorage* omrsock_sockaddr_t;
 
 /* Pointer to a socket descriptor */
-typedef struct OMRSocket *omrsock_socket_t;
+typedef struct OMRSocket* omrsock_socket_t;
 
 #endif /* !defined(OMRPORTSOCK_H_) */

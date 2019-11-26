@@ -20,10 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
-#include "omrcfg.h"
-#include "modronopt.h"
-
 #include "MemorySubSpaceGeneric.hpp"
 
 #include "AllocateDescription.hpp"
@@ -41,6 +37,8 @@
 #include "MemorySubSpaceRegionIterator.hpp"
 #include "ObjectAllocationInterface.hpp"
 #include "RegionPool.hpp"
+#include "modronopt.h"
+#include "omrcfg.h"
 
 /**
  * Return the memory pool associated to the receiver.
@@ -108,7 +106,6 @@ MM_MemorySubSpaceGeneric::getMemoryPool(MM_EnvironmentBase* env, void* addrBase,
 {
 	return _memoryPool->getMemoryPool(env, addrBase, addrTop, highAddr);
 }
-
 
 /* ***************************************
  * Allocation
@@ -211,7 +208,6 @@ MM_MemorySubSpaceGeneric::getApproximateActiveFreeMemorySize(uintptr_t includeMe
 	}
 }
 
-
 /**
  * @copydoc MM_MemorySubSpace::getApproximateActiveFreeLOAMemorySize()
  */
@@ -273,11 +269,18 @@ MM_MemorySubSpaceGeneric::getAllocationFailureStats()
  */
 
 void*
-MM_MemorySubSpaceGeneric::allocateObject(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, MM_MemorySubSpace* baseSubSpace, MM_MemorySubSpace* previousSubSpace, bool shouldCollectOnFailure)
+MM_MemorySubSpaceGeneric::allocateObject(MM_EnvironmentBase* env,
+                                         MM_AllocateDescription* allocDescription,
+                                         MM_MemorySubSpace* baseSubSpace,
+                                         MM_MemorySubSpace* previousSubSpace,
+                                         bool shouldCollectOnFailure)
 {
-	Trc_MM_MSSGeneric_allocate_entry(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(), this, getName(), baseSubSpace, previousSubSpace, (uintptr_t)_allocateAtSafePointOnly, (uintptr_t)shouldCollectOnFailure, (uintptr_t)_isAllocatable);
+	Trc_MM_MSSGeneric_allocate_entry(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(),
+	                                 this, getName(), baseSubSpace, previousSubSpace,
+	                                 (uintptr_t)_allocateAtSafePointOnly, (uintptr_t)shouldCollectOnFailure,
+	                                 (uintptr_t)_isAllocatable);
 
-	void *result = NULL;
+	void* result = NULL;
 
 	/* Typically, JIT stack frame is not built (shouldCollectOnFailure is false) and concurrent mark is not running or not complete (_allocateAtSafePointOnly is false),
 	 * so we most often proceed with allocate.
@@ -290,23 +293,28 @@ MM_MemorySubSpaceGeneric::allocateObject(MM_EnvironmentBase* env, MM_AllocateDes
 			result = _memoryPool->allocateObject(env, allocDescription);
 		}
 
-		if(NULL != result) {
+		if (NULL != result) {
 			/* Allocate succeeded */
 			allocDescription->setMemorySubSpace(this);
 			allocDescription->setObjectFlags(getObjectFlags());
 		} else {
 			/* Allocate failed - try the parent */
 			if (shouldCollectOnFailure) {
-				Trc_MM_MSSGeneric_allocate(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(), 1, this, _parent);
-				result = _parent->allocationRequestFailed(env, allocDescription, ALLOCATION_TYPE_OBJECT, NULL, this, this);
+				Trc_MM_MSSGeneric_allocate(env->getLanguageVMThread(), "Object",
+				                           allocDescription->getBytesRequested(), 1, this, _parent);
+				result = _parent->allocationRequestFailed(env, allocDescription, ALLOCATION_TYPE_OBJECT,
+				                                          NULL, this, this);
 			} else {
-				Trc_MM_MSSGeneric_allocate(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(), 2, this, _parent);
-				result = _parent->allocateObject(env, allocDescription, baseSubSpace, this, shouldCollectOnFailure);
+				Trc_MM_MSSGeneric_allocate(env->getLanguageVMThread(), "Object",
+				                           allocDescription->getBytesRequested(), 2, this, _parent);
+				result = _parent->allocateObject(env, allocDescription, baseSubSpace, this,
+				                                 shouldCollectOnFailure);
 			}
 		}
 	}
 
-	Trc_MM_MSSGeneric_allocate_exit(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(), this, result);
+	Trc_MM_MSSGeneric_allocate_exit(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(),
+	                                this, result);
 
 	return result;
 }
@@ -315,21 +323,27 @@ MM_MemorySubSpaceGeneric::allocateObject(MM_EnvironmentBase* env, MM_AllocateDes
  * Allocate the arraylet spine in immortal or scoped memory.
  */
 void*
-MM_MemorySubSpaceGeneric::allocateArrayletLeaf(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, MM_MemorySubSpace* baseSubSpace, MM_MemorySubSpace* previousSubSpace, bool shouldCollectOnFailure)
+MM_MemorySubSpaceGeneric::allocateArrayletLeaf(MM_EnvironmentBase* env,
+                                               MM_AllocateDescription* allocDescription,
+                                               MM_MemorySubSpace* baseSubSpace,
+                                               MM_MemorySubSpace* previousSubSpace,
+                                               bool shouldCollectOnFailure)
 {
-	void *result = NULL;
+	void* result = NULL;
 
 	if (!_allocateAtSafePointOnly || shouldCollectOnFailure) {
 		if (_isAllocatable) {
 			result = _memoryPool->allocateArrayletLeaf(env, allocDescription);
 		}
 
-		if(NULL == result) {
+		if (NULL == result) {
 			/* Allocate failed - try the parent */
 			if (shouldCollectOnFailure) {
-				result = _parent->allocationRequestFailed(env, allocDescription, ALLOCATION_TYPE_LEAF, NULL, this, this);
+				result = _parent->allocationRequestFailed(env, allocDescription, ALLOCATION_TYPE_LEAF,
+				                                          NULL, this, this);
 			} else {
-				result = _parent->allocateArrayletLeaf(env, allocDescription, baseSubSpace, this, shouldCollectOnFailure);
+				result = _parent->allocateArrayletLeaf(env, allocDescription, baseSubSpace, this,
+				                                       shouldCollectOnFailure);
 			}
 		}
 	}
@@ -338,7 +352,12 @@ MM_MemorySubSpaceGeneric::allocateArrayletLeaf(MM_EnvironmentBase* env, MM_Alloc
 }
 
 void*
-MM_MemorySubSpaceGeneric::allocationRequestFailed(MM_EnvironmentBase* env, MM_AllocateDescription* allocateDescription, AllocationType allocationType, MM_ObjectAllocationInterface* objectAllocationInterface, MM_MemorySubSpace* baseSubSpace, MM_MemorySubSpace* previousSubSpace)
+MM_MemorySubSpaceGeneric::allocationRequestFailed(MM_EnvironmentBase* env,
+                                                  MM_AllocateDescription* allocateDescription,
+                                                  AllocationType allocationType,
+                                                  MM_ObjectAllocationInterface* objectAllocationInterface,
+                                                  MM_MemorySubSpace* baseSubSpace,
+                                                  MM_MemorySubSpace* previousSubSpace)
 {
 	void* result = allocateGeneric(env, allocateDescription, allocationType, objectAllocationInterface, this);
 
@@ -353,11 +372,18 @@ MM_MemorySubSpaceGeneric::allocationRequestFailed(MM_EnvironmentBase* env, MM_Al
 
 #if defined(OMR_GC_THREAD_LOCAL_HEAP)
 void*
-MM_MemorySubSpaceGeneric::allocateTLH(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, MM_ObjectAllocationInterface* objectAllocationInterface, MM_MemorySubSpace* baseSubSpace, MM_MemorySubSpace* previousSubSpace, bool shouldCollectOnFailure)
+MM_MemorySubSpaceGeneric::allocateTLH(MM_EnvironmentBase* env,
+                                      MM_AllocateDescription* allocDescription,
+                                      MM_ObjectAllocationInterface* objectAllocationInterface,
+                                      MM_MemorySubSpace* baseSubSpace,
+                                      MM_MemorySubSpace* previousSubSpace,
+                                      bool shouldCollectOnFailure)
 {
-	Trc_MM_MSSGeneric_allocate_entry(env->getLanguageVMThread(), "TLH", allocDescription->getBytesRequested(), this, getName(), baseSubSpace, previousSubSpace, (uintptr_t)_allocateAtSafePointOnly, (uintptr_t)shouldCollectOnFailure, (uintptr_t)_isAllocatable);
+	Trc_MM_MSSGeneric_allocate_entry(env->getLanguageVMThread(), "TLH", allocDescription->getBytesRequested(), this,
+	                                 getName(), baseSubSpace, previousSubSpace, (uintptr_t)_allocateAtSafePointOnly,
+	                                 (uintptr_t)shouldCollectOnFailure, (uintptr_t)_isAllocatable);
 
-	void *result = NULL;
+	void* result = NULL;
 
 	/* Typically, JIT stack frame is not built (shouldCollectOnFailure is false) and concurrent mark is not running or not complete (_allocateAtSafePointOnly is false),
 	 * so we most often proceed with allocate.
@@ -372,18 +398,25 @@ MM_MemorySubSpaceGeneric::allocateTLH(MM_EnvironmentBase* env, MM_AllocateDescri
 
 		if (NULL == result) {
 			if (shouldCollectOnFailure) {
-				Trc_MM_MSSGeneric_allocate3(env->getLanguageVMThread(), "TLH", allocDescription->getBytesRequested(), this, _parent, (uintptr_t)allocDescription->shouldCollectAndClimb());
+				Trc_MM_MSSGeneric_allocate3(env->getLanguageVMThread(), "TLH",
+				                            allocDescription->getBytesRequested(), this, _parent,
+				                            (uintptr_t)allocDescription->shouldCollectAndClimb());
 				if (allocDescription->shouldCollectAndClimb()) {
-					result = _parent->allocationRequestFailed(env, allocDescription, ALLOCATION_TYPE_TLH, objectAllocationInterface, this, this);
+					result = _parent->allocationRequestFailed(
+					        env, allocDescription, ALLOCATION_TYPE_TLH, objectAllocationInterface,
+					        this, this);
 				}
 			} else {
-				Trc_MM_MSSGeneric_allocate(env->getLanguageVMThread(), "TLH", allocDescription->getBytesRequested(), 2, this, _parent);
-				result = _parent->allocateTLH(env, allocDescription, objectAllocationInterface, baseSubSpace, this, false);
+				Trc_MM_MSSGeneric_allocate(env->getLanguageVMThread(), "TLH",
+				                           allocDescription->getBytesRequested(), 2, this, _parent);
+				result = _parent->allocateTLH(env, allocDescription, objectAllocationInterface,
+				                              baseSubSpace, this, false);
 			}
 		}
 	}
 
-	Trc_MM_MSSGeneric_allocate_exit(env->getLanguageVMThread(), "TLH", allocDescription->getBytesRequested(), this, result);
+	Trc_MM_MSSGeneric_allocate_exit(env->getLanguageVMThread(), "TLH", allocDescription->getBytesRequested(), this,
+	                                result);
 
 	return result;
 }
@@ -394,7 +427,9 @@ MM_MemorySubSpaceGeneric::allocateTLH(MM_EnvironmentBase* env, MM_AllocateDescri
  ****************************************
  */
 void*
-MM_MemorySubSpaceGeneric::collectorAllocate(MM_EnvironmentBase* env, MM_Collector* requestCollector, MM_AllocateDescription* allocDescription)
+MM_MemorySubSpaceGeneric::collectorAllocate(MM_EnvironmentBase* env,
+                                            MM_Collector* requestCollector,
+                                            MM_AllocateDescription* allocDescription)
 {
 	void* result;
 
@@ -416,19 +451,26 @@ MM_MemorySubSpaceGeneric::collectorAllocate(MM_EnvironmentBase* env, MM_Collecto
 
 #if defined(OMR_GC_THREAD_LOCAL_HEAP)
 void*
-MM_MemorySubSpaceGeneric::collectorAllocateTLH(MM_EnvironmentBase* env, MM_Collector* requestCollector, MM_AllocateDescription* allocDescription,
-											   uintptr_t maximumBytesRequired, void*& addrBase, void*& addrTop)
+MM_MemorySubSpaceGeneric::collectorAllocateTLH(MM_EnvironmentBase* env,
+                                               MM_Collector* requestCollector,
+                                               MM_AllocateDescription* allocDescription,
+                                               uintptr_t maximumBytesRequired,
+                                               void*& addrBase,
+                                               void*& addrTop)
 {
 	void* result = NULL;
 
-	result = _memoryPool->collectorAllocateTLH(env, allocDescription, maximumBytesRequired, addrBase, addrTop, true);
+	result =
+	        _memoryPool->collectorAllocateTLH(env, allocDescription, maximumBytesRequired, addrBase, addrTop, true);
 	if (NULL == result) {
 		_memoryPool->lock(env);
-		result = _memoryPool->collectorAllocateTLH(env, allocDescription, maximumBytesRequired, addrBase, addrTop, false);
+		result = _memoryPool->collectorAllocateTLH(env, allocDescription, maximumBytesRequired, addrBase,
+		                                           addrTop, false);
 		if ((NULL == result) && allocDescription->isCollectorAllocateExpandOnFailure()) {
 			if (0 != collectorExpand(env, requestCollector, allocDescription)) {
 				allocDescription->setCollectorAllocateSatisfyAnywhere(true);
-				result = _memoryPool->collectorAllocateTLH(env, allocDescription, maximumBytesRequired, addrBase, addrTop, false);
+				result = _memoryPool->collectorAllocateTLH(env, allocDescription, maximumBytesRequired,
+				                                           addrBase, addrTop, false);
 			}
 		}
 		_memoryPool->unlock(env);
@@ -467,7 +509,9 @@ MM_MemorySubSpaceGeneric::abandonHeapChunk(void* addrBase, void* addrTop)
  * @note This call is not protected by any locking mechanism.
  */
 uintptr_t
-MM_MemorySubSpaceGeneric::collectorExpand(MM_EnvironmentBase* env, MM_Collector* requestCollector, MM_AllocateDescription* allocDescription)
+MM_MemorySubSpaceGeneric::collectorExpand(MM_EnvironmentBase* env,
+                                          MM_Collector* requestCollector,
+                                          MM_AllocateDescription* allocDescription)
 {
 	return _parent->collectorExpand(env, requestCollector, allocDescription);
 }
@@ -549,13 +593,24 @@ MM_MemorySubSpaceGeneric::rebuildFreeList(MM_EnvironmentBase* env)
  * Initialization
  */
 MM_MemorySubSpaceGeneric*
-MM_MemorySubSpaceGeneric::newInstance(MM_EnvironmentBase* env, MM_MemoryPool* memoryPool, MM_RegionPool* regionPool, bool usesGlobalCollector, uintptr_t minimumSize, uintptr_t initialSize, uintptr_t maximumSize, uintptr_t memoryType, uint32_t objectFlags)
+MM_MemorySubSpaceGeneric::newInstance(MM_EnvironmentBase* env,
+                                      MM_MemoryPool* memoryPool,
+                                      MM_RegionPool* regionPool,
+                                      bool usesGlobalCollector,
+                                      uintptr_t minimumSize,
+                                      uintptr_t initialSize,
+                                      uintptr_t maximumSize,
+                                      uintptr_t memoryType,
+                                      uint32_t objectFlags)
 {
 	MM_MemorySubSpaceGeneric* memorySubSpace;
 
-	memorySubSpace = (MM_MemorySubSpaceGeneric*)env->getForge()->allocate(sizeof(MM_MemorySubSpaceGeneric), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	memorySubSpace = (MM_MemorySubSpaceGeneric*)env->getForge()->allocate(
+	        sizeof(MM_MemorySubSpaceGeneric), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (NULL != memorySubSpace) {
-		new (memorySubSpace) MM_MemorySubSpaceGeneric(env, memoryPool, regionPool, usesGlobalCollector, minimumSize, initialSize, maximumSize, memoryType, objectFlags);
+		new (memorySubSpace)
+		        MM_MemorySubSpaceGeneric(env, memoryPool, regionPool, usesGlobalCollector, minimumSize,
+		                                 initialSize, maximumSize, memoryType, objectFlags);
 		if (!memorySubSpace->initialize(env)) {
 			memorySubSpace->kill(env);
 			memorySubSpace = NULL;
@@ -612,7 +667,10 @@ MM_MemorySubSpaceGeneric::tearDown(MM_EnvironmentBase* env)
  * Memory described by the range has added to the heap and been made available to the subspace as free memory.
  */
 bool
-MM_MemorySubSpaceGeneric::expanded(MM_EnvironmentBase* env, MM_PhysicalSubArena* subArena, MM_HeapRegionDescriptor* region, bool canCoalesce)
+MM_MemorySubSpaceGeneric::expanded(MM_EnvironmentBase* env,
+                                   MM_PhysicalSubArena* subArena,
+                                   MM_HeapRegionDescriptor* region,
+                                   bool canCoalesce)
 {
 	uintptr_t size = region->getSize();
 	void* lowAddress = region->getLowAddress();
@@ -633,7 +691,12 @@ MM_MemorySubSpaceGeneric::expanded(MM_EnvironmentBase* env, MM_PhysicalSubArena*
  * @Note this code only exists for Phase 2 Gencon collectors.  No new code should use this API.
  */
 bool
-MM_MemorySubSpaceGeneric::expanded(MM_EnvironmentBase* env, MM_PhysicalSubArena* subArena, uintptr_t size, void* lowAddress, void* highAddress, bool canCoalesce)
+MM_MemorySubSpaceGeneric::expanded(MM_EnvironmentBase* env,
+                                   MM_PhysicalSubArena* subArena,
+                                   uintptr_t size,
+                                   void* lowAddress,
+                                   void* highAddress,
+                                   bool canCoalesce)
 {
 	/* Inform the sub space hierarchy of the size change */
 	bool result = heapAddRange(env, this, size, lowAddress, highAddress);
@@ -651,7 +714,12 @@ MM_MemorySubSpaceGeneric::expanded(MM_EnvironmentBase* env, MM_PhysicalSubArena*
  * @warn This routine is fairly hacky - is there a better way?
  */
 void
-MM_MemorySubSpaceGeneric::addExistingMemory(MM_EnvironmentBase* env, MM_PhysicalSubArena* subArena, uintptr_t size, void* lowAddress, void* highAddress, bool canCoalesce)
+MM_MemorySubSpaceGeneric::addExistingMemory(MM_EnvironmentBase* env,
+                                            MM_PhysicalSubArena* subArena,
+                                            uintptr_t size,
+                                            void* lowAddress,
+                                            void* highAddress,
+                                            bool canCoalesce)
 {
 	/* Feed the range to the memory pool */
 	_memoryPool->expandWithRange(env, size, lowAddress, highAddress, canCoalesce);
@@ -668,7 +736,11 @@ MM_MemorySubSpaceGeneric::addExistingMemory(MM_EnvironmentBase* env, MM_Physical
  * @warn This routine is fairly hacky - is there a better way?
  */
 void*
-MM_MemorySubSpaceGeneric::removeExistingMemory(MM_EnvironmentBase* env, MM_PhysicalSubArena* subArena, uintptr_t size, void* lowAddress, void* highAddress)
+MM_MemorySubSpaceGeneric::removeExistingMemory(MM_EnvironmentBase* env,
+                                               MM_PhysicalSubArena* subArena,
+                                               uintptr_t size,
+                                               void* lowAddress,
+                                               void* highAddress)
 {
 	if (MEMORY_TYPE_OLD == (getTypeFlags() & MEMORY_TYPE_OLD)) {
 		removeTenureRange(env, size, lowAddress, highAddress);
@@ -755,12 +827,14 @@ MM_MemorySubSpaceGeneric::addTenureRange(MM_EnvironmentBase* env, uintptr_t size
 		/* expanding the base so base and size need to be updated */
 		extensions->heapBaseForBarrierRange0 = low;
 		extensions->heapSizeForBarrierRange0 += size;
-	} else if (low == (void*)((uintptr_t)extensions->heapBaseForBarrierRange0 + extensions->heapSizeForBarrierRange0)) {
+	} else if (low
+	           == (void*)((uintptr_t)extensions->heapBaseForBarrierRange0 + extensions->heapSizeForBarrierRange0)) {
 		/* expanding the top so only size needs to be updated */
 		extensions->heapSizeForBarrierRange0 += size;
 	} else {
 		/* initial inflate of the heap so both base and size need to be updated */
-		Assert_MM_true((NULL == extensions->heapBaseForBarrierRange0) && (0 == extensions->heapSizeForBarrierRange0));
+		Assert_MM_true((NULL == extensions->heapBaseForBarrierRange0)
+		               && (0 == extensions->heapSizeForBarrierRange0));
 		extensions->heapBaseForBarrierRange0 = low;
 		extensions->heapSizeForBarrierRange0 = size;
 	}
@@ -778,7 +852,8 @@ MM_MemorySubSpaceGeneric::removeTenureRange(MM_EnvironmentBase* env, uintptr_t s
 		/* contracting from low */
 		extensions->heapBaseForBarrierRange0 = high;
 		extensions->heapSizeForBarrierRange0 -= size;
-	} else if (high == (void*)((uintptr_t)extensions->heapBaseForBarrierRange0 + extensions->heapSizeForBarrierRange0)) {
+	} else if (high
+	           == (void*)((uintptr_t)extensions->heapBaseForBarrierRange0 + extensions->heapSizeForBarrierRange0)) {
 		/* contracting from high */
 		extensions->heapSizeForBarrierRange0 -= size;
 	} else {

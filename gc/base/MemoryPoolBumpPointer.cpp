@@ -20,9 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "omrcfg.h"
-#include "ModronAssertions.h"
-
 #include "MemoryPoolBumpPointer.hpp"
 
 #include "AllocateDescription.hpp"
@@ -33,16 +30,19 @@
 #include "HeapLinkedFreeHeader.hpp"
 #include "HeapRegionDescriptor.hpp"
 #include "MemorySubSpace.hpp"
+#include "ModronAssertions.h"
+#include "omrcfg.h"
 
 /**
  * Create and initialize a new instance of the receiver.
  */
-MM_MemoryPoolBumpPointer *
-MM_MemoryPoolBumpPointer::newInstance(MM_EnvironmentBase *env, uintptr_t minimumFreeEntrySize)
+MM_MemoryPoolBumpPointer*
+MM_MemoryPoolBumpPointer::newInstance(MM_EnvironmentBase* env, uintptr_t minimumFreeEntrySize)
 {
-	MM_MemoryPoolBumpPointer *memoryPool = (MM_MemoryPoolBumpPointer *)env->getForge()->allocate(sizeof(MM_MemoryPoolBumpPointer), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_MemoryPoolBumpPointer* memoryPool = (MM_MemoryPoolBumpPointer*)env->getForge()->allocate(
+	        sizeof(MM_MemoryPoolBumpPointer), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (NULL != memoryPool) {
-		memoryPool = new(memoryPool) MM_MemoryPoolBumpPointer(env, minimumFreeEntrySize);
+		memoryPool = new (memoryPool) MM_MemoryPoolBumpPointer(env, minimumFreeEntrySize);
 		if (!memoryPool->initialize(env)) {
 			memoryPool->kill(env);
 			memoryPool = NULL;
@@ -52,9 +52,9 @@ MM_MemoryPoolBumpPointer::newInstance(MM_EnvironmentBase *env, uintptr_t minimum
 }
 
 bool
-MM_MemoryPoolBumpPointer::initialize(MM_EnvironmentBase *env)
+MM_MemoryPoolBumpPointer::initialize(MM_EnvironmentBase* env)
 {
-	if(!MM_MemoryPool::initialize(env)) {
+	if (!MM_MemoryPool::initialize(env)) {
 		return false;
 	}
 
@@ -76,7 +76,7 @@ MM_MemoryPoolBumpPointer::initialize(MM_EnvironmentBase *env)
 }
 
 void
-MM_MemoryPoolBumpPointer::tearDown(MM_EnvironmentBase *env)
+MM_MemoryPoolBumpPointer::tearDown(MM_EnvironmentBase* env)
 {
 	MM_MemoryPool::tearDown(env);
 
@@ -91,15 +91,15 @@ MM_MemoryPoolBumpPointer::tearDown(MM_EnvironmentBase *env)
  * Allocation
  ****************************************
  */
-MMINLINE void *
-MM_MemoryPoolBumpPointer::internalAllocate(MM_EnvironmentBase *env, uintptr_t sizeInBytesRequired)
+MMINLINE void*
+MM_MemoryPoolBumpPointer::internalAllocate(MM_EnvironmentBase* env, uintptr_t sizeInBytesRequired)
 {
 	Assert_MM_objectAligned(env, sizeInBytesRequired);
-	void *result = NULL;
+	void* result = NULL;
 	uintptr_t spaceRemaining = (uintptr_t)_topPointer - (uintptr_t)_allocatePointer;
 	if (sizeInBytesRequired <= spaceRemaining) {
 		result = _allocatePointer;
-		_allocatePointer = (void *)((uintptr_t)_allocatePointer + sizeInBytesRequired);
+		_allocatePointer = (void*)((uintptr_t)_allocatePointer + sizeInBytesRequired);
 		uintptr_t newFreeSpace = spaceRemaining - sizeInBytesRequired;
 		if (0 == newFreeSpace) {
 			_freeEntryCount = 0;
@@ -112,19 +112,20 @@ MM_MemoryPoolBumpPointer::internalAllocate(MM_EnvironmentBase *env, uintptr_t si
 	return result;
 }
 
-void *
-MM_MemoryPoolBumpPointer::allocateObject(MM_EnvironmentBase *env,  MM_AllocateDescription *allocDescription)
+void*
+MM_MemoryPoolBumpPointer::allocateObject(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription)
 {
-	void * addr = internalAllocate(env, allocDescription->getContiguousBytes());
+	void* addr = internalAllocate(env, allocDescription->getContiguousBytes());
 
 	if (addr != NULL) {
 #if defined(OMR_GC_ALLOCATION_TAX)
-		if(env->getExtensions()->payAllocationTax) {
+		if (env->getExtensions()->payAllocationTax) {
 			allocDescription->setAllocationTaxSize(allocDescription->getBytesRequested());
 		}
-#endif  /* OMR_GC_ALLOCATION_TAX */
+#endif /* OMR_GC_ALLOCATION_TAX */
 		allocDescription->setTLHAllocation(false);
-		allocDescription->setNurseryAllocation((_memorySubSpace->getTypeFlags() == MEMORY_TYPE_NEW) ? true : false);
+		allocDescription->setNurseryAllocation((_memorySubSpace->getTypeFlags() == MEMORY_TYPE_NEW) ? true
+		                                                                                            : false);
 		allocDescription->setMemoryPool(this);
 	}
 
@@ -132,7 +133,10 @@ MM_MemoryPoolBumpPointer::allocateObject(MM_EnvironmentBase *env,  MM_AllocateDe
 }
 
 MMINLINE bool
-MM_MemoryPoolBumpPointer::internalAllocateTLH(MM_EnvironmentBase *env, uintptr_t maximumSizeInBytesRequired, void * &addrBase, void * &addrTop)
+MM_MemoryPoolBumpPointer::internalAllocateTLH(MM_EnvironmentBase* env,
+                                              uintptr_t maximumSizeInBytesRequired,
+                                              void*& addrBase,
+                                              void*& addrTop)
 {
 	bool success = false;
 	uintptr_t spaceRemaining = (uintptr_t)_topPointer - (uintptr_t)_allocatePointer;
@@ -144,7 +148,7 @@ MM_MemoryPoolBumpPointer::internalAllocateTLH(MM_EnvironmentBase *env, uintptr_t
 		} else {
 			sizeToAllocate = spaceRemaining;
 		}
-		_allocatePointer = (void *)((uintptr_t)_allocatePointer + sizeToAllocate);
+		_allocatePointer = (void*)((uintptr_t)_allocatePointer + sizeToAllocate);
 		addrTop = _allocatePointer;
 		uintptr_t newFreeSpace = spaceRemaining - sizeToAllocate;
 		if (newFreeSpace < _minimumFreeEntrySize) {
@@ -165,11 +169,14 @@ MM_MemoryPoolBumpPointer::internalAllocateTLH(MM_EnvironmentBase *env, uintptr_t
 	return success;
 }
 
-void *
-MM_MemoryPoolBumpPointer::allocateTLH(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription,
-											uintptr_t maximumSizeInBytesRequired, void * &addrBase, void * &addrTop)
+void*
+MM_MemoryPoolBumpPointer::allocateTLH(MM_EnvironmentBase* env,
+                                      MM_AllocateDescription* allocDescription,
+                                      uintptr_t maximumSizeInBytesRequired,
+                                      void*& addrBase,
+                                      void*& addrTop)
 {
-	void *tlhBase = NULL;
+	void* tlhBase = NULL;
 
 	if (internalAllocateTLH(env, maximumSizeInBytesRequired, addrBase, addrTop)) {
 		tlhBase = addrBase;
@@ -177,37 +184,46 @@ MM_MemoryPoolBumpPointer::allocateTLH(MM_EnvironmentBase *env, MM_AllocateDescri
 
 	if (NULL != tlhBase) {
 #if defined(OMR_GC_ALLOCATION_TAX)
-		if(env->getExtensions()->payAllocationTax) {
-			allocDescription->setAllocationTaxSize((uint8_t *)addrTop - (uint8_t *)addrBase);
+		if (env->getExtensions()->payAllocationTax) {
+			allocDescription->setAllocationTaxSize((uint8_t*)addrTop - (uint8_t*)addrBase);
 		}
-#endif  /* OMR_GC_ALLOCATION_TAX */
+#endif /* OMR_GC_ALLOCATION_TAX */
 
 		allocDescription->setTLHAllocation(true);
-		allocDescription->setNurseryAllocation((_memorySubSpace->getTypeFlags() == MEMORY_TYPE_NEW) ? true : false);
+		allocDescription->setNurseryAllocation((_memorySubSpace->getTypeFlags() == MEMORY_TYPE_NEW) ? true
+		                                                                                            : false);
 		allocDescription->setMemoryPool(this);
 	}
 
 	return tlhBase;
 }
 
-void *
-MM_MemoryPoolBumpPointer::collectorAllocate(MM_EnvironmentBase *env,  MM_AllocateDescription *allocDescription, bool lockingRequired)
+void*
+MM_MemoryPoolBumpPointer::collectorAllocate(MM_EnvironmentBase* env,
+                                            MM_AllocateDescription* allocDescription,
+                                            bool lockingRequired)
 {
-	void * addr = internalAllocate(env, allocDescription->getContiguousBytes());
+	void* addr = internalAllocate(env, allocDescription->getContiguousBytes());
 
 	if (NULL != addr) {
 		allocDescription->setTLHAllocation(false);
-		allocDescription->setNurseryAllocation((_memorySubSpace->getTypeFlags() == MEMORY_TYPE_NEW) ? true : false);
+		allocDescription->setNurseryAllocation((_memorySubSpace->getTypeFlags() == MEMORY_TYPE_NEW) ? true
+		                                                                                            : false);
 		allocDescription->setMemoryPool(this);
 	}
 
 	return addr;
 }
 
-void *
-MM_MemoryPoolBumpPointer::collectorAllocateTLH(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, uintptr_t maximumSizeInBytesRequired, void * &addrBase, void * &addrTop, bool lockingRequired)
+void*
+MM_MemoryPoolBumpPointer::collectorAllocateTLH(MM_EnvironmentBase* env,
+                                               MM_AllocateDescription* allocDescription,
+                                               uintptr_t maximumSizeInBytesRequired,
+                                               void*& addrBase,
+                                               void*& addrTop,
+                                               bool lockingRequired)
 {
-	void *tlhBase = NULL;
+	void* tlhBase = NULL;
 
 	if (internalAllocateTLH(env, maximumSizeInBytesRequired, addrBase, addrTop)) {
 		tlhBase = addrBase;
@@ -232,7 +248,7 @@ MM_MemoryPoolBumpPointer::reset(Cause cause)
 	/* Call superclass first .. */
 	MM_MemoryPool::reset(cause);
 
-	_heapFreeList = (MM_HeapLinkedFreeHeader *)NULL;
+	_heapFreeList = (MM_HeapLinkedFreeHeader*)NULL;
 	_scannableBytes = 0;
 	_nonScannableBytes = 0;
 
@@ -244,8 +260,10 @@ MM_MemoryPoolBumpPointer::reset(Cause cause)
  * As opposed to reset, which will empty out, this will fill out as if everything is free.
  * Returns the freelist entry created at the end of the given region
  */
-MM_HeapLinkedFreeHeader *
-MM_MemoryPoolBumpPointer::rebuildFreeListInRegion(MM_EnvironmentBase *env, MM_HeapRegionDescriptor *region, MM_HeapLinkedFreeHeader *previousFreeEntry)
+MM_HeapLinkedFreeHeader*
+MM_MemoryPoolBumpPointer::rebuildFreeListInRegion(MM_EnvironmentBase* env,
+                                                  MM_HeapRegionDescriptor* region,
+                                                  MM_HeapLinkedFreeHeader* previousFreeEntry)
 {
 	Assert_MM_true(0 == _darkMatterBytes);
 	Assert_MM_true(0 == _scannableBytes);
@@ -256,11 +274,11 @@ MM_MemoryPoolBumpPointer::rebuildFreeListInRegion(MM_EnvironmentBase *env, MM_He
 	_freeMemorySize = newFreeSpace;
 	_freeEntryCount = 1;
 	_largestFreeEntry = newFreeSpace;
-	return (MM_HeapLinkedFreeHeader *)_allocatePointer;
+	return (MM_HeapLinkedFreeHeader*)_allocatePointer;
 }
 
 void
-MM_MemoryPoolBumpPointer::setAllocationPointer(MM_EnvironmentBase *env, void *allocatePointer)
+MM_MemoryPoolBumpPointer::setAllocationPointer(MM_EnvironmentBase* env, void* allocatePointer)
 {
 	_allocatePointer = allocatePointer;
 }
@@ -276,7 +294,11 @@ MM_MemoryPoolBumpPointer::setAllocationPointer(MM_EnvironmentBase *env, void *al
  *
  */
 void
-MM_MemoryPoolBumpPointer::expandWithRange(MM_EnvironmentBase *env, uintptr_t expandSize, void *lowAddress, void *highAddress, bool canCoalesce)
+MM_MemoryPoolBumpPointer::expandWithRange(MM_EnvironmentBase* env,
+                                          uintptr_t expandSize,
+                                          void* lowAddress,
+                                          void* highAddress,
+                                          bool canCoalesce)
 {
 	_allocatePointer = lowAddress;
 	_topPointer = highAddress;
@@ -298,14 +320,17 @@ MM_MemoryPoolBumpPointer::expandWithRange(MM_EnvironmentBase *env, uintptr_t exp
  * @note The expectation is that the range consists ONLY of free elements (no live data appears).
  *
  */
-void *
-MM_MemoryPoolBumpPointer::contractWithRange(MM_EnvironmentBase *env, uintptr_t contractSize, void *lowAddress, void *highAddress)
+void*
+MM_MemoryPoolBumpPointer::contractWithRange(MM_EnvironmentBase* env,
+                                            uintptr_t contractSize,
+                                            void* lowAddress,
+                                            void* highAddress)
 {
 	return NULL;
 }
 
 bool
-MM_MemoryPoolBumpPointer::abandonHeapChunk(void *addrBase, void *addrTop)
+MM_MemoryPoolBumpPointer::abandonHeapChunk(void* addrBase, void* addrTop)
 {
 	Assert_MM_true(addrTop >= addrBase);
 	internalRecycleHeapChunk(addrBase, addrTop, NULL);
@@ -314,14 +339,15 @@ MM_MemoryPoolBumpPointer::abandonHeapChunk(void *addrBase, void *addrTop)
 }
 
 MMINLINE bool
-MM_MemoryPoolBumpPointer::internalRecycleHeapChunk(void *addrBase, void *addrTop, MM_HeapLinkedFreeHeader *next)
+MM_MemoryPoolBumpPointer::internalRecycleHeapChunk(void* addrBase, void* addrTop, MM_HeapLinkedFreeHeader* next)
 {
 	/* Determine if the heap chunk belongs in the free list */
 	bool const compressed = compressObjectReferences();
 	uintptr_t freeEntrySize = ((uintptr_t)addrTop) - ((uintptr_t)addrBase);
 	Assert_MM_true((uintptr_t)addrTop >= (uintptr_t)addrBase);
 
-	MM_HeapLinkedFreeHeader *freeEntry = MM_HeapLinkedFreeHeader::fillWithHoles(addrBase, freeEntrySize, compressed);
+	MM_HeapLinkedFreeHeader* freeEntry =
+	        MM_HeapLinkedFreeHeader::fillWithHoles(addrBase, freeEntrySize, compressed);
 	if ((NULL != freeEntry) && (freeEntrySize >= _minimumFreeEntrySize)) {
 		Assert_MM_true(freeEntry == addrBase);
 		Assert_MM_true((NULL == next) || (freeEntry < next));
@@ -332,7 +358,7 @@ MM_MemoryPoolBumpPointer::internalRecycleHeapChunk(void *addrBase, void *addrTop
 	}
 }
 
-MM_SweepPoolManager *
+MM_SweepPoolManager*
 MM_MemoryPoolBumpPointer::getSweepPoolManager()
 {
 	/*
@@ -344,8 +370,8 @@ MM_MemoryPoolBumpPointer::getSweepPoolManager()
 	return _sweepPoolManager;
 }
 
-void 
-MM_MemoryPoolBumpPointer::recalculateMemoryPoolStatistics(MM_EnvironmentBase *env)
+void
+MM_MemoryPoolBumpPointer::recalculateMemoryPoolStatistics(MM_EnvironmentBase* env)
 {
 	uintptr_t freeBytes = (uintptr_t)_topPointer - (uintptr_t)_allocatePointer;
 	setFreeMemorySize(freeBytes);
@@ -354,7 +380,7 @@ MM_MemoryPoolBumpPointer::recalculateMemoryPoolStatistics(MM_EnvironmentBase *en
 }
 
 void
-MM_MemoryPoolBumpPointer::rewindAllocationPointerTo(void *pointer)
+MM_MemoryPoolBumpPointer::rewindAllocationPointerTo(void* pointer)
 {
 	Assert_MM_true(pointer < _allocatePointer);
 	_allocatePointer = pointer;
@@ -368,7 +394,7 @@ MM_MemoryPoolBumpPointer::alignAllocationPointer(uintptr_t alignmentMultiple)
 		uintptr_t alignmentMask = alignmentMultiple - 1;
 		uintptr_t newSum = (uintptr_t)_allocatePointer + alignmentMask;
 		uintptr_t alignedValue = newSum & ~alignmentMask;
-		void* newAllocatePointer = OMR_MIN((void *)alignedValue, _topPointer);
+		void* newAllocatePointer = OMR_MIN((void*)alignedValue, _topPointer);
 		_allocatePointer = newAllocatePointer;
 	}
 }
@@ -377,8 +403,11 @@ MM_MemoryPoolBumpPointer::alignAllocationPointer(uintptr_t alignmentMultiple)
  * @see MM_MemoryPool::createFreeEntry()
  */
 bool
-MM_MemoryPoolBumpPointer::createFreeEntry(MM_EnvironmentBase* env, void* addrBase, void* addrTop,
-													  MM_HeapLinkedFreeHeader* previousFreeEntry, MM_HeapLinkedFreeHeader* nextFreeEntry)
+MM_MemoryPoolBumpPointer::createFreeEntry(MM_EnvironmentBase* env,
+                                          void* addrBase,
+                                          void* addrTop,
+                                          MM_HeapLinkedFreeHeader* previousFreeEntry,
+                                          MM_HeapLinkedFreeHeader* nextFreeEntry)
 {
 	bool const compressed = compressObjectReferences();
 
@@ -389,7 +418,7 @@ MM_MemoryPoolBumpPointer::createFreeEntry(MM_EnvironmentBase* env, void* addrBas
 			previousFreeEntry->setNext((MM_HeapLinkedFreeHeader*)addrBase, compressed);
 		}
 
-		if ((uintptr_t) addrBase > (uintptr_t) getLastFreeEntry()) {
+		if ((uintptr_t)addrBase > (uintptr_t)getLastFreeEntry()) {
 			setLastFreeEntry(addrBase);
 		}
 		return true;
@@ -401,9 +430,6 @@ MM_MemoryPoolBumpPointer::createFreeEntry(MM_EnvironmentBase* env, void* addrBas
 	}
 	return false;
 }
-
-
-
 
 /* (non-doxygen)
  * @see MM_MemoryPool::createFreeEntry()
@@ -423,18 +449,21 @@ MM_MemoryPoolBumpPointer::createFreeEntry(MM_EnvironmentBase* env, void* addrBas
  * @return true if free memory element accepted
  */
 bool
-MM_MemoryPoolBumpPointer::connectInnerMemoryToPool(MM_EnvironmentBase* env, void* address, uintptr_t size, void* previousFreeEntry)
+MM_MemoryPoolBumpPointer::connectInnerMemoryToPool(MM_EnvironmentBase* env,
+                                                   void* address,
+                                                   uintptr_t size,
+                                                   void* previousFreeEntry)
 {
 	bool result = false;
 
 	if (size >= getMinimumFreeEntrySize()) {
 		/* Build the free header */
-		createFreeEntry(env, (MM_HeapLinkedFreeHeader*)address, (uint8_t*)address + size, (MM_HeapLinkedFreeHeader*)previousFreeEntry, NULL);
+		createFreeEntry(env, (MM_HeapLinkedFreeHeader*)address, (uint8_t*)address + size,
+		                (MM_HeapLinkedFreeHeader*)previousFreeEntry, NULL);
 		result = true;
 	}
 	return result;
 }
-
 
 /**
  * Connect leading/trailing chunk free memory piece ("Connect")
@@ -444,13 +473,17 @@ MM_MemoryPoolBumpPointer::connectInnerMemoryToPool(MM_EnvironmentBase* env, void
  * @param nextFreeEntry next element of list (if any) this memory must be connected with
  */
 void
-MM_MemoryPoolBumpPointer::connectOuterMemoryToPool(MM_EnvironmentBase* env, void* address, uintptr_t size, void* nextFreeEntry)
+MM_MemoryPoolBumpPointer::connectOuterMemoryToPool(MM_EnvironmentBase* env,
+                                                   void* address,
+                                                   uintptr_t size,
+                                                   void* nextFreeEntry)
 {
 	Assert_MM_true((NULL == nextFreeEntry) || (address < nextFreeEntry));
 	Assert_MM_true((NULL == address) || (size >= getMinimumFreeEntrySize()));
 
 	/* Build the free header */
-	createFreeEntry(env, (MM_HeapLinkedFreeHeader*)address, (uint8_t*)address + size, NULL, (MM_HeapLinkedFreeHeader*)nextFreeEntry);
+	createFreeEntry(env, (MM_HeapLinkedFreeHeader*)address, (uint8_t*)address + size, NULL,
+	                (MM_HeapLinkedFreeHeader*)nextFreeEntry);
 
 	if (NULL == _heapFreeList) {
 		_heapFreeList = (MM_HeapLinkedFreeHeader*)nextFreeEntry;
@@ -472,4 +505,3 @@ MM_MemoryPoolBumpPointer::connectFinalMemoryToPool(MM_EnvironmentBase* env, void
 	/* Build the free header */
 	createFreeEntry(env, (MM_HeapLinkedFreeHeader*)address, (uint8_t*)address + size);
 }
-

@@ -23,14 +23,11 @@
 #if !defined(VERBOSEHANDLEROUTPUT_HPP_)
 #define VERBOSEHANDLEROUTPUT_HPP_
 
-#include "omrcfg.h"
-#include "omr.h"
-
 #include "Base.hpp"
-
-#include "modronbase.h"
-
 #include "LightweightNonReentrantLock.hpp"
+#include "modronbase.h"
+#include "omr.h"
+#include "omrcfg.h"
 
 class MM_CollectionStatistics;
 class MM_EnvironmentBase;
@@ -43,26 +40,25 @@ private:
 	MM_LightweightNonReentrantLock _reportingLock;
 
 protected:
-	MM_GCExtensionsBase *_extensions;
-	OMR_VM *_omrVM;
-	J9HookInterface** _mmPrivateHooks;  /**< Pointers to the internal Hook interface */
-	J9HookInterface** _mmOmrHooks;  /**< Pointers to the internal Hook interface */
-	MM_VerboseManager *_manager; /* VerboseManager used to format and print output */
+	MM_GCExtensionsBase* _extensions;
+	OMR_VM* _omrVM;
+	J9HookInterface** _mmPrivateHooks; /**< Pointers to the internal Hook interface */
+	J9HookInterface** _mmOmrHooks; /**< Pointers to the internal Hook interface */
+	MM_VerboseManager* _manager; /* VerboseManager used to format and print output */
 public:
-
 private:
 protected:
-	MM_VerboseHandlerOutput(MM_GCExtensionsBase *extensions);
+	MM_VerboseHandlerOutput(MM_GCExtensionsBase* extensions);
 
-	virtual bool initialize(MM_EnvironmentBase *env, MM_VerboseManager *manager);
-	virtual void tearDown(MM_EnvironmentBase *env);
+	virtual bool initialize(MM_EnvironmentBase* env, MM_VerboseManager* manager);
+	virtual void tearDown(MM_EnvironmentBase* env);
 
-	virtual bool getThreadName(char *buf, uintptr_t bufLen, OMR_VMThread *vmThread);
+	virtual bool getThreadName(char* buf, uintptr_t bufLen, OMR_VMThread* vmThread);
 	virtual void writeVmArgs(MM_EnvironmentBase* env);
 
-	bool getTimeDeltaInMicroSeconds(uint64_t *timeInMicroSeconds, uint64_t startTime, uint64_t endTime)
+	bool getTimeDeltaInMicroSeconds(uint64_t* timeInMicroSeconds, uint64_t startTime, uint64_t endTime)
 	{
-		if(endTime < startTime) {
+		if (endTime < startTime) {
 			*timeInMicroSeconds = 0;
 			return false;
 		}
@@ -80,9 +76,9 @@ protected:
 	 * @return true if the calculation was successfull. false, otherwise - timeInMicroSeconds is set to 0.
 	 */
 	bool
-	getTimeDelta(uint64_t *timeInMicroSeconds, uint64_t startTimeInMicroseconds, uint64_t endTimeInMicroseconds)
+	getTimeDelta(uint64_t* timeInMicroSeconds, uint64_t startTimeInMicroseconds, uint64_t endTimeInMicroseconds)
 	{
-		if(endTimeInMicroseconds < startTimeInMicroseconds) {
+		if (endTimeInMicroseconds < startTimeInMicroseconds) {
 			*timeInMicroSeconds = 0;
 			return false;
 		}
@@ -96,14 +92,13 @@ protected:
 	 * @param env current GC thread.
 	 * @return string representing the human readable "type" of the cycle.
 	 */
-	const char *getCurrentCycleType(MM_EnvironmentBase *env);
+	const char* getCurrentCycleType(MM_EnvironmentBase* env);
 	/**
 	 * Answer a string representation of a given cycle type.
 	 * @param[IN] cycle type
 	 * @return string representing the human readable "type" of the cycle.
-	 */	
-	virtual const char *getCycleType(uintptr_t type);
-
+	 */
+	virtual const char* getCycleType(uintptr_t type);
 
 	/**
 	 * Handle any output or data tracking for the initialized phase of verbose GC.
@@ -137,7 +132,10 @@ protected:
 	 * @param eventData hook specific event data.
 	 * @param indentDepth base indent count for all inner stanza lines.
 	 */
-	virtual void handleCycleStartInnerStanzas(J9HookInterface** hook, uintptr_t eventNum, void* eventData, uintptr_t indentDepth);
+	virtual void handleCycleStartInnerStanzas(J9HookInterface** hook,
+	                                          uintptr_t eventNum,
+	                                          void* eventData,
+	                                          uintptr_t indentDepth);
 
 	/**
 	 * Determine if the receive has inner stanza details for cycle end events.
@@ -153,7 +151,8 @@ protected:
 	 * @param eventData hook specific event data.
 	 * @param indentDepth base indent count for all inner stanza lines.
 	 */
-	virtual void handleCycleEndInnerStanzas(J9HookInterface** hook, uintptr_t eventNum, void* eventData, uintptr_t indentDepth);
+	virtual void
+	handleCycleEndInnerStanzas(J9HookInterface** hook, uintptr_t eventNum, void* eventData, uintptr_t indentDepth);
 
 	/**
 	 * Determine if the receive has inner stanza details for cycle end events.
@@ -169,7 +168,10 @@ protected:
 	 * @param eventData hook specific event data.
 	 * @param indentDepth base indent count for all inner stanza lines.
 	 */
-	virtual void handleAllocationFailureStartInnerStanzas(J9HookInterface** hook, uintptr_t eventNum, void* eventData, uintptr_t indentDepth);
+	virtual void handleAllocationFailureStartInnerStanzas(J9HookInterface** hook,
+	                                                      uintptr_t eventNum,
+	                                                      void* eventData,
+	                                                      uintptr_t indentDepth);
 
 	/* Print out allocations statistics
 	 * @param current Env
@@ -194,11 +196,12 @@ protected:
 	 * @param indent base level of indentation for the summary.
 	 * @param commonData Structure which contains the memory information.
 	 */
-	void outputMemoryInfo(MM_EnvironmentBase *env, uintptr_t indent, MM_CollectionStatistics *stats);
+	void outputMemoryInfo(MM_EnvironmentBase* env, uintptr_t indent, MM_CollectionStatistics* stats);
 
 	virtual bool hasOutputMemoryInfoInnerStanza();
 
-	virtual void outputMemoryInfoInnerStanza(MM_EnvironmentBase *env, uintptr_t indent, MM_CollectionStatistics *stats);
+	virtual void
+	outputMemoryInfoInnerStanza(MM_EnvironmentBase* env, uintptr_t indent, MM_CollectionStatistics* stats);
 
 	/**
 	 * Output a stand-alone stanza heap resize events.
@@ -211,7 +214,14 @@ protected:
 	 * @param reason the reason for the resize
 	 * @param timeInMicroSeconds the total time that all of the resizes took
 	 */
-	void outputHeapResizeInfo(MM_EnvironmentBase *env, uintptr_t indent, HeapResizeType resizeType, uintptr_t resizeAmount, uintptr_t resizeCount, uintptr_t subSpaceType, uintptr_t reason, uint64_t timeInMicroSeconds);
+	void outputHeapResizeInfo(MM_EnvironmentBase* env,
+	                          uintptr_t indent,
+	                          HeapResizeType resizeType,
+	                          uintptr_t resizeAmount,
+	                          uintptr_t resizeCount,
+	                          uintptr_t subSpaceType,
+	                          uintptr_t reason,
+	                          uint64_t timeInMicroSeconds);
 
 	/**
 	 * Output an embedded stanza for collector heap resize events.
@@ -224,14 +234,21 @@ protected:
 	 * @param reason the reason for the resize
 	 * @param timeInMicroSeconds the total time that all of the resizes took
 	 */
-	void outputCollectorHeapResizeInfo(MM_EnvironmentBase *env, uintptr_t indent, HeapResizeType resizeType, uintptr_t resizeAmount, uintptr_t resizeCount, uintptr_t subSpaceType, uintptr_t reason, uint64_t timeInMicroSeconds);
+	void outputCollectorHeapResizeInfo(MM_EnvironmentBase* env,
+	                                   uintptr_t indent,
+	                                   HeapResizeType resizeType,
+	                                   uintptr_t resizeAmount,
+	                                   uintptr_t resizeCount,
+	                                   uintptr_t subSpaceType,
+	                                   uintptr_t reason,
+	                                   uint64_t timeInMicroSeconds);
 
 	/**
 	 * Get the string representation of the subspace type
 	 * @param typeFlags the type flags stored for the subpace in question
 	 * @return the string representation for the subspace type
 	 */
-	virtual const char *getSubSpaceType(uintptr_t typeFlags);
+	virtual const char* getSubSpaceType(uintptr_t typeFlags);
 
 	/**
 	 * Output string constants table summary.
@@ -240,12 +257,13 @@ protected:
 	 * @param candidates total count candidate strings considered
 	 * @param cleared total count of cleared strings
 	 */
-	void outputStringConstantInfo(MM_EnvironmentBase *env, uintptr_t indent, uintptr_t candidates, uintptr_t cleared);
+	void
+	outputStringConstantInfo(MM_EnvironmentBase* env, uintptr_t indent, uintptr_t candidates, uintptr_t cleared);
 
 public:
-	static MM_VerboseHandlerOutput *newInstance(MM_EnvironmentBase *env, MM_VerboseManager *manager);
+	static MM_VerboseHandlerOutput* newInstance(MM_EnvironmentBase* env, MM_VerboseManager* manager);
 
-	void kill(MM_EnvironmentBase *env);
+	void kill(MM_EnvironmentBase* env);
 
 	/**
 	 * Perform necessary hooks and infrastructure setup to enable verbose gc output.
@@ -262,7 +280,7 @@ public:
 	 *  
 	 *  @return _manger the VerboseManager used to format and print output
 	 */
-	MM_VerboseManager *getManager() {return _manager;}
+	MM_VerboseManager* getManager() { return _manager; }
 
 	/**
 	 * Build the standard top level tag template.
@@ -273,7 +291,7 @@ public:
 	 *
 	 * @note should be moved to protected once all standard usage is converted.
 	 */
-	uintptr_t getTagTemplate(char *buf, uintptr_t bufsize, uint64_t wallTimeMs);
+	uintptr_t getTagTemplate(char* buf, uintptr_t bufsize, uint64_t wallTimeMs);
 
 	/**
 	 * Build the standard top level tag template.
@@ -285,7 +303,7 @@ public:
 	 *
 	 * @note should be moved to protected once all standard usage is converted.
 	 */
-	uintptr_t getTagTemplate(char *buf, uintptr_t bufsize, uintptr_t id, uint64_t wallTimeMs);
+	uintptr_t getTagTemplate(char* buf, uintptr_t bufsize, uintptr_t id, uint64_t wallTimeMs);
 
 	/**
 	 * Build the standard top level tag template.
@@ -299,7 +317,12 @@ public:
 	 *
 	 * @note should be moved to protected once all standard usage is converted.
 	 */
-	uintptr_t getTagTemplate(char *buf, uintptr_t bufsize, uintptr_t id, const char *type, uintptr_t contextId, uint64_t wallTimeMs);
+	uintptr_t getTagTemplate(char* buf,
+	                         uintptr_t bufsize,
+	                         uintptr_t id,
+	                         const char* type,
+	                         uintptr_t contextId,
+	                         uint64_t wallTimeMs);
 
 	/**
 	 * Build the standard top level tag template.
@@ -314,7 +337,13 @@ public:
 	 *
 	 * @note should be moved to protected once all standard usage is converted.
 	 */
-	uintptr_t getTagTemplateWithOldType(char *buf, uintptr_t bufsize, uintptr_t id, const char *oldType, const char *newType, uintptr_t contextId, uint64_t wallTimeMs);
+	uintptr_t getTagTemplateWithOldType(char* buf,
+	                                    uintptr_t bufsize,
+	                                    uintptr_t id,
+	                                    const char* oldType,
+	                                    const char* newType,
+	                                    uintptr_t contextId,
+	                                    uint64_t wallTimeMs);
 
 	/**
 	 * Build the standard top level tag template.
@@ -329,7 +358,13 @@ public:
 	 *
 	 * @note should be moved to protected once all standard usage is converted.
 	 */
-	uintptr_t getTagTemplate(char *buf, uintptr_t bufsize, uintptr_t id, const char *type, uintptr_t contextId, uint64_t timeus, uint64_t wallTimeMs);
+	uintptr_t getTagTemplate(char* buf,
+	                         uintptr_t bufsize,
+	                         uintptr_t id,
+	                         const char* type,
+	                         uintptr_t contextId,
+	                         uint64_t timeus,
+	                         uint64_t wallTimeMs);
 
 	/**
 	 * Build the standard top level tag template.
@@ -346,7 +381,15 @@ public:
 	 *
 	 * @note should be moved to protected once all standard usage is converted.
 	 */
-	uintptr_t getTagTemplateWithDuration(char *buf, uintptr_t bufsize, uintptr_t id, const char *type, uintptr_t contextId, uint64_t durationus, uint64_t usertimeus, uint64_t cputimeus, uint64_t wallTimeMs);
+	uintptr_t getTagTemplateWithDuration(char* buf,
+	                                     uintptr_t bufsize,
+	                                     uintptr_t id,
+	                                     const char* type,
+	                                     uintptr_t contextId,
+	                                     uint64_t durationus,
+	                                     uint64_t usertimeus,
+	                                     uint64_t cputimeus,
+	                                     uint64_t wallTimeMs);
 
 	/**
 	 * Handle any output or data tracking for the initialized phase of verbose GC.
@@ -453,14 +496,14 @@ public:
 	 * @param eventData hook specific event data.
 	 */
 	void handleGCEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData);
-	
+
 	void handleConcurrentStart(J9HookInterface** hook, UDATA eventNum, void* eventData);
 	void handleConcurrentEnd(J9HookInterface** hook, UDATA eventNum, void* eventData);
-	
-	virtual	void handleConcurrentStartInternal(J9HookInterface** hook, UDATA eventNum, void* eventData) {}
+
+	virtual void handleConcurrentStartInternal(J9HookInterface** hook, UDATA eventNum, void* eventData) {}
 	virtual void handleConcurrentEndInternal(J9HookInterface** hook, UDATA eventNum, void* eventData);
-	virtual const char *getConcurrentTypeString() { return NULL; }
-	
+	virtual const char* getConcurrentTypeString() { return NULL; }
+
 	virtual void handleConcurrentGCOpStart(J9HookInterface** hook, uintptr_t eventNum, void* eventData) {}
 	virtual void handleConcurrentGCOpEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData) {}
 
@@ -473,7 +516,6 @@ public:
 	 * @param eventData hook specific event data.
 	 */
 	void handleExcessiveGCRaised(J9HookInterface** hook, uintptr_t eventNum, void* eventData);
-
 };
 
 #endif /* VERBOSEHANDLEROUTPUT_HPP_ */

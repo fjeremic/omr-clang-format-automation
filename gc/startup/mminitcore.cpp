@@ -47,14 +47,15 @@ extern "C" {
  * @return 0 if OK, or non 0 if error
  */
 intptr_t
-initializeMutatorModel(OMR_VMThread *omrVMThread)
+initializeMutatorModel(OMR_VMThread* omrVMThread)
 {
 	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(omrVMThread->_vm);
 	omrVMThread->_gcOmrVMThreadExtensions = extensions->configuration->createEnvironment(extensions, omrVMThread);
 	if (NULL != omrVMThread->_gcOmrVMThreadExtensions) {
 		if (extensions->isStandardGC()) {
-			void *lowAddress = extensions->heapBaseForBarrierRange0;
-			void *highAddress = (void *)((uintptr_t)extensions->heapBaseForBarrierRange0 + extensions->heapSizeForBarrierRange0);
+			void* lowAddress = extensions->heapBaseForBarrierRange0;
+			void* highAddress = (void*)((uintptr_t)extensions->heapBaseForBarrierRange0
+			                            + extensions->heapSizeForBarrierRange0);
 			omrVMThread->lowTenureAddress = lowAddress;
 			omrVMThread->highTenureAddress = highAddress;
 
@@ -62,9 +63,9 @@ initializeMutatorModel(OMR_VMThread *omrVMThread)
 			omrVMThread->heapBaseForBarrierRange0 = extensions->heapBaseForBarrierRange0;
 			omrVMThread->heapSizeForBarrierRange0 = extensions->heapSizeForBarrierRange0;
 		} else if (extensions->isVLHGC()) {
-			MM_Heap *heap = extensions->getHeap();
-			void *heapBase = heap->getHeapBase();
-			void *heapTop = heap->getHeapTop();
+			MM_Heap* heap = extensions->getHeap();
+			void* heapBase = heap->getHeapBase();
+			void* heapTop = heap->getHeapTop();
 
 			/* replacement values for lowTenureAddress and highTenureAddress */
 			omrVMThread->heapBaseForBarrierRange0 = heapBase;
@@ -88,9 +89,9 @@ initializeMutatorModel(OMR_VMThread *omrVMThread)
  * Cleanup Mutator specific resources (TLH, thread extension, etc) on shutdown.
  */
 void
-cleanupMutatorModel(OMR_VMThread *omrVMThread, uintptr_t flushCaches)
+cleanupMutatorModel(OMR_VMThread* omrVMThread, uintptr_t flushCaches)
 {
-	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(omrVMThread);
+	MM_EnvironmentBase* env = MM_EnvironmentBase::getEnvironment(omrVMThread);
 
 	if (NULL != env) {
 		if (flushCaches) {
@@ -101,7 +102,6 @@ cleanupMutatorModel(OMR_VMThread *omrVMThread, uintptr_t flushCaches)
 
 	omrVMThread->_gcOmrVMThreadExtensions = NULL;
 }
-
 
 intptr_t
 gcOmrInitializeDefaults(OMR_VM* omrVM)
@@ -115,7 +115,7 @@ gcOmrInitializeDefaults(OMR_VM* omrVM)
 		goto error;
 	}
 	extensions->setOmrVM(omrVM);
-	omrVM->_gcOmrVMExtensions = (void *)extensions;
+	omrVM->_gcOmrVMExtensions = (void*)extensions;
 
 	return 0;
 
@@ -124,7 +124,7 @@ error:
 }
 #if defined(OMR_RAS_TDF_TRACE)
 void
-gcOmrInitializeTrace(OMR_VMThread *omrVMThread)
+gcOmrInitializeTrace(OMR_VMThread* omrVMThread)
 {
 	UT_OMRMM_MODULE_LOADED(omrVMThread->_vm->utIntf);
 }
@@ -133,4 +133,3 @@ gcOmrInitializeTrace(OMR_VMThread *omrVMThread)
 #ifdef __cplusplus
 } /* extern "C" { */
 #endif
-

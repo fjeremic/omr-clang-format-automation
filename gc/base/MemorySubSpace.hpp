@@ -23,15 +23,14 @@
 #if !defined(MEMORYSUBSPACE_HPP_)
 #define MEMORYSUBSPACE_HPP_
 
-#include "omrcomp.h"
-#include "modronbase.h"
-
 #include "AllocationFailureStats.hpp"
 #include "EnvironmentBase.hpp"
 #include "GCExtensionsBase.hpp"
 #include "LightweightNonReentrantLock.hpp"
 #include "MemorySpacesAPI.h"
 #include "ModronAssertions.h"
+#include "modronbase.h"
+#include "omrcomp.h"
 
 class GC_MemorySubSpaceRegionIterator;
 class MM_AllocateDescription;
@@ -47,7 +46,8 @@ class MM_MemorySpace;
 class MM_ObjectAllocationInterface;
 class MM_PhysicalSubArena;
 
-typedef enum {
+typedef enum
+{
 	MODRON_COUNTER_BALANCE_TYPE_NONE = 1,
 	MODRON_COUNTER_BALANCE_TYPE_EXPAND
 } ModronCounterBalanceType;
@@ -55,7 +55,8 @@ typedef enum {
 extern "C" {
 /**
  */
-void memorySubSpaceAsyncCallbackHandler(OMR_VMThread *omrVMThread);
+void
+memorySubSpaceAsyncCallbackHandler(OMR_VMThread* omrVMThread);
 }
 
 /**
@@ -64,18 +65,18 @@ void memorySubSpaceAsyncCallbackHandler(OMR_VMThread *omrVMThread);
  */
 class MM_MemorySubSpace : public MM_BaseVirtual
 {
-friend class GC_MemorySubSpaceRegionIterator;
+	friend class GC_MemorySubSpaceRegionIterator;
 
-/*
+	/*
  * Data members
  */
 private:
 	MM_MemorySubSpace *_next, *_previous;
-	MM_MemorySubSpace *_children;
+	MM_MemorySubSpace* _children;
 	MM_AllocationFailureStats _allocationFailureStats;
 	MM_LightweightNonReentrantLock _lock; /**< Lock used to ensure region list is maintained safely */
-	MM_HeapRegionDescriptor *_regionList;
-		
+	MM_HeapRegionDescriptor* _regionList;
+
 	bool _concurrentCollectable;
 
 	uintptr_t _memoryType;
@@ -84,11 +85,11 @@ private:
 	uint32_t _objectFlags;
 
 protected:
-	MM_GCExtensionsBase *_extensions;
-	MM_Collector *_collector;
-	MM_MemorySpace *_memorySpace;
-	MM_MemorySubSpace *_parent;
-	MM_PhysicalSubArena *_physicalSubArena;
+	MM_GCExtensionsBase* _extensions;
+	MM_Collector* _collector;
+	MM_MemorySpace* _memorySpace;
+	MM_MemorySubSpace* _parent;
+	MM_PhysicalSubArena* _physicalSubArena;
 
 	uintptr_t _initialSize;
 	uintptr_t _minimumSize;
@@ -107,65 +108,64 @@ protected:
 	uintptr_t _expansionSize;
 
 public:
-
-/*
+	/*
  * Function members
  */
 private:
-	
 protected:
 	void generateAllocationFailureStats(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription);
 
 public:
-	
-	MMINLINE void clearCounterBalancing() {
+	MMINLINE void clearCounterBalancing()
+	{
 		_counterBalanceType = MODRON_COUNTER_BALANCE_TYPE_NONE;
 		_counterBalanceSize = 0;
 		_counterBalanceChainHead = NULL;
 		_counterBalanceChain = NULL;
 	}
-	
-	void reportSystemGCStart(MM_EnvironmentBase *env, uint32_t gcCode);
-	void reportSystemGCEnd(MM_EnvironmentBase *env);
-	void reportHeapResizeAttempt(MM_EnvironmentBase *env, uintptr_t amount, uintptr_t type);
-	void reportPercolateCollect(MM_EnvironmentBase *env);
 
-	bool initialize(MM_EnvironmentBase *env);
-	virtual void tearDown(MM_EnvironmentBase *env);
-	
-	MM_HeapRegionDescriptor *getFirstRegion();
-	MM_HeapRegionDescriptor *getNextRegion(MM_HeapRegionDescriptor *region);
+	void reportSystemGCStart(MM_EnvironmentBase* env, uint32_t gcCode);
+	void reportSystemGCEnd(MM_EnvironmentBase* env);
+	void reportHeapResizeAttempt(MM_EnvironmentBase* env, uintptr_t amount, uintptr_t type);
+	void reportPercolateCollect(MM_EnvironmentBase* env);
+
+	bool initialize(MM_EnvironmentBase* env);
+	virtual void tearDown(MM_EnvironmentBase* env);
+
+	MM_HeapRegionDescriptor* getFirstRegion();
+	MM_HeapRegionDescriptor* getNextRegion(MM_HeapRegionDescriptor* region);
 
 	/**
 	 * The type of allocation we were trying to perform when calling allocationRequestFailed.  This is used to determine
 	 * what call-out function to use to restart the allocation after we have dealt with the failure
 	 */
-	enum AllocationType {
+	enum AllocationType
+	{
 		ALLOCATION_TYPE_INVALID = 0,
 		ALLOCATION_TYPE_OBJECT,
 		ALLOCATION_TYPE_LEAF,
 		ALLOCATION_TYPE_TLH,
 	};
 
-	MMINLINE MM_PhysicalSubArena *getPhysicalSubArena() const { return _physicalSubArena; }
+	MMINLINE MM_PhysicalSubArena* getPhysicalSubArena() const { return _physicalSubArena; }
 
-	virtual const char *getName() { return MEMORY_SUBSPACE_NAME_UNDEFINED; }
-	virtual const char *getDescription() { return MEMORY_SUBSPACE_DESCRIPTION_UNDEFINED; }
+	virtual const char* getName() { return MEMORY_SUBSPACE_NAME_UNDEFINED; }
+	virtual const char* getDescription() { return MEMORY_SUBSPACE_DESCRIPTION_UNDEFINED; }
 	MMINLINE uint64_t getUniqueID() { return _uniqueID; }
 	MMINLINE void setUniqueID(uint64_t uniqueID) { _uniqueID = uniqueID; }
 
-	virtual MM_MemoryPool *getMemoryPool();
-	virtual MM_MemoryPool *getMemoryPool(void *addr);
-	virtual MM_MemoryPool *getMemoryPool(uintptr_t size);
-	virtual MM_MemoryPool *getMemoryPool(MM_EnvironmentBase *env, void *addrBase, void *addrTop, void * &highAddr);
+	virtual MM_MemoryPool* getMemoryPool();
+	virtual MM_MemoryPool* getMemoryPool(void* addr);
+	virtual MM_MemoryPool* getMemoryPool(uintptr_t size);
+	virtual MM_MemoryPool* getMemoryPool(MM_EnvironmentBase* env, void* addrBase, void* addrTop, void*& highAddr);
 
 	virtual uintptr_t getMemoryPoolCount();
 	virtual uintptr_t getActiveMemoryPoolCount();
 
-	virtual void kill(MM_EnvironmentBase *env);
+	virtual void kill(MM_EnvironmentBase* env);
 
 	/* Subclass may or may not implement this. MemorySubSpace that have children may implement this where merged stats will be reported. */
-	virtual MM_LargeObjectAllocateStats *getLargeObjectAllocateStats();
+	virtual MM_LargeObjectAllocateStats* getLargeObjectAllocateStats();
 
 	virtual void resetLargestFreeEntry();
 	/**
@@ -174,20 +174,20 @@ public:
 	 * @param env[in] The calling thread (usually the master thread of the GC)
 	 * @param region[in] The region to be recycled
 	 */
-	virtual void recycleRegion(MM_EnvironmentBase *env, MM_HeapRegionDescriptor *region);
-	virtual uintptr_t findLargestFreeEntry(MM_EnvironmentBase *env, MM_AllocateDescription *allocateDescription);
+	virtual void recycleRegion(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* region);
+	virtual uintptr_t findLargestFreeEntry(MM_EnvironmentBase* env, MM_AllocateDescription* allocateDescription);
 
-	MMINLINE void isAllocatable(bool isAllocatable) {_isAllocatable = isAllocatable; }
+	MMINLINE void isAllocatable(bool isAllocatable) { _isAllocatable = isAllocatable; }
 	MMINLINE bool isAllocatable() { return _isAllocatable; }
-	
+
 	MMINLINE uintptr_t getContractionSize() const { return _contractionSize; }
 	MMINLINE uintptr_t getExpansionSize() const { return _expansionSize; }
 	MMINLINE void setContractionSize(uintptr_t size) { _contractionSize = size; }
 	MMINLINE void setExpansionSize(uintptr_t size) { _expansionSize = size; }
 
-	void registerMemorySubSpace(MM_MemorySubSpace *memorySubSpace);
-	void unregisterMemorySubSpace(MM_MemorySubSpace *memorySubSpace);
-	
+	void registerMemorySubSpace(MM_MemorySubSpace* memorySubSpace);
+	void unregisterMemorySubSpace(MM_MemorySubSpace* memorySubSpace);
+
 	MMINLINE MM_MemorySubSpace* getNext() { return _next; }
 	MMINLINE MM_MemorySubSpace* getPrevious() { return _previous; }
 	MMINLINE void setNext(MM_MemorySubSpace* memorySubSpace) { _next = memorySubSpace; }
@@ -196,8 +196,8 @@ public:
 	MMINLINE MM_MemorySubSpace* getParent() { return _parent; }
 	MMINLINE void setParent(MM_MemorySubSpace* subSpace) { _parent = subSpace; }
 	MMINLINE MM_MemorySubSpace* getChildren() { return _children; }
-	
-	void setMemorySpace(MM_MemorySpace *memorySpace);
+
+	void setMemorySpace(MM_MemorySpace* memorySpace);
 
 	MMINLINE uintptr_t getInitialSize() { return _initialSize; }
 	MMINLINE uintptr_t getMinimumSize() { return _minimumSize; }
@@ -205,27 +205,27 @@ public:
 	MMINLINE uintptr_t getMaximumSize() { return _maximumSize; }
 
 	MMINLINE void setCurrentSize(uintptr_t currentSize) { _currentSize = currentSize; }
-	
+
 	virtual uintptr_t getActualFreeMemorySize();
 	virtual uintptr_t getApproximateFreeMemorySize();
-	
+
 	virtual uintptr_t getActiveMemorySize();
 	virtual uintptr_t getActiveMemorySize(uintptr_t includeMemoryType);
 	virtual uintptr_t getActiveLOAMemorySize(uintptr_t includeMemoryType);
 	virtual uintptr_t getActiveSurvivorMemorySize(uintptr_t includeMemoryType);
-	
+
 	virtual uintptr_t getActualActiveFreeMemorySize();
 	virtual uintptr_t getApproximateActiveFreeMemorySize();
 	virtual uintptr_t getApproximateActiveFreeLOAMemorySize();
 	virtual uintptr_t getApproximateActiveFreeSurvivorMemorySize();
-	
+
 	virtual uintptr_t getActualActiveFreeMemorySize(uintptr_t includeMemoryType);
 	virtual uintptr_t getApproximateActiveFreeMemorySize(uintptr_t includeMemoryType);
 	virtual uintptr_t getApproximateActiveFreeLOAMemorySize(uintptr_t includeMemoryType);
 	virtual uintptr_t getApproximateActiveFreeSurvivorMemorySize(uintptr_t includeMemoryType);
-	
-	virtual void mergeHeapStats(MM_HeapStats *heapStats);
-	virtual void mergeHeapStats(MM_HeapStats *heapStats, uintptr_t includeMemoryType);
+
+	virtual void mergeHeapStats(MM_HeapStats* heapStats);
+	virtual void mergeHeapStats(MM_HeapStats* heapStats, uintptr_t includeMemoryType);
 	virtual void resetHeapStatistics(bool globalCollect);
 	virtual MM_AllocationFailureStats* getAllocationFailureStats();
 
@@ -235,12 +235,12 @@ public:
 	 */
 	MMINLINE bool isLeafSubSpace() { return NULL == _children; }
 
-	virtual bool completeFreelistRebuildRequired(MM_EnvironmentBase *env);
-	
-	MMINLINE MM_Collector *getCollector() { return _collector; }
-	MMINLINE void setCollector(MM_Collector *collector) { _collector = collector; }
+	virtual bool completeFreelistRebuildRequired(MM_EnvironmentBase* env);
 
-	MMINLINE MM_MemorySpace *getMemorySpace() { return _memorySpace; }
+	MMINLINE MM_Collector* getCollector() { return _collector; }
+	MMINLINE void setCollector(MM_Collector* collector) { _collector = collector; }
+
+	MMINLINE MM_MemorySpace* getMemorySpace() { return _memorySpace; }
 
 	/**
 	 * Generic allocation failure handler.  This will attempt to acquire exclusive VM access and perform a garbage collection to reclaim resources.  The given "allocationType"
@@ -255,7 +255,12 @@ public:
 	 * 
 	 * @return The address of the allocated object or base address of the allocated TLH.  NULL returned on failure. 
 	 */
-	virtual void *allocationRequestFailed(MM_EnvironmentBase *env, MM_AllocateDescription *allocateDescription, AllocationType allocationType, MM_ObjectAllocationInterface *objectAllocationInterface, MM_MemorySubSpace *baseSubSpace, MM_MemorySubSpace *previousSubSpace) = 0;
+	virtual void* allocationRequestFailed(MM_EnvironmentBase* env,
+	                                      MM_AllocateDescription* allocateDescription,
+	                                      AllocationType allocationType,
+	                                      MM_ObjectAllocationInterface* objectAllocationInterface,
+	                                      MM_MemorySubSpace* baseSubSpace,
+	                                      MM_MemorySubSpace* previousSubSpace) = 0;
 	/**
 	 * A generic helper which is used by most implementations of allocationRequestFailed to issue the actual allocation request between GC attempt stages.  It decodes
 	 * the allocationType to determine which actual allocation call to issue (Object, Leaf, or TLH).
@@ -269,27 +274,44 @@ public:
 	 * @return The address of the allocation or NULL on failure (in the case of Object or Leaf allocation, this is the address of the allocate.  In the case of TLH,
 	 * this is the base address of the TLH)
 	 */
-	void *allocateGeneric(MM_EnvironmentBase *env, MM_AllocateDescription *allocateDescription, AllocationType allocationType, MM_ObjectAllocationInterface *objectAllocationInterface, MM_MemorySubSpace *attemptSubspace);
-	virtual void *allocateObject(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, MM_MemorySubSpace *baseSubSpace, MM_MemorySubSpace *previousSubSpace, bool shouldCollectOnFailure) = 0;
+	void* allocateGeneric(MM_EnvironmentBase* env,
+	                      MM_AllocateDescription* allocateDescription,
+	                      AllocationType allocationType,
+	                      MM_ObjectAllocationInterface* objectAllocationInterface,
+	                      MM_MemorySubSpace* attemptSubspace);
+	virtual void* allocateObject(MM_EnvironmentBase* env,
+	                             MM_AllocateDescription* allocDescription,
+	                             MM_MemorySubSpace* baseSubSpace,
+	                             MM_MemorySubSpace* previousSubSpace,
+	                             bool shouldCollectOnFailure) = 0;
 
 	/* TODO: RTJ Merge: Arraylet cleanup */
 	virtual uintptr_t largestDesirableArraySpine() { return UDATA_MAX; /* (no limit) */ }
-	
+
 	/**
 	 * Allocate an arraylet leaf.
 	 */
-	virtual void *allocateArrayletLeaf(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, MM_MemorySubSpace *baseSubSpace, MM_MemorySubSpace *previousSubSpace, bool shouldCollectOnFailure)
+	virtual void* allocateArrayletLeaf(MM_EnvironmentBase* env,
+	                                   MM_AllocateDescription* allocDescription,
+	                                   MM_MemorySubSpace* baseSubSpace,
+	                                   MM_MemorySubSpace* previousSubSpace,
+	                                   bool shouldCollectOnFailure)
 	{
 		Assert_MM_unreachable();
 		return NULL;
 	}
 
-	virtual void *allocateTLH(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, MM_ObjectAllocationInterface *objectAllocationInterface, MM_MemorySubSpace *baseSubSpace, MM_MemorySubSpace *previousSubSpace, bool shouldCollectOnFailure)
+	virtual void* allocateTLH(MM_EnvironmentBase* env,
+	                          MM_AllocateDescription* allocDescription,
+	                          MM_ObjectAllocationInterface* objectAllocationInterface,
+	                          MM_MemorySubSpace* baseSubSpace,
+	                          MM_MemorySubSpace* previousSubSpace,
+	                          bool shouldCollectOnFailure)
 	{
 		Assert_MM_unreachable();
 		return NULL;
 	}
-	
+
 	/**
 	 * Called under exclusive to request that the subspace attempt to replenish the given context and satisfy the given allocateDescription of the given allocationType
 	 * 
@@ -301,55 +323,71 @@ public:
 	 * 
 	 * @return The result of the allocation attempted under exclusive
 	 */
-	virtual void *lockedReplenishAndAllocate(MM_EnvironmentBase *env, MM_AllocationContext *context, MM_ObjectAllocationInterface *objectAllocationInterface, MM_AllocateDescription *allocateDescription, AllocationType allocationType)
+	virtual void* lockedReplenishAndAllocate(MM_EnvironmentBase* env,
+	                                         MM_AllocationContext* context,
+	                                         MM_ObjectAllocationInterface* objectAllocationInterface,
+	                                         MM_AllocateDescription* allocateDescription,
+	                                         AllocationType allocationType)
 	{
 		Assert_MM_unreachable();
 		return NULL;
 	}
 
-	virtual void setAllocateAtSafePointOnly(MM_EnvironmentBase *env, bool safePoint);
+	virtual void setAllocateAtSafePointOnly(MM_EnvironmentBase* env, bool safePoint);
 	virtual bool shouldAllocateAtSafePointOnly() { return false; }
 
 	/* Calls for internal collection routines */
-	virtual void *collectorAllocate(MM_EnvironmentBase *env, MM_Collector *requestCollector, MM_AllocateDescription *allocDescription);
-	virtual void *collectorAllocateTLH(MM_EnvironmentBase *env, MM_Collector *requestCollector, MM_AllocateDescription *allocDescription, uintptr_t maximumBytesRequired, void * &addrBase, void * &addrTop);
-	virtual uintptr_t collectorExpand(MM_EnvironmentBase *env, MM_Collector *requestCollector, MM_AllocateDescription *allocDescription);
+	virtual void* collectorAllocate(MM_EnvironmentBase* env,
+	                                MM_Collector* requestCollector,
+	                                MM_AllocateDescription* allocDescription);
+	virtual void* collectorAllocateTLH(MM_EnvironmentBase* env,
+	                                   MM_Collector* requestCollector,
+	                                   MM_AllocateDescription* allocDescription,
+	                                   uintptr_t maximumBytesRequired,
+	                                   void*& addrBase,
+	                                   void*& addrTop);
+	virtual uintptr_t collectorExpand(MM_EnvironmentBase* env,
+	                                  MM_Collector* requestCollector,
+	                                  MM_AllocateDescription* allocDescription);
 
 	/**
 	 * Convert the specified section of the subspace into an unused section.
 	 * @parm addrBase the start address of the section
 	 * @parm addrTop the first byte beyond the end of the region
 	 */
-	virtual void abandonHeapChunk(void *addrBase, void *addrTop) = 0;
+	virtual void abandonHeapChunk(void* addrBase, void* addrTop) = 0;
 
-	virtual MM_MemorySubSpace *getDefaultMemorySubSpace() = 0;
-	virtual MM_MemorySubSpace *getTenureMemorySubSpace() = 0;
-	
+	virtual MM_MemorySubSpace* getDefaultMemorySubSpace() = 0;
+	virtual MM_MemorySubSpace* getTenureMemorySubSpace() = 0;
+
 	/**
 	 * Find top level parent MemorySubSpace that matches provided typeFlags. Assumption is that this memory space already matches the flags.
 	 */
-	MM_MemorySubSpace *getTopLevelMemorySubSpace(uintptr_t typeFlags);
+	MM_MemorySubSpace* getTopLevelMemorySubSpace(uintptr_t typeFlags);
 
-	MMINLINE uintptr_t getTypeFlags() { return _memoryType; }		
+	MMINLINE uintptr_t getTypeFlags() { return _memoryType; }
 	MMINLINE uint32_t getObjectFlags() { return _objectFlags; }
 
 	virtual bool isActive();
-	virtual bool isChildActive(MM_MemorySubSpace *memorySubSpace);
+	virtual bool isChildActive(MM_MemorySubSpace* memorySubSpace);
 
-	virtual bool inflate(MM_EnvironmentBase *env);
+	virtual bool inflate(MM_EnvironmentBase* env);
 
-	virtual void systemGarbageCollect(MM_EnvironmentBase *env, uint32_t gcCode);
-	virtual bool percolateGarbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, uint32_t gcCode);
-	virtual bool garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, uint32_t gcCode);
+	virtual void systemGarbageCollect(MM_EnvironmentBase* env, uint32_t gcCode);
+	virtual bool
+	percolateGarbageCollect(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, uint32_t gcCode);
+	virtual bool garbageCollect(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, uint32_t gcCode);
 
 	virtual void reset();
-	virtual void rebuildFreeList(MM_EnvironmentBase *env);
+	virtual void rebuildFreeList(MM_EnvironmentBase* env);
 
-	virtual void payAllocationTax(MM_EnvironmentBase *env, MM_MemorySubSpace *baseSubSpace, MM_AllocateDescription *allocDescription);
-	void payAllocationTax(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription);
+	virtual void payAllocationTax(MM_EnvironmentBase* env,
+	                              MM_MemorySubSpace* baseSubSpace,
+	                              MM_AllocateDescription* allocDescription);
+	void payAllocationTax(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription);
 
-	void reportAllocationFailureStart(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription);
-	void reportAllocationFailureEnd(MM_EnvironmentBase *env);
+	void reportAllocationFailureStart(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription);
+	void reportAllocationFailureEnd(MM_EnvironmentBase* env);
 
 	/**
 	 * Report that exclusive access was acquired to satisfy an allocation.
@@ -360,32 +398,63 @@ public:
 	 * @param env allocating thread.
 	 * @param allocateDescription descriptor for the allocation that satisfied.
 	 */
-	void reportAcquiredExclusiveToSatisfyAllocate(MM_EnvironmentBase *env, MM_AllocateDescription *allocateDescription);
+	void
+	reportAcquiredExclusiveToSatisfyAllocate(MM_EnvironmentBase* env, MM_AllocateDescription* allocateDescription);
 
 	bool setResizable(bool resizable);
 
-	bool canExpand(MM_EnvironmentBase *env, uintptr_t expandSize);
-	virtual uintptr_t adjustExpansionWithinUserIncrement(MM_EnvironmentBase *env, uintptr_t expandSize);
-	uintptr_t maxExpansion(MM_EnvironmentBase *env);
-	virtual uintptr_t maxExpansionInSpace(MM_EnvironmentBase *env);
+	bool canExpand(MM_EnvironmentBase* env, uintptr_t expandSize);
+	virtual uintptr_t adjustExpansionWithinUserIncrement(MM_EnvironmentBase* env, uintptr_t expandSize);
+	uintptr_t maxExpansion(MM_EnvironmentBase* env);
+	virtual uintptr_t maxExpansionInSpace(MM_EnvironmentBase* env);
 
-	virtual void checkResize(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription = NULL, bool _systemGC = false);
-	virtual intptr_t performResize(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription = NULL);
-	virtual uintptr_t expand(MM_EnvironmentBase *env, uintptr_t expandSize);
-	virtual uintptr_t contract(MM_EnvironmentBase *env, uintptr_t contractSize);
-	uintptr_t counterBalanceContract(MM_EnvironmentBase *env, uintptr_t contractSize, uintptr_t contractAlignment);
-	virtual uintptr_t counterBalanceContract(MM_EnvironmentBase *env, MM_MemorySubSpace *previousSubSpace, MM_MemorySubSpace *contractSubSpace, uintptr_t contractSize, uintptr_t contractAlignment);
-	virtual uintptr_t counterBalanceContractWithExpand(MM_EnvironmentBase *env, MM_MemorySubSpace *previousSubSpace, MM_MemorySubSpace *contractSubSpace, uintptr_t contractSize, uintptr_t contractAlignment, uintptr_t expandSize);
+	virtual void
+	checkResize(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription = NULL, bool _systemGC = false);
+	virtual intptr_t performResize(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription = NULL);
+	virtual uintptr_t expand(MM_EnvironmentBase* env, uintptr_t expandSize);
+	virtual uintptr_t contract(MM_EnvironmentBase* env, uintptr_t contractSize);
+	uintptr_t counterBalanceContract(MM_EnvironmentBase* env, uintptr_t contractSize, uintptr_t contractAlignment);
+	virtual uintptr_t counterBalanceContract(MM_EnvironmentBase* env,
+	                                         MM_MemorySubSpace* previousSubSpace,
+	                                         MM_MemorySubSpace* contractSubSpace,
+	                                         uintptr_t contractSize,
+	                                         uintptr_t contractAlignment);
+	virtual uintptr_t counterBalanceContractWithExpand(MM_EnvironmentBase* env,
+	                                                   MM_MemorySubSpace* previousSubSpace,
+	                                                   MM_MemorySubSpace* contractSubSpace,
+	                                                   uintptr_t contractSize,
+	                                                   uintptr_t contractAlignment,
+	                                                   uintptr_t expandSize);
 
-	bool canContract(MM_EnvironmentBase *env, uintptr_t contractSize);
-	uintptr_t maxContraction(MM_EnvironmentBase *env);
-	uintptr_t maxContractionInSpace(MM_EnvironmentBase *env);
-	uintptr_t getAvailableContractionSizeForRangeEndingAt(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, void *lowAddr, void *highAddr);
-	virtual bool expanded(MM_EnvironmentBase *env, MM_PhysicalSubArena *subArena, MM_HeapRegionDescriptor *region, bool canCoalesce);
-	virtual bool expanded(MM_EnvironmentBase *env, MM_PhysicalSubArena *subArena, uintptr_t size, void *lowAddress, void *highAddress, bool canCoalesce);
-	virtual void addExistingMemory(MM_EnvironmentBase *env, MM_PhysicalSubArena *subArena, uintptr_t size, void *lowAddress, void *highAddress, bool canCoalesce);
-	virtual void *removeExistingMemory(MM_EnvironmentBase *env, MM_PhysicalSubArena *subArena, uintptr_t size, void *lowAddress, void *highAddress);
-	
+	bool canContract(MM_EnvironmentBase* env, uintptr_t contractSize);
+	uintptr_t maxContraction(MM_EnvironmentBase* env);
+	uintptr_t maxContractionInSpace(MM_EnvironmentBase* env);
+	uintptr_t getAvailableContractionSizeForRangeEndingAt(MM_EnvironmentBase* env,
+	                                                      MM_AllocateDescription* allocDescription,
+	                                                      void* lowAddr,
+	                                                      void* highAddr);
+	virtual bool expanded(MM_EnvironmentBase* env,
+	                      MM_PhysicalSubArena* subArena,
+	                      MM_HeapRegionDescriptor* region,
+	                      bool canCoalesce);
+	virtual bool expanded(MM_EnvironmentBase* env,
+	                      MM_PhysicalSubArena* subArena,
+	                      uintptr_t size,
+	                      void* lowAddress,
+	                      void* highAddress,
+	                      bool canCoalesce);
+	virtual void addExistingMemory(MM_EnvironmentBase* env,
+	                               MM_PhysicalSubArena* subArena,
+	                               uintptr_t size,
+	                               void* lowAddress,
+	                               void* highAddress,
+	                               bool canCoalesce);
+	virtual void* removeExistingMemory(MM_EnvironmentBase* env,
+	                                   MM_PhysicalSubArena* subArena,
+	                                   uintptr_t size,
+	                                   void* lowAddress,
+	                                   void* highAddress);
+
 	/**
 	 * Select a region for contraction, preferably on the specified NUMA node
 	 * 
@@ -394,53 +463,64 @@ public:
 	 * 
 	 * @return the region to contract, or NULL if none available
 	 */
-	virtual MM_HeapRegionDescriptor * selectRegionForContraction(MM_EnvironmentBase *env, uintptr_t numaNode);
-	
-	virtual bool heapAddRange(MM_EnvironmentBase *env, MM_MemorySubSpace *subspace, uintptr_t size, void *lowAddress, void *highAddress);
-	virtual bool heapRemoveRange(MM_EnvironmentBase *env, MM_MemorySubSpace *subspace, uintptr_t size, void *lowAddress, void *highAddress, void *lowValidAddress, void *highValidAddress);
+	virtual MM_HeapRegionDescriptor* selectRegionForContraction(MM_EnvironmentBase* env, uintptr_t numaNode);
+
+	virtual bool heapAddRange(MM_EnvironmentBase* env,
+	                          MM_MemorySubSpace* subspace,
+	                          uintptr_t size,
+	                          void* lowAddress,
+	                          void* highAddress);
+	virtual bool heapRemoveRange(MM_EnvironmentBase* env,
+	                             MM_MemorySubSpace* subspace,
+	                             uintptr_t size,
+	                             void* lowAddress,
+	                             void* highAddress,
+	                             void* lowValidAddress,
+	                             void* highValidAddress);
 	/**
 	 * Called after the heap geometry changes to allow any data structures dependent on this to be updated.
 	 * This call could be triggered by memory ranges being added to or removed from the heap or memory being
 	 * moved from one subspace to another.
 	 * @param env[in] The thread which performed the change in heap geometry 
 	 */
-	virtual void heapReconfigured(MM_EnvironmentBase *env);
+	virtual void heapReconfigured(MM_EnvironmentBase* env);
 
-	virtual void *findFreeEntryEndingAtAddr(MM_EnvironmentBase *env, void *addr);
-	virtual void *findFreeEntryTopStartingAtAddr(MM_EnvironmentBase *env, void *addr);
-	virtual void *getFirstFreeStartingAddr(MM_EnvironmentBase *env);
-	virtual void *getNextFreeStartingAddr(MM_EnvironmentBase *env, void *currentFree);
-	virtual void moveHeap(MM_EnvironmentBase *env, void *srcBase, void *srcTop, void *dstBase);
+	virtual void* findFreeEntryEndingAtAddr(MM_EnvironmentBase* env, void* addr);
+	virtual void* findFreeEntryTopStartingAtAddr(MM_EnvironmentBase* env, void* addr);
+	virtual void* getFirstFreeStartingAddr(MM_EnvironmentBase* env);
+	virtual void* getNextFreeStartingAddr(MM_EnvironmentBase* env, void* currentFree);
+	virtual void moveHeap(MM_EnvironmentBase* env, void* srcBase, void* srcTop, void* dstBase);
 
-	virtual uintptr_t getAvailableContractionSize(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription);
+	virtual uintptr_t
+	getAvailableContractionSize(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription);
 
 	MMINLINE bool isConcurrentCollectable() { return _concurrentCollectable; }
-	MMINLINE void setConcurrentCollectable() { _concurrentCollectable= true; }
+	MMINLINE void setConcurrentCollectable() { _concurrentCollectable = true; }
 
-	void enqueueCounterBalanceExpand(MM_EnvironmentBase *env, MM_MemorySubSpace *subSpace, uintptr_t expandSize);
-	void triggerEnqueuedCounterBalancing(MM_EnvironmentBase *env);
-	void clearEnqueuedCounterBalancing(MM_EnvironmentBase *env);
-	void runEnqueuedCounterBalancing(MM_EnvironmentBase *env);
+	void enqueueCounterBalanceExpand(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace, uintptr_t expandSize);
+	void triggerEnqueuedCounterBalancing(MM_EnvironmentBase* env);
+	void clearEnqueuedCounterBalancing(MM_EnvironmentBase* env);
+	void runEnqueuedCounterBalancing(MM_EnvironmentBase* env);
 
 #if defined(OMR_GC_CONCURRENT_SWEEP)
-	virtual bool replenishPoolForAllocate(MM_EnvironmentBase *env, MM_MemoryPool *memoryPool, uintptr_t size);
+	virtual bool replenishPoolForAllocate(MM_EnvironmentBase* env, MM_MemoryPool* memoryPool, uintptr_t size);
 #endif /* OMR_GC_CONCURRENT_SWEEP */
 
-	bool isDescendant(MM_MemorySubSpace *memorySubSpace);
-	
+	bool isDescendant(MM_MemorySubSpace* memorySubSpace);
+
 	/**
 	 * Some optimizations require knowing if this subspace is involved in a copying semi-space
 	 */
 	virtual bool isPartOfSemiSpace();
-	
+
 	/**
 	 * Merge the stats from children memory subSpaces
 	 * Not thread safe - caller has to make sure no other threads are modifying the stats for any of children.
 	 */
-	virtual void mergeLargeObjectAllocateStats(MM_EnvironmentBase *env) {}
+	virtual void mergeLargeObjectAllocateStats(MM_EnvironmentBase* env) {}
 
-	virtual void registerRegion(MM_HeapRegionDescriptor *region);
-	virtual void unregisterRegion(MM_HeapRegionDescriptor *region);
+	virtual void registerRegion(MM_HeapRegionDescriptor* region);
+	virtual void unregisterRegion(MM_HeapRegionDescriptor* region);
 	void lockRegionList();
 	void unlockRegionList();
 	bool wasContractedThisGC(uintptr_t gcCount);
@@ -452,39 +532,44 @@ public:
 	/**
 	 * Create a MemorySubSpace object.
 	 */
-	MM_MemorySubSpace(
-		MM_EnvironmentBase *env, MM_Collector *collector, MM_PhysicalSubArena *physicalSubArena,
-		bool usesGlobalCollector, uintptr_t minimumSize, uintptr_t initialSize, uintptr_t maximumSize, uintptr_t memoryType, uint32_t objectFlags)
-		: MM_BaseVirtual()
-		, _next(NULL)
-		, _previous(NULL)
-		, _children(NULL)
-		, _regionList(NULL)
-		, _concurrentCollectable(false)		
-		, _memoryType(memoryType)
-		, _objectFlags(objectFlags)
-		, _extensions(env->getExtensions())
-		, _collector(collector)
-		, _memorySpace(NULL)
-		, _parent(NULL)
-		, _physicalSubArena(physicalSubArena)
-		, _initialSize(initialSize)
-		, _minimumSize(minimumSize)
-		, _currentSize(0)
-		, _maximumSize(maximumSize)
-		, _uniqueID(0)
-		, _usesGlobalCollector(usesGlobalCollector)
-		, _isAllocatable(true)
-		, _counterBalanceType(MODRON_COUNTER_BALANCE_TYPE_NONE)
-		, _counterBalanceSize(0)
-		, _counterBalanceChainHead(NULL)
-		, _counterBalanceChain(NULL)
-		, _contractionSize(0)
-		, _expansionSize(0)
+	MM_MemorySubSpace(MM_EnvironmentBase* env,
+	                  MM_Collector* collector,
+	                  MM_PhysicalSubArena* physicalSubArena,
+	                  bool usesGlobalCollector,
+	                  uintptr_t minimumSize,
+	                  uintptr_t initialSize,
+	                  uintptr_t maximumSize,
+	                  uintptr_t memoryType,
+	                  uint32_t objectFlags)
+	        : MM_BaseVirtual(),
+	          _next(NULL),
+	          _previous(NULL),
+	          _children(NULL),
+	          _regionList(NULL),
+	          _concurrentCollectable(false),
+	          _memoryType(memoryType),
+	          _objectFlags(objectFlags),
+	          _extensions(env->getExtensions()),
+	          _collector(collector),
+	          _memorySpace(NULL),
+	          _parent(NULL),
+	          _physicalSubArena(physicalSubArena),
+	          _initialSize(initialSize),
+	          _minimumSize(minimumSize),
+	          _currentSize(0),
+	          _maximumSize(maximumSize),
+	          _uniqueID(0),
+	          _usesGlobalCollector(usesGlobalCollector),
+	          _isAllocatable(true),
+	          _counterBalanceType(MODRON_COUNTER_BALANCE_TYPE_NONE),
+	          _counterBalanceSize(0),
+	          _counterBalanceChainHead(NULL),
+	          _counterBalanceChain(NULL),
+	          _contractionSize(0),
+	          _expansionSize(0)
 	{
 		_typeId = __FUNCTION__;
 	}
 };
 
 #endif /* MEMORYSUBSPACE_HPP_ */
-

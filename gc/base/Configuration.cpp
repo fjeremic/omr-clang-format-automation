@@ -25,9 +25,6 @@
  * @ingroup GC_Base
  */
 
-#include "omrcfg.h"
-#include "sizeclasses.h"
-
 #include "Configuration.hpp"
 
 #include "Debug.hpp"
@@ -37,12 +34,14 @@
 #include "GlobalCollector.hpp"
 #include "Heap.hpp"
 #include "HeapRegionManager.hpp"
-#include "OMR_VM.hpp"
-#include "OMR_VMThread.hpp"
 #include "MemoryManager.hpp"
 #include "MemorySpace.hpp"
+#include "OMR_VM.hpp"
+#include "OMR_VMThread.hpp"
 #include "ParallelDispatcher.hpp"
 #include "ReferenceChainWalkerMarkMap.hpp"
+#include "omrcfg.h"
+#include "sizeclasses.h"
 #if defined(OMR_GC_THREAD_LOCAL_HEAP)
 #include "TLHAllocationInterface.hpp"
 #endif /* defined(OMR_GC_THREAD_LOCAL_HEAP) */
@@ -72,7 +71,9 @@ MM_Configuration::initialize(MM_EnvironmentBase* env)
 			if (initializeNUMAManager(env)) {
 				initializeGCThreadCount(env);
 				initializeGCParameters(env);
-				extensions->_lightweightNonReentrantLockPool = pool_new(sizeof(J9ThreadMonitorTracing), 0, 0, 0, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_MM, POOL_FOR_PORT(env->getPortLibrary()));
+				extensions->_lightweightNonReentrantLockPool =
+				        pool_new(sizeof(J9ThreadMonitorTracing), 0, 0, 0, OMR_GET_CALLSITE(),
+				                 OMRMEM_CATEGORY_MM, POOL_FOR_PORT(env->getPortLibrary()));
 				result = (NULL != extensions->_lightweightNonReentrantLockPool);
 			}
 		}
@@ -89,8 +90,8 @@ MM_Configuration::tearDown(MM_EnvironmentBase* env)
 	/* DefaultMemorySpace needs to be killed before
 	 * ext->heap is freed in MM_Configuration::tearDown. */
 	if (NULL != extensions->heap) {
-		MM_MemorySpace *modronMemorySpace = extensions->heap->getDefaultMemorySpace();
-		if  (NULL != modronMemorySpace) {
+		MM_MemorySpace* modronMemorySpace = extensions->heap->getDefaultMemorySpace();
+		if (NULL != modronMemorySpace) {
 			modronMemorySpace->kill(env);
 		}
 		extensions->heap->setDefaultMemorySpace(NULL);
@@ -102,7 +103,7 @@ MM_Configuration::tearDown(MM_EnvironmentBase* env)
 		extensions->referenceChainWalkerMarkMap = NULL;
 	}
 
-	MM_Collector *collector = extensions->getGlobalCollector();
+	MM_Collector* collector = extensions->getGlobalCollector();
 	if (NULL != collector) {
 		collector->kill(env);
 		extensions->setGlobalCollector(NULL);
@@ -124,7 +125,7 @@ MM_Configuration::tearDown(MM_EnvironmentBase* env)
 	if (NULL != extensions->heap) {
 		extensions->heap->kill(env);
 		extensions->heap = NULL;
-	}	
+	}
 
 	if (NULL != extensions->memoryManager) {
 		extensions->memoryManager->kill(env);
@@ -195,9 +196,7 @@ MM_Configuration::initializeEnvironment(MM_EnvironmentBase* env)
 		env->_objectAllocationInterface = MM_SegregatedAllocationInterface::newInstance(env);
 		break;
 #endif /* defined(OMR_GC_SEGREGATED_HEAP) */
-	default:
-		Assert_MM_unreachable();
-		break;
+	default: Assert_MM_unreachable(); break;
 	}
 
 	if (NULL != env->_objectAllocationInterface) {
@@ -254,8 +253,8 @@ MM_Configuration::createHeap(MM_EnvironmentBase* env, uintptr_t heapBytesRequest
 
 		/* VM Design 1869: kill the heap if it was allocated but not in the area requested by the fvtest options and then let it fall through to the normal error handling */
 		if ((heap->getHeapBase() < extensions->fvtest_verifyHeapAbove)
-		|| ((NULL != extensions->fvtest_verifyHeapBelow) && (heap->getHeapTop() > extensions->fvtest_verifyHeapBelow))
-		) {
+		    || ((NULL != extensions->fvtest_verifyHeapBelow)
+		        && (heap->getHeapTop() > extensions->fvtest_verifyHeapBelow))) {
 			heap->kill(env);
 			heap = NULL;
 		}
@@ -268,7 +267,7 @@ bool
 MM_Configuration::initializeRunTimeObjectAlignmentAndCRShift(MM_EnvironmentBase* env, MM_Heap* heap)
 {
 	MM_GCExtensionsBase* extensions = env->getExtensions();
-	OMR_VM *omrVM = env->getOmrVM();
+	OMR_VM* omrVM = env->getOmrVM();
 
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 	if (env->compressObjectReferences()) {
@@ -318,16 +317,16 @@ MM_Configuration::initializeRunTimeObjectAlignmentAndCRShift(MM_EnvironmentBase*
 
 void
 MM_Configuration::prepareParameters(OMR_VM* omrVM,
-									uintptr_t minimumSpaceSize,
-									uintptr_t minimumNewSpaceSize,
-									uintptr_t initialNewSpaceSize,
-									uintptr_t maximumNewSpaceSize,
-									uintptr_t minimumTenureSpaceSize,
-									uintptr_t initialTenureSpaceSize,
-									uintptr_t maximumTenureSpaceSize,
-									uintptr_t memoryMax,
-									uintptr_t tenureFlags,
-									MM_InitializationParameters* parameters)
+                                    uintptr_t minimumSpaceSize,
+                                    uintptr_t minimumNewSpaceSize,
+                                    uintptr_t initialNewSpaceSize,
+                                    uintptr_t maximumNewSpaceSize,
+                                    uintptr_t minimumTenureSpaceSize,
+                                    uintptr_t initialTenureSpaceSize,
+                                    uintptr_t maximumTenureSpaceSize,
+                                    uintptr_t memoryMax,
+                                    uintptr_t tenureFlags,
+                                    MM_InitializationParameters* parameters)
 {
 	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(omrVM);
 	MM_Heap* heap = extensions->heap;
@@ -341,8 +340,10 @@ MM_Configuration::prepareParameters(OMR_VM* omrVM,
 	maximumNewSpaceSize = MM_Math::roundToCeiling(alignment * 2, maximumNewSpaceSize);
 	maximumTenureSpaceSize = MM_Math::roundToCeiling(alignment, maximumTenureSpaceSize);
 
-	minimumSpaceSize = OMR_MAX(MM_Math::roundToCeiling(alignment, minimumSpaceSize), minimumNewSpaceSize + minimumTenureSpaceSize);
-	memoryMax = OMR_MAX(MM_Math::roundToCeiling(alignment, memoryMax), maximumTenureSpaceSize + maximumNewSpaceSize);
+	minimumSpaceSize = OMR_MAX(MM_Math::roundToCeiling(alignment, minimumSpaceSize),
+	                           minimumNewSpaceSize + minimumTenureSpaceSize);
+	memoryMax =
+	        OMR_MAX(MM_Math::roundToCeiling(alignment, memoryMax), maximumTenureSpaceSize + maximumNewSpaceSize);
 
 	maximumHeapSize = OMR_MIN(maximumHeapSize, memoryMax);
 
@@ -357,8 +358,10 @@ MM_Configuration::prepareParameters(OMR_VM* omrVM,
 	parameters->_initialNewSpaceSize = OMR_MIN(maximumHeapSize, initialNewSpaceSize);
 	parameters->_maximumNewSpaceSize = OMR_MIN(maximumHeapSize, maximumNewSpaceSize);
 
-	parameters->_minimumOldSpaceSize = OMR_MIN(maximumHeapSize - parameters->_minimumNewSpaceSize, minimumTenureSpaceSize);
-	parameters->_initialOldSpaceSize = OMR_MIN(maximumHeapSize - parameters->_initialNewSpaceSize, initialTenureSpaceSize);
+	parameters->_minimumOldSpaceSize =
+	        OMR_MIN(maximumHeapSize - parameters->_minimumNewSpaceSize, minimumTenureSpaceSize);
+	parameters->_initialOldSpaceSize =
+	        OMR_MIN(maximumHeapSize - parameters->_initialNewSpaceSize, initialTenureSpaceSize);
 	parameters->_maximumOldSpaceSize = OMR_MIN(maximumHeapSize, maximumTenureSpaceSize);
 	parameters->_maximumSpaceSize = maximumHeapSize;
 }
@@ -369,13 +372,9 @@ MM_Configuration::getAlignment(MM_GCExtensionsBase* extensions, MM_AlignmentType
 	uintptr_t result = 0;
 
 	switch (type) {
-	case mm_heapAlignment:
-		result = extensions->heapAlignment;
-		break;
+	case mm_heapAlignment: result = extensions->heapAlignment; break;
 
-	case mm_regionAlignment:
-		result = extensions->regionSize;
-		break;
+	case mm_regionAlignment: result = extensions->regionSize; break;
 	}
 
 	return result;
@@ -410,7 +409,8 @@ MM_Configuration::initializeArrayletLeafSize(MM_EnvironmentBase* env)
 	bool result = true;
 	OMR_VM* omrVM = env->getOmrVM();
 	if (UDATA_MAX != _defaultArrayletLeafSize) {
-		uintptr_t arrayletLeafSize = (0 != _defaultArrayletLeafSize) ? _defaultArrayletLeafSize : env->getExtensions()->regionSize;
+		uintptr_t arrayletLeafSize = (0 != _defaultArrayletLeafSize) ? _defaultArrayletLeafSize
+		                                                             : env->getExtensions()->regionSize;
 		uintptr_t shift = calculatePowerOfTwoShift(env, arrayletLeafSize);
 		if (0 != shift) {
 			omrVM->_arrayletLeafSize = (uintptr_t)1 << shift;
@@ -445,7 +445,7 @@ void
 MM_Configuration::initializeGCParameters(MM_EnvironmentBase* env)
 {
 	MM_GCExtensionsBase* extensions = env->getExtensions();
-	
+
 	/* TODO 108399: May need to adjust -Xmn*, -Xmo* values here if not fully specified on startup options */
 
 	/* initialize packet lock splitting factor */
@@ -472,14 +472,15 @@ MM_Configuration::initializeGCParameters(MM_EnvironmentBase* env)
 
 	/* initialize default split freelist split amount */
 	if (0 == extensions->splitFreeListSplitAmount) {
-	#if defined(OMR_GC_MODRON_SCAVENGER)
+#if defined(OMR_GC_MODRON_SCAVENGER)
 		if (extensions->scavengerEnabled) {
-			extensions->splitFreeListSplitAmount = (extensions->gcThreadCount - 1) / 8  +  1;
+			extensions->splitFreeListSplitAmount = (extensions->gcThreadCount - 1) / 8 + 1;
 		} else
-	#endif /* J9VM_GC_MODRON_SCAVENGER */
+#endif /* J9VM_GC_MODRON_SCAVENGER */
 		{
 			OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-			extensions->splitFreeListSplitAmount = (omrsysinfo_get_number_CPUs_by_type(OMRPORT_CPU_ONLINE) - 1) / 8  +  1;
+			extensions->splitFreeListSplitAmount =
+			        (omrsysinfo_get_number_CPUs_by_type(OMRPORT_CPU_ONLINE) - 1) / 8 + 1;
 		}
 	}
 }
@@ -490,8 +491,11 @@ MM_Configuration::initializeNUMAManager(MM_EnvironmentBase* env)
 	return env->getExtensions()->_numaManager.recacheNUMASupport(env);
 }
 
-MM_Dispatcher *
-MM_Configuration::createDispatcher(MM_EnvironmentBase *env, omrsig_handler_fn handler, void* handler_arg, uintptr_t defaultOSStackSize)
+MM_Dispatcher*
+MM_Configuration::createDispatcher(MM_EnvironmentBase* env,
+                                   omrsig_handler_fn handler,
+                                   void* handler_arg,
+                                   uintptr_t defaultOSStackSize)
 {
 	return MM_ParallelDispatcher::newInstance(env, handler, handler_arg, defaultOSStackSize);
 }

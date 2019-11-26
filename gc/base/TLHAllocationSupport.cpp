@@ -25,15 +25,7 @@
  * @ingroup GC_Base_Core
  */
 
-#include <string.h>
-
-#include "omrcfg.h"
-
 #include "TLHAllocationSupport.hpp"
-
-#include "ModronAssertions.h"
-#include "objectdescription.h"
-#include "omrutil.h"
 
 #include "AllocateDescription.hpp"
 #include "AllocationContext.hpp"
@@ -46,8 +38,13 @@
 #include "MemoryPool.hpp"
 #include "MemorySpace.hpp"
 #include "MemorySubSpace.hpp"
+#include "ModronAssertions.h"
 #include "ObjectAllocationInterface.hpp"
 #include "ObjectHeapIteratorAddressOrderedList.hpp"
+#include "objectdescription.h"
+#include "omrcfg.h"
+#include "omrutil.h"
+#include <string.h>
 
 #if defined(OMR_VALGRIND_MEMCHECK)
 #include "MemcheckWrapper.hpp"
@@ -58,23 +55,25 @@
  * Report clearing of a full allocation cache
  */
 void
-MM_TLHAllocationSupport::reportClearCache(MM_EnvironmentBase *env)
+MM_TLHAllocationSupport::reportClearCache(MM_EnvironmentBase* env)
 {
-	MM_GCExtensionsBase *extensions = env->getExtensions();
-	MM_MemorySubSpace *subspace = env->getMemorySpace()->getDefaultMemorySubSpace();
+	MM_GCExtensionsBase* extensions = env->getExtensions();
+	MM_MemorySubSpace* subspace = env->getMemorySpace()->getDefaultMemorySubSpace();
 
-	TRIGGER_J9HOOK_MM_PRIVATE_CACHE_CLEARED(extensions->privateHookInterface, _omrVMThread, subspace, getBase(), getAlloc(), getTop());
+	TRIGGER_J9HOOK_MM_PRIVATE_CACHE_CLEARED(extensions->privateHookInterface, _omrVMThread, subspace, getBase(),
+	                                        getAlloc(), getTop());
 }
 
 /**
  * Report allocation of a new allocation cache
  */
 void
-MM_TLHAllocationSupport::reportRefreshCache(MM_EnvironmentBase *env)
+MM_TLHAllocationSupport::reportRefreshCache(MM_EnvironmentBase* env)
 {
-	MM_MemorySubSpace *subspace = env->getMemorySpace()->getDefaultMemorySubSpace();
+	MM_MemorySubSpace* subspace = env->getMemorySpace()->getDefaultMemorySubSpace();
 
-	TRIGGER_J9HOOK_MM_PRIVATE_CACHE_REFRESHED(env->getExtensions()->privateHookInterface, _omrVMThread, subspace, getBase(), getTop());
+	TRIGGER_J9HOOK_MM_PRIVATE_CACHE_REFRESHED(env->getExtensions()->privateHookInterface, _omrVMThread, subspace,
+	                                          getBase(), getTop());
 }
 
 /**
@@ -85,9 +84,9 @@ MM_TLHAllocationSupport::reportRefreshCache(MM_EnvironmentBase *env)
  * @note The calling environment may not be the receivers owning environment.
  */
 void
-MM_TLHAllocationSupport::clear(MM_EnvironmentBase *env)
+MM_TLHAllocationSupport::clear(MM_EnvironmentBase* env)
 {
-	MM_MemoryPool *memoryPool = getMemoryPool();
+	MM_MemoryPool* memoryPool = getMemoryPool();
 
 	/* Any previous cache to clear  ? */
 	if (NULL != memoryPool) {
@@ -105,12 +104,12 @@ MM_TLHAllocationSupport::clear(MM_EnvironmentBase *env)
  *
  * @param shouldFlush determines whether the existing cache information should be flushed back to the heap.
  */
- void
- MM_TLHAllocationSupport::reconnect(MM_EnvironmentBase *env, bool shouldFlush)
+void
+MM_TLHAllocationSupport::reconnect(MM_EnvironmentBase* env, bool shouldFlush)
 {
-	 MM_GCExtensionsBase *extensions = env->getExtensions();
+	MM_GCExtensionsBase* extensions = env->getExtensions();
 
-	if(shouldFlush) {
+	if (shouldFlush) {
 		_abandonedList = NULL;
 		_abandonedListSize = 0;
 		clear(env);
@@ -131,7 +130,7 @@ MM_TLHAllocationSupport::clear(MM_EnvironmentBase *env)
  * @note The previous cache contents are expected to have been flushed back to the heap.
  */
 void
-MM_TLHAllocationSupport::restart(MM_EnvironmentBase *env)
+MM_TLHAllocationSupport::restart(MM_EnvironmentBase* env)
 {
 	MM_GCExtensionsBase* extensions = env->getExtensions();
 	uintptr_t refreshSize;
@@ -149,7 +148,9 @@ MM_TLHAllocationSupport::restart(MM_EnvironmentBase *env)
  * Refresh the TLH.
  */
 bool
-MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, bool shouldCollectOnFailure)
+MM_TLHAllocationSupport::refresh(MM_EnvironmentBase* env,
+                                 MM_AllocateDescription* allocDescription,
+                                 bool shouldCollectOnFailure)
 {
 	MM_GCExtensionsBase* extensions = env->getExtensions();
 	bool const compressed = extensions->compressObjectReferences();
@@ -170,7 +171,7 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 		return false;
 	}
 
-	MM_AllocationStats *stats = _objectAllocationInterface->getAllocationStats();
+	MM_AllocationStats* stats = _objectAllocationInterface->getAllocationStats();
 
 	stats->_tlhDiscardedBytes += getSize();
 
@@ -180,9 +181,9 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 		MM_HeapLinkedFreeHeaderTLH* newCache = (MM_HeapLinkedFreeHeaderTLH*)getRealAlloc();
 
 #if defined(OMR_VALGRIND_MEMCHECK)
-		valgrindMakeMemUndefined((uintptr_t)newCache, sizeof(MM_HeapLinkedFreeHeaderTLH));			
+		valgrindMakeMemUndefined((uintptr_t)newCache, sizeof(MM_HeapLinkedFreeHeaderTLH));
 #endif /* defined(OMR_VALGRIND_MEMCHECK) */
-	    newCache->setSize(getSize());
+		newCache->setSize(getSize());
 		newCache->_memoryPool = getMemoryPool();
 		newCache->_memorySubSpace = getMemorySubSpace();
 		newCache->setNext(_abandonedList, compressed);
@@ -200,9 +201,9 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 	/* Try allocating a TLH */
 	if ((NULL != _abandonedList) && (sizeInBytesRequired <= tlhMinimumSize)) {
 		/* Try to get a cached TLH */
-		setupTLH(env, (void *)_abandonedList, (void *)_abandonedList->afterEnd(),
-				_abandonedList->_memorySubSpace, _abandonedList->_memoryPool);
-		_abandonedList = (MM_HeapLinkedFreeHeaderTLH *)_abandonedList->getNext(compressed);
+		setupTLH(env, (void*)_abandonedList, (void*)_abandonedList->afterEnd(), _abandonedList->_memorySubSpace,
+		         _abandonedList->_memoryPool);
+		_abandonedList = (MM_HeapLinkedFreeHeaderTLH*)_abandonedList->getNext(compressed);
 		--_abandonedListSize;
 
 #if defined(OMR_GC_BATCH_CLEAR_TLH)
@@ -224,25 +225,30 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 		didRefresh = true;
 	} else {
 		/* Try allocating a fresh TLH */
-		MM_AllocationContext *ac = env->getAllocationContext();
-		MM_MemorySpace *memorySpace = _objectAllocationInterface->getOwningEnv()->getMemorySpace();
+		MM_AllocationContext* ac = env->getAllocationContext();
+		MM_MemorySpace* memorySpace = _objectAllocationInterface->getOwningEnv()->getMemorySpace();
 
 		if (NULL != ac) {
 			/* ensure that we are allowed to use the AI in this configuration in the Tarok case */
 			/* allocation contexts currently aren't supported with generational schemes */
-			Assert_MM_true(memorySpace->getTenureMemorySubSpace() == memorySpace->getDefaultMemorySubSpace());
-			didRefresh = (NULL != ac->allocateTLH(env, allocDescription, _objectAllocationInterface, shouldCollectOnFailure));
+			Assert_MM_true(memorySpace->getTenureMemorySubSpace()
+			               == memorySpace->getDefaultMemorySubSpace());
+			didRefresh = (NULL
+			              != ac->allocateTLH(env, allocDescription, _objectAllocationInterface,
+			                                 shouldCollectOnFailure));
 		} else {
-			MM_MemorySubSpace *subspace = memorySpace->getDefaultMemorySubSpace();
-			didRefresh = (NULL != subspace->allocateTLH(env, allocDescription, _objectAllocationInterface, NULL, NULL, shouldCollectOnFailure));
+			MM_MemorySubSpace* subspace = memorySpace->getDefaultMemorySubSpace();
+			didRefresh = (NULL
+			              != subspace->allocateTLH(env, allocDescription, _objectAllocationInterface, NULL,
+			                                       NULL, shouldCollectOnFailure));
 		}
 
 		if (didRefresh) {
 #if defined(OMR_GC_BATCH_CLEAR_TLH)
 			if (_zeroTLH) {
 				if (0 != extensions->batchClearTLH) {
-					void *base = getBase();
-					void *top = getTop();
+					void* base = getBase();
+					void* top = getTop();
 					OMRZeroMemory(base, (uintptr_t)top - (uintptr_t)base);
 				}
 			}
@@ -286,14 +292,15 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 	return didRefresh;
 }
 
-
 /**
  * Attempt to allocate an object in this TLH.
  */
-void *
-MM_TLHAllocationSupport::allocateFromTLH(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, bool shouldCollectOnFailure)
+void*
+MM_TLHAllocationSupport::allocateFromTLH(MM_EnvironmentBase* env,
+                                         MM_AllocateDescription* allocDescription,
+                                         bool shouldCollectOnFailure)
 {
-	void *memPtr = NULL;
+	void* memPtr = NULL;
 
 	Assert_MM_true(!env->getExtensions()->isSegregatedHeap());
 	uintptr_t sizeInBytesRequired = allocDescription->getContiguousBytes();
@@ -303,9 +310,9 @@ MM_TLHAllocationSupport::allocateFromTLH(MM_EnvironmentBase *env, MM_AllocateDes
 	}
 
 	/* Try to fit the allocate into the current TLH */
-	if(sizeInBytesRequired <= getSize()) {
-		memPtr = (void *)getAlloc();
-		setAlloc((void *)((uintptr_t)getAlloc() + sizeInBytesRequired));
+	if (sizeInBytesRequired <= getSize()) {
+		memPtr = (void*)getAlloc();
+		setAlloc((void*)((uintptr_t)getAlloc() + sizeInBytesRequired));
 #if defined(OMR_GC_TLH_PREFETCH_FTA)
 		if (*_pointerToTlhPrefetchFTA < (intptr_t)sizeInBytesRequired) {
 			*_pointerToTlhPrefetchFTA = 0;
@@ -314,7 +321,7 @@ MM_TLHAllocationSupport::allocateFromTLH(MM_EnvironmentBase *env, MM_AllocateDes
 		}
 #endif /* OMR_GC_TLH_PREFETCH_FTA */
 		allocDescription->setObjectFlags(getObjectFlags());
-		allocDescription->setMemorySubSpace((MM_MemorySubSpace *)_tlh->memorySubSpace);
+		allocDescription->setMemorySubSpace((MM_MemorySubSpace*)_tlh->memorySubSpace);
 		allocDescription->completedFromTlh();
 	}
 
@@ -329,12 +336,15 @@ MM_TLHAllocationSupport::allocateFromTLH(MM_EnvironmentBase *env, MM_AllocateDes
  * AllocationDescription with the appropriate information.
  * @return true on successful TLH replenishment, false otherwise.
  */
-void *
-MM_TLHAllocationSupport::allocateTLH(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, MM_MemorySubSpace *memorySubSpace, MM_MemoryPool *memoryPool)
+void*
+MM_TLHAllocationSupport::allocateTLH(MM_EnvironmentBase* env,
+                                     MM_AllocateDescription* allocDescription,
+                                     MM_MemorySubSpace* memorySubSpace,
+                                     MM_MemoryPool* memoryPool)
 {
 	void *addrBase, *addrTop;
 
-	if(memoryPool->allocateTLH(env, allocDescription, getRefreshSize(), addrBase, addrTop)) {
+	if (memoryPool->allocateTLH(env, allocDescription, getRefreshSize(), addrBase, addrTop)) {
 		setupTLH(env, addrBase, addrTop, memorySubSpace, memoryPool);
 		allocDescription->setMemorySubSpace(memorySubSpace);
 		allocDescription->setObjectFlags(memorySubSpace->getObjectFlags());
@@ -344,7 +354,7 @@ MM_TLHAllocationSupport::allocateTLH(MM_EnvironmentBase *env, MM_AllocateDescrip
 }
 
 void
-MM_TLHAllocationSupport::flushCache(MM_EnvironmentBase *env)
+MM_TLHAllocationSupport::flushCache(MM_EnvironmentBase* env)
 {
 	/* Since AllocationStats have been reset, reset the base as well*/
 	_abandonedList = NULL;
@@ -353,11 +363,15 @@ MM_TLHAllocationSupport::flushCache(MM_EnvironmentBase *env)
 }
 
 void
-MM_TLHAllocationSupport::setupTLH(MM_EnvironmentBase *env, void *addrBase, void *addrTop, MM_MemorySubSpace *memorySubSpace, MM_MemoryPool *memoryPool)
+MM_TLHAllocationSupport::setupTLH(MM_EnvironmentBase* env,
+                                  void* addrBase,
+                                  void* addrTop,
+                                  MM_MemorySubSpace* memorySubSpace,
+                                  MM_MemoryPool* memoryPool)
 {
-	MM_GCExtensionsBase *extensions = env->getExtensions();
+	MM_GCExtensionsBase* extensions = env->getExtensions();
 
-	if (extensions->doFrequentObjectAllocationSampling){
+	if (extensions->doFrequentObjectAllocationSampling) {
 		updateFrequentObjectsStats(env);
 	}
 
@@ -376,19 +390,23 @@ MM_TLHAllocationSupport::setupTLH(MM_EnvironmentBase *env, void *addrBase, void 
 }
 
 void
-MM_TLHAllocationSupport::updateFrequentObjectsStats(MM_EnvironmentBase *env)
+MM_TLHAllocationSupport::updateFrequentObjectsStats(MM_EnvironmentBase* env)
 {
-	MM_GCExtensionsBase *extensions = env->getExtensions();
+	MM_GCExtensionsBase* extensions = env->getExtensions();
 	MM_FrequentObjectsStats* frequentObjectsStats = _objectAllocationInterface->getFrequentObjectsStats();
 
-	if(NULL != frequentObjectsStats){
+	if (NULL != frequentObjectsStats) {
 		/* presumably first and current alloc pointer will point to an object */
-		GC_ObjectHeapIteratorAddressOrderedList objectHeapIterator(extensions, (omrobjectptr_t) getBase(), (omrobjectptr_t) getAlloc(), false, false);
+		GC_ObjectHeapIteratorAddressOrderedList objectHeapIterator(extensions, (omrobjectptr_t)getBase(),
+		                                                           (omrobjectptr_t)getAlloc(), false, false);
 		omrobjectptr_t object = NULL;
-		uintptr_t limit = (((uintptr_t) getAlloc() - (uintptr_t) getBase())*extensions->frequentObjectAllocationSamplingRate)/100 + (uintptr_t) getBase();
+		uintptr_t limit = (((uintptr_t)getAlloc() - (uintptr_t)getBase())
+		                   * extensions->frequentObjectAllocationSamplingRate)
+		                / 100
+		        + (uintptr_t)getBase();
 
-		while(NULL != (object = objectHeapIterator.nextObject())){
-			if( ((uintptr_t) object) > limit){
+		while (NULL != (object = objectHeapIterator.nextObject())) {
+			if (((uintptr_t)object) > limit) {
 				break;
 			}
 			frequentObjectsStats->update(env, object);
@@ -398,14 +416,15 @@ MM_TLHAllocationSupport::updateFrequentObjectsStats(MM_EnvironmentBase *env)
 
 #if defined(OMR_GC_OBJECT_ALLOCATION_NOTIFY)
 void
-MM_TLHAllocationSupport::objectAllocationNotify(MM_EnvironmentBase *env, void *heapBase, void *heapTop)
+MM_TLHAllocationSupport::objectAllocationNotify(MM_EnvironmentBase* env, void* heapBase, void* heapTop)
 {
-	MM_GCExtensionsBase *extensions = env->getExtensions();
-	MM_CollectorLanguageInterface * cli = extensions->collectorLanguageInterface;
-	GC_ObjectHeapIteratorAddressOrderedList objectHeapIterator(extensions, (omrobjectptr_t)heapBase, heapTop, false, false);
+	MM_GCExtensionsBase* extensions = env->getExtensions();
+	MM_CollectorLanguageInterface* cli = extensions->collectorLanguageInterface;
+	GC_ObjectHeapIteratorAddressOrderedList objectHeapIterator(extensions, (omrobjectptr_t)heapBase, heapTop, false,
+	                                                           false);
 	omrobjectptr_t object = NULL;
 
-	while(NULL != (object = objectHeapIterator.nextObject())){
+	while (NULL != (object = objectHeapIterator.nextObject())) {
 		env->objectAllocationNotify(object);
 	}
 }

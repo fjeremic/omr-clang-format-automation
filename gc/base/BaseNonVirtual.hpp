@@ -23,9 +23,9 @@
 #if !defined(BASENONVIRTUAL_HPP_)
 #define BASENONVIRTUAL_HPP_
 
-#include <stdlib.h>
-#include <stddef.h>
 #include "Base.hpp"
+#include <stddef.h>
+#include <stdlib.h>
 
 class MM_BaseNonVirtual : public MM_Base
 {
@@ -36,9 +36,8 @@ protected:
 	 * e.g. _typeId = __FUNCTION__;
 	 */
 	const char* _typeId;
-	
+
 public:
-	
 	/**
 	 * Create a Base Non Virtual object.
 	 */

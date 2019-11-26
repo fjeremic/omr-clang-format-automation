@@ -28,10 +28,9 @@
 #if !defined(CONCURRENTCLEARNEWMARKBITSTASK_HPP_)
 #define CONCURRENTCLEARNEWMARKBITSTASK_HPP_
 
+#include "ParallelTask.hpp"
 #include "omrcfg.h"
 #include "omrmodroncore.h"
-
-#include "ParallelTask.hpp"
 
 class MM_ConcurrentGC;
 class MM_Dispatcher;
@@ -44,19 +43,20 @@ class MM_EnvironmentBase;
 class MM_ConcurrentClearNewMarkBitsTask : public MM_ParallelTask
 {
 private:
-	MM_ConcurrentGC *_collector;
+	MM_ConcurrentGC* _collector;
 
 public:
 	virtual UDATA getVMStateID() { return OMRVMSTATE_GC_CONCURRENT_MARK_CLEAR_NEW_MARKBITS; };
-	
-	virtual void run(MM_EnvironmentBase *env);
+
+	virtual void run(MM_EnvironmentBase* env);
 
 	/**
 	 * Create a ConcurrentClearNewMarkBitsTask object
 	 */
-	MM_ConcurrentClearNewMarkBitsTask(MM_EnvironmentBase *env, MM_Dispatcher *dispatcher, MM_ConcurrentGC *collector) :
-		MM_ParallelTask(env, dispatcher),
-		_collector(collector)
+	MM_ConcurrentClearNewMarkBitsTask(MM_EnvironmentBase* env,
+	                                  MM_Dispatcher* dispatcher,
+	                                  MM_ConcurrentGC* collector)
+	        : MM_ParallelTask(env, dispatcher), _collector(collector)
 	{
 		_typeId = __FUNCTION__;
 	};

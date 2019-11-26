@@ -20,9 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "omrcfg.h"
-#include "omrport.h"
-
 #include "CopyScanCacheChunkInHeap.hpp"
 
 #include "AllocateDescription.hpp"
@@ -32,15 +29,21 @@
 #include "GCExtensionsBase.hpp"
 #include "HeapLinkedFreeHeader.hpp"
 #include "MemorySubSpace.hpp"
+#include "omrcfg.h"
+#include "omrport.h"
 
-MM_CopyScanCacheChunkInHeap *
-MM_CopyScanCacheChunkInHeap::newInstance(MM_EnvironmentStandard *env, MM_CopyScanCacheChunk *nextChunk, MM_MemorySubSpace *memorySubSpace, MM_Collector *requestCollector,
-		MM_CopyScanCacheStandard **sublistTail, uintptr_t *entries)
+MM_CopyScanCacheChunkInHeap*
+MM_CopyScanCacheChunkInHeap::newInstance(MM_EnvironmentStandard* env,
+                                         MM_CopyScanCacheChunk* nextChunk,
+                                         MM_MemorySubSpace* memorySubSpace,
+                                         MM_Collector* requestCollector,
+                                         MM_CopyScanCacheStandard** sublistTail,
+                                         uintptr_t* entries)
 {
-	MM_GCExtensionsBase *extensions = env->getExtensions();
-	MM_CopyScanCacheChunkInHeap *chunk = NULL;
-	void *addrBase = NULL;
-	void *addrTop = NULL;
+	MM_GCExtensionsBase* extensions = env->getExtensions();
+	MM_CopyScanCacheChunkInHeap* chunk = NULL;
+	void* addrBase = NULL;
+	void* addrTop = NULL;
 
 	/*
 	 * Calculate size of memory to allocate in heap:
@@ -66,21 +69,22 @@ MM_CopyScanCacheChunkInHeap::newInstance(MM_EnvironmentStandard *env, MM_CopySca
 
 	/* Attempt to allocate in given subspace */
 	MM_AllocateDescription allocDescription(sizeToAllocate, 0, false, true);
-	addrBase = (MM_CopyScanCacheChunkInHeap *)memorySubSpace->collectorAllocate(env, requestCollector, &allocDescription);
+	addrBase = (MM_CopyScanCacheChunkInHeap*)memorySubSpace->collectorAllocate(env, requestCollector,
+	                                                                           &allocDescription);
 
 	if (NULL != addrBase) {
 		bool const compressed = env->compressObjectReferences();
 		/* memory allocated */
-		addrTop = (void *)(((uint8_t *)addrBase) + sizeToAllocate);
+		addrTop = (void*)(((uint8_t*)addrBase) + sizeToAllocate);
 
 		/* create a hole */
 		MM_HeapLinkedFreeHeader::fillWithHoles(addrBase, sizeToAllocate, compressed);
 
 		/* create a CopyScanCacheChunkInHeap itself */
-		chunk = (MM_CopyScanCacheChunkInHeap *)((uintptr_t)addrBase + sizeof(MM_HeapLinkedFreeHeader));
-		new(chunk) MM_CopyScanCacheChunkInHeap(addrBase, addrTop, memorySubSpace);
-		chunk->_baseCache = (MM_CopyScanCacheStandard *)(chunk + 1);
-		if(chunk->initialize(env, numberOfCaches, nextChunk, OMR_SCAVENGER_CACHE_TYPE_HEAP, sublistTail)) {
+		chunk = (MM_CopyScanCacheChunkInHeap*)((uintptr_t)addrBase + sizeof(MM_HeapLinkedFreeHeader));
+		new (chunk) MM_CopyScanCacheChunkInHeap(addrBase, addrTop, memorySubSpace);
+		chunk->_baseCache = (MM_CopyScanCacheStandard*)(chunk + 1);
+		if (chunk->initialize(env, numberOfCaches, nextChunk, OMR_SCAVENGER_CACHE_TYPE_HEAP, sublistTail)) {
 			*entries = numberOfCaches;
 		} else {
 			chunk->kill(env);
@@ -91,12 +95,10 @@ MM_CopyScanCacheChunkInHeap::newInstance(MM_EnvironmentStandard *env, MM_CopySca
 }
 
 void
-MM_CopyScanCacheChunkInHeap::kill(MM_EnvironmentBase *env)
+MM_CopyScanCacheChunkInHeap::kill(MM_EnvironmentBase* env)
 {
 	tearDown(env);
 
 	/* return memory to pool */
 	_memorySubSpace->abandonHeapChunk(_addrBase, _addrTop);
 }
-
-

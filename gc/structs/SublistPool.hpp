@@ -28,13 +28,12 @@
 #if !defined(SUBLISTPOOL_HPP_)
 #define SUBLISTPOOL_HPP_
 
+#include "AtomicOperations.hpp"
+#include "Forge.hpp"
+#include "modronbase.h"
 #include "omrcfg.h"
 #include "omrcomp.h"
 #include "omrthread.h"
-#include "modronbase.h"
-
-#include "AtomicOperations.hpp"
-#include "Forge.hpp"
 
 class MM_EnvironmentBase;
 class MM_SublistFragment;
@@ -51,65 +50,65 @@ class GC_SublistIterator;
  */
 class MM_SublistPool
 {
-/*
+	/*
  * Data members
  */
 private:
-	MM_SublistPuddle *_list;
-	MM_SublistPuddle *_allocPuddle;
+	MM_SublistPuddle* _list;
+	MM_SublistPuddle* _allocPuddle;
 	omrthread_monitor_t _mutex;
 	uintptr_t _growSize;
 	uintptr_t _currentSize;
 	uintptr_t _maxSize;
 	volatile uintptr_t _count; /**< A count for number of elements across all sublistPuddles */
 	OMR::GC::AllocationCategory::Enum _allocCategory;
-	
-	MM_SublistPuddle *_previousList; /**< A list of the non-empty puddles when #startProcessingSublist() was called */
-	
+
+	MM_SublistPuddle*
+	        _previousList; /**< A list of the non-empty puddles when #startProcessingSublist() was called */
+
 protected:
 public:
-
-/*
+	/*
  * Function members
  */
 private:
-	MM_SublistPuddle *createNewPuddle(MM_EnvironmentBase *env);
-	void freePuddles(MM_EnvironmentBase *env, MM_SublistPuddle *list);
+	MM_SublistPuddle* createNewPuddle(MM_EnvironmentBase* env);
+	void freePuddles(MM_EnvironmentBase* env, MM_SublistPuddle* list);
 
 protected:
 public:
-	bool initialize(MM_EnvironmentBase *env, OMR::GC::AllocationCategory::Enum category);
-	void tearDown(MM_EnvironmentBase *env);
+	bool initialize(MM_EnvironmentBase* env, OMR::GC::AllocationCategory::Enum category);
+	void tearDown(MM_EnvironmentBase* env);
 
 	MMINLINE void setGrowSize(uintptr_t growSize) { _growSize = growSize; }
 	MMINLINE uintptr_t getGrowSize() { return _growSize; }
 	MMINLINE void setMaxSize(uintptr_t maxSize) { _maxSize = maxSize; }
 	MMINLINE uintptr_t getMaxSize() { return _maxSize; }
-	
+
 	MMINLINE void incrementCount(uintptr_t count)
 	{
-		if( 0 != count ) {
+		if (0 != count) {
 			MM_AtomicOperations::add(&_count, count);
-		}		
+		}
 	}
 
 	MMINLINE void decrementCount(uintptr_t count)
 	{
-		if( 0 != count ) {
+		if (0 != count) {
 			MM_AtomicOperations::subtract(&_count, count);
-		}		
+		}
 	}
-	
+
 	uintptr_t countElements();
 
 	MMINLINE bool isEmpty() { return _currentSize == 0 ? true : false; };
 
-	bool allocate(MM_EnvironmentBase *env, MM_SublistFragment *fragment);
-	uintptr_t *allocateElementNoContention(MM_EnvironmentBase *env);
+	bool allocate(MM_EnvironmentBase* env, MM_SublistFragment* fragment);
+	uintptr_t* allocateElementNoContention(MM_EnvironmentBase* env);
 
-	void compact(MM_EnvironmentBase *env);
-	void clear(MM_EnvironmentBase *env);
-	
+	void compact(MM_EnvironmentBase* env);
+	void clear(MM_EnvironmentBase* env);
+
 	/**
 	 * Prepare to process this sublist by moving all of its non-empty puddles onto
 	 * the list of previous puddles. The puddles may be retrieved by calling #popPreviousPuddle().
@@ -124,18 +123,18 @@ public:
 	 * @param emptyPuddle[in] a puddle which has already been processed, or NULL
 	 * @return a puddle to process, or NULL if the list is empty
 	 */
-	MM_SublistPuddle *popPreviousPuddle(MM_SublistPuddle * returnedPuddle);
-	
-	MM_SublistPool() 
-		: _list(NULL)
-		, _allocPuddle(NULL)
-		, _mutex(NULL)
-		, _growSize(0)
-		, _currentSize(0)
-		, _maxSize(0)
-		, _count(0)
-		, _allocCategory(OMR::GC::AllocationCategory::OTHER)
-		, _previousList(NULL)
+	MM_SublistPuddle* popPreviousPuddle(MM_SublistPuddle* returnedPuddle);
+
+	MM_SublistPool()
+	        : _list(NULL),
+	          _allocPuddle(NULL),
+	          _mutex(NULL),
+	          _growSize(0),
+	          _currentSize(0),
+	          _maxSize(0),
+	          _count(0),
+	          _allocCategory(OMR::GC::AllocationCategory::OTHER),
+	          _previousList(NULL)
 	{}
 
 	friend class GC_SublistIterator;

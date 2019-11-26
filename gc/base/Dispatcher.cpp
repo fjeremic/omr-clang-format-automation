@@ -20,23 +20,23 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "omrcfg.h"
-#include "omrcomp.h"
-
 #include "Dispatcher.hpp"
 
 #include "EnvironmentBase.hpp"
 #include "Task.hpp"
+#include "omrcfg.h"
+#include "omrcomp.h"
 
-MM_Dispatcher *
-MM_Dispatcher::newInstance(MM_EnvironmentBase *env)
+MM_Dispatcher*
+MM_Dispatcher::newInstance(MM_EnvironmentBase* env)
 {
-	MM_Dispatcher *dispatcher;
-	
-	dispatcher = (MM_Dispatcher *)env->getForge()->allocate(sizeof(MM_Dispatcher), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_Dispatcher* dispatcher;
+
+	dispatcher = (MM_Dispatcher*)env->getForge()->allocate(sizeof(MM_Dispatcher),
+	                                                       OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (dispatcher) {
-		new(dispatcher) MM_Dispatcher(env);
-		if(!dispatcher->initialize(env)) {
+		new (dispatcher) MM_Dispatcher(env);
+		if (!dispatcher->initialize(env)) {
 			dispatcher->kill(env);
 			return NULL;
 		}
@@ -45,35 +45,35 @@ MM_Dispatcher::newInstance(MM_EnvironmentBase *env)
 }
 
 void
-MM_Dispatcher::kill(MM_EnvironmentBase *env)
+MM_Dispatcher::kill(MM_EnvironmentBase* env)
 {
 	env->getForge()->free(this);
 }
 
 bool
-MM_Dispatcher::initialize(MM_EnvironmentBase *env)
+MM_Dispatcher::initialize(MM_EnvironmentBase* env)
 {
 	return true;
 }
 
 void
-MM_Dispatcher::prepareThreadsForTask(MM_EnvironmentBase *env, MM_Task *task, uintptr_t threadCount)
+MM_Dispatcher::prepareThreadsForTask(MM_EnvironmentBase* env, MM_Task* task, uintptr_t threadCount)
 {
 	task->setThreadCount(1);
 	_task = task;
 }
 
 void
-MM_Dispatcher::acceptTask(MM_EnvironmentBase *env)
+MM_Dispatcher::acceptTask(MM_EnvironmentBase* env)
 {
 	env->_currentTask = _task;
 	env->_currentTask->accept(env);
 }
 
 void
-MM_Dispatcher::completeTask(MM_EnvironmentBase *env)
+MM_Dispatcher::completeTask(MM_EnvironmentBase* env)
 {
-	MM_Task *currentTask = env->_currentTask;
+	MM_Task* currentTask = env->_currentTask;
 
 	env->_currentTask = NULL;
 	_task = NULL;
@@ -82,12 +82,11 @@ MM_Dispatcher::completeTask(MM_EnvironmentBase *env)
 }
 
 void
-MM_Dispatcher::cleanupAfterTask(MM_EnvironmentBase *env)
-{
-}
+MM_Dispatcher::cleanupAfterTask(MM_EnvironmentBase* env)
+{}
 
 void
-MM_Dispatcher::run(MM_EnvironmentBase *env, MM_Task *task, uintptr_t newThreadCount)
+MM_Dispatcher::run(MM_EnvironmentBase* env, MM_Task* task, uintptr_t newThreadCount)
 {
 	uintptr_t activeThreads = recomputeActiveThreadCountForTask(env, task, newThreadCount);
 	task->masterSetup(env);
@@ -99,19 +98,18 @@ MM_Dispatcher::run(MM_EnvironmentBase *env, MM_Task *task, uintptr_t newThreadCo
 	task->masterCleanup(env);
 }
 
-bool 
-MM_Dispatcher::startUpThreads() 
-{ 
-	return true; 
+bool
+MM_Dispatcher::startUpThreads()
+{
+	return true;
 }
 
-void 
-MM_Dispatcher::shutDownThreads() 
-{
-}
+void
+MM_Dispatcher::shutDownThreads()
+{}
 
 uintptr_t
-MM_Dispatcher::recomputeActiveThreadCountForTask(MM_EnvironmentBase *env, MM_Task *task, uintptr_t newThreadCount)
+MM_Dispatcher::recomputeActiveThreadCountForTask(MM_EnvironmentBase* env, MM_Task* task, uintptr_t newThreadCount)
 {
 	return 1;
 }

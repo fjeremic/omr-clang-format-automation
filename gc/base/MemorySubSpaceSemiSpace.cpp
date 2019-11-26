@@ -20,10 +20,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <math.h>
-
-#include "omrcfg.h"
-#include "modronopt.h"
+#include "MemorySubSpaceSemiSpace.hpp"
 
 #include "AllocateDescription.hpp"
 #include "Collector.hpp"
@@ -37,8 +34,10 @@
 #include "MemorySpace.hpp"
 #include "MemorySubSpace.hpp"
 #include "MemorySubSpaceRegionIterator.hpp"
-#include "MemorySubSpaceSemiSpace.hpp"
 #include "PhysicalSubArena.hpp"
+#include "modronopt.h"
+#include "omrcfg.h"
+#include <math.h>
 
 #if defined(OMR_VALGRIND_MEMCHECK)
 #include "MemcheckWrapper.hpp"
@@ -51,71 +50,97 @@
  ****************************************
  */
 
-void *
-MM_MemorySubSpaceSemiSpace::allocateObject(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, MM_MemorySubSpace *baseSubSpace, MM_MemorySubSpace *previousSubSpace, bool shouldCollectOnFailure)
+void*
+MM_MemorySubSpaceSemiSpace::allocateObject(MM_EnvironmentBase* env,
+                                           MM_AllocateDescription* allocDescription,
+                                           MM_MemorySubSpace* baseSubSpace,
+                                           MM_MemorySubSpace* previousSubSpace,
+                                           bool shouldCollectOnFailure)
 {
-	Trc_MM_MSSSS_allocate_entry(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(), this, getName(), baseSubSpace, previousSubSpace, (uintptr_t)shouldCollectOnFailure);
+	Trc_MM_MSSSS_allocate_entry(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(), this,
+	                            getName(), baseSubSpace, previousSubSpace, (uintptr_t)shouldCollectOnFailure);
 
-	void *addr = NULL;
+	void* addr = NULL;
 
 	if (shouldCollectOnFailure) {
 		Trc_MM_MSSSS_allocate(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(), 1);
-		addr = _memorySubSpaceAllocate->allocateObject(env, allocDescription, baseSubSpace, this, shouldCollectOnFailure);
+		addr = _memorySubSpaceAllocate->allocateObject(env, allocDescription, baseSubSpace, this,
+		                                               shouldCollectOnFailure);
 	} else {
-		if(previousSubSpace == _parent) {
-			Trc_MM_MSSSS_allocate(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(), 2);
+		if (previousSubSpace == _parent) {
+			Trc_MM_MSSSS_allocate(env->getLanguageVMThread(), "Object",
+			                      allocDescription->getBytesRequested(), 2);
 			/* if we are coming from parent (after a Global GC), pass it down to Allocate */
-			addr = _memorySubSpaceAllocate->allocateObject(env, allocDescription, baseSubSpace, this, shouldCollectOnFailure);
+			addr = _memorySubSpaceAllocate->allocateObject(env, allocDescription, baseSubSpace, this,
+			                                               shouldCollectOnFailure);
 		} else if (previousSubSpace == this) {
 			/* if retrying after a recent GC (from allocationRequestFailed), pass it down to Allocate */
-			Trc_MM_MSSSS_allocate(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(), 3);
-			addr = _memorySubSpaceAllocate->allocateObject(env, allocDescription, baseSubSpace, this, shouldCollectOnFailure);
+			Trc_MM_MSSSS_allocate(env->getLanguageVMThread(), "Object",
+			                      allocDescription->getBytesRequested(), 3);
+			addr = _memorySubSpaceAllocate->allocateObject(env, allocDescription, baseSubSpace, this,
+			                                               shouldCollectOnFailure);
 		} else {
 			/* Allocate subspace failed after a recent GC, try parent */
-			Trc_MM_MSSSS_allocate4(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(), (uintptr_t)allocDescription->shouldClimb());
+			Trc_MM_MSSSS_allocate4(env->getLanguageVMThread(), "Object",
+			                       allocDescription->getBytesRequested(),
+			                       (uintptr_t)allocDescription->shouldClimb());
 			Assert_MM_true(previousSubSpace == _memorySubSpaceAllocate);
 			if (allocDescription->shouldClimb()) {
-				addr = _parent->allocateObject(env, allocDescription, baseSubSpace, this, shouldCollectOnFailure);
+				addr = _parent->allocateObject(env, allocDescription, baseSubSpace, this,
+				                               shouldCollectOnFailure);
 			}
 		}
-		}
-	
+	}
+
 	Trc_MM_MSSSS_allocate_exit(env->getLanguageVMThread(), "Object", allocDescription->getBytesRequested(), addr);
 
 	return addr;
 }
 
-void *
-MM_MemorySubSpaceSemiSpace::allocationRequestFailed(MM_EnvironmentBase *env, MM_AllocateDescription *allocateDescription, AllocationType allocationType, MM_ObjectAllocationInterface *objectAllocationInterface, MM_MemorySubSpace *baseSubSpace, MM_MemorySubSpace *previousSubSpace)
+void*
+MM_MemorySubSpaceSemiSpace::allocationRequestFailed(MM_EnvironmentBase* env,
+                                                    MM_AllocateDescription* allocateDescription,
+                                                    AllocationType allocationType,
+                                                    MM_ObjectAllocationInterface* objectAllocationInterface,
+                                                    MM_MemorySubSpace* baseSubSpace,
+                                                    MM_MemorySubSpace* previousSubSpace)
 {
-	Trc_MM_MSSSS_allocationRequestFailed_entry(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), this, getName(), baseSubSpace, previousSubSpace, (uintptr_t)allocationType);
+	Trc_MM_MSSSS_allocationRequestFailed_entry(env->getLanguageVMThread(), allocateDescription->getBytesRequested(),
+	                                           this, getName(), baseSubSpace, previousSubSpace,
+	                                           (uintptr_t)allocationType);
 
 	/* The baseSubSpace in this case isn't really valid - in the event of a scavenge, the baseSubSpace changes.  The current subSpace will become the
 	 * base for any restarts
 	 */
-	void *addr = NULL;
+	void* addr = NULL;
 
 	allocateDescription->saveObjects(env);
 	if (!env->acquireExclusiveVMAccessForGC(_collector, true, true)) {
 		allocateDescription->restoreObjects(env);
-		Trc_MM_MSSSS_allocationRequestFailed(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), 1);
-		addr = allocateGeneric(env, allocateDescription, allocationType, objectAllocationInterface, _memorySubSpaceAllocate);
-		if(NULL != addr) {
-			Trc_MM_MSSSS_allocationRequestFailed_exit(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), 1, addr);
+		Trc_MM_MSSSS_allocationRequestFailed(env->getLanguageVMThread(),
+		                                     allocateDescription->getBytesRequested(), 1);
+		addr = allocateGeneric(env, allocateDescription, allocationType, objectAllocationInterface,
+		                       _memorySubSpaceAllocate);
+		if (NULL != addr) {
+			Trc_MM_MSSSS_allocationRequestFailed_exit(env->getLanguageVMThread(),
+			                                          allocateDescription->getBytesRequested(), 1, addr);
 			return addr;
 		}
 
 		allocateDescription->saveObjects(env);
 		if (!env->acquireExclusiveVMAccessForGC(_collector)) {
 			allocateDescription->restoreObjects(env);
-			Trc_MM_MSSSS_allocationRequestFailed(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), 2);
-			addr = allocateGeneric(env, allocateDescription, allocationType, objectAllocationInterface, _memorySubSpaceAllocate);
-			if(NULL != addr) {
+			Trc_MM_MSSSS_allocationRequestFailed(env->getLanguageVMThread(),
+			                                     allocateDescription->getBytesRequested(), 2);
+			addr = allocateGeneric(env, allocateDescription, allocationType, objectAllocationInterface,
+			                       _memorySubSpaceAllocate);
+			if (NULL != addr) {
 				/* Satisfied the allocate after having grabbed exclusive access to perform a GC (without actually performing the GC).  Raise
 				 * an event for tracing / verbose to report the occurrence.
 				 */
 				reportAcquiredExclusiveToSatisfyAllocate(env, allocateDescription);
-				Trc_MM_MSSSS_allocationRequestFailed_exit(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), 2, addr);
+				Trc_MM_MSSSS_allocationRequestFailed_exit(
+				        env->getLanguageVMThread(), allocateDescription->getBytesRequested(), 2, addr);
 				return addr;
 			}
 			allocateDescription->saveObjects(env);
@@ -133,13 +158,15 @@ MM_MemorySubSpaceSemiSpace::allocationRequestFailed(MM_EnvironmentBase *env, MM_
 	 * we might not be the only SemiSpace around (think NUMA). if so, we want to do scavenge on whole new space.
 	 * OMRTODO we might be short-cutting here. more formal approach is to pass allocationRequestFailed to parent and he decides what to do
 	 */
-	MM_MemorySubSpace *topLevelMemorySubSpaceNew = getTopLevelMemorySubSpace(MEMORY_TYPE_NEW);
-	addr = _collector->garbageCollect(env, topLevelMemorySubSpaceNew, allocateDescription, J9MMCONSTANT_IMPLICIT_GC_DEFAULT, objectAllocationInterface, this, NULL);
+	MM_MemorySubSpace* topLevelMemorySubSpaceNew = getTopLevelMemorySubSpace(MEMORY_TYPE_NEW);
+	addr = _collector->garbageCollect(env, topLevelMemorySubSpaceNew, allocateDescription,
+	                                  J9MMCONSTANT_IMPLICIT_GC_DEFAULT, objectAllocationInterface, this, NULL);
 	allocateDescription->restoreObjects(env);
 
-	if(NULL != addr) {
+	if (NULL != addr) {
 		reportAllocationFailureEnd(env);
-		Trc_MM_MSSSS_allocationRequestFailed_exit(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), 3, addr);
+		Trc_MM_MSSSS_allocationRequestFailed_exit(env->getLanguageVMThread(),
+		                                          allocateDescription->getBytesRequested(), 3, addr);
 		return addr;
 	}
 
@@ -147,49 +174,65 @@ MM_MemorySubSpaceSemiSpace::allocationRequestFailed(MM_EnvironmentBase *env, MM_
 
 	/* Override the baseSubSpace with this - the allocate subspace can change through collections */
 	reportAllocationFailureEnd(env);
-	
+
 	/*
 	 *  TLH: Should we not be checking "collect and climb" here or some such?  why are we not calling the parent? 
 	 *	Calling of parent for TLH is wrong because objects allocated into it on the in-line path won't have the OLD bit set
 	 *  CMVC 144061 
 	 */
 	if (ALLOCATION_TYPE_TLH != allocationType) {
-		Trc_MM_MSSSS_allocationRequestFailed(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), 3);
-		addr = _parent->allocationRequestFailed(env, allocateDescription, allocationType, objectAllocationInterface, this, this);
+		Trc_MM_MSSSS_allocationRequestFailed(env->getLanguageVMThread(),
+		                                     allocateDescription->getBytesRequested(), 3);
+		addr = _parent->allocationRequestFailed(env, allocateDescription, allocationType,
+		                                        objectAllocationInterface, this, this);
 	}
 
-	Trc_MM_MSSSS_allocationRequestFailed_exit(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), 4, addr);
+	Trc_MM_MSSSS_allocationRequestFailed_exit(env->getLanguageVMThread(), allocateDescription->getBytesRequested(),
+	                                          4, addr);
 	return addr;
 }
 
-void *
-MM_MemorySubSpaceSemiSpace::allocateArrayletLeaf(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, MM_MemorySubSpace *baseSubSpace, MM_MemorySubSpace *previousSubSpace, bool shouldCollectOnFailure)
+void*
+MM_MemorySubSpaceSemiSpace::allocateArrayletLeaf(MM_EnvironmentBase* env,
+                                                 MM_AllocateDescription* allocDescription,
+                                                 MM_MemorySubSpace* baseSubSpace,
+                                                 MM_MemorySubSpace* previousSubSpace,
+                                                 bool shouldCollectOnFailure)
 {
-	void *addr = NULL;
+	void* addr = NULL;
 
 	if (shouldCollectOnFailure) {
-		addr = _memorySubSpaceAllocate->allocateArrayletLeaf(env, allocDescription, baseSubSpace, this, shouldCollectOnFailure);
+		addr = _memorySubSpaceAllocate->allocateArrayletLeaf(env, allocDescription, baseSubSpace, this,
+		                                                     shouldCollectOnFailure);
 	} else {
-		if(previousSubSpace == _parent) {
+		if (previousSubSpace == _parent) {
 			/* if we are coming from parent (after a Global GC), pass it down to Allocate */
-			addr = _memorySubSpaceAllocate->allocateArrayletLeaf(env, allocDescription, baseSubSpace, this, shouldCollectOnFailure);
+			addr = _memorySubSpaceAllocate->allocateArrayletLeaf(env, allocDescription, baseSubSpace, this,
+			                                                     shouldCollectOnFailure);
 		} else if (previousSubSpace == this) {
 			/* if retrying after a recent GC (from allocationRequestFailed), pass it down to Allocate */
-			addr = _memorySubSpaceAllocate->allocateArrayletLeaf(env, allocDescription, baseSubSpace, this, shouldCollectOnFailure);
+			addr = _memorySubSpaceAllocate->allocateArrayletLeaf(env, allocDescription, baseSubSpace, this,
+			                                                     shouldCollectOnFailure);
 		} else {
 			/* Allocate subspace failed after a recent GC, try parent */
 			Assert_MM_true(previousSubSpace == _memorySubSpaceAllocate);
 			if (allocDescription->shouldClimb()) {
-				addr = _parent->allocateArrayletLeaf(env, allocDescription, baseSubSpace, this, shouldCollectOnFailure);
+				addr = _parent->allocateArrayletLeaf(env, allocDescription, baseSubSpace, this,
+				                                     shouldCollectOnFailure);
 			}
 		}
-		}
-	
-	return addr;	
+	}
+
+	return addr;
 }
 
-void *
-MM_MemorySubSpaceSemiSpace::allocateTLH(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, MM_ObjectAllocationInterface *objectAllocationInterface, MM_MemorySubSpace *baseSubSpace, MM_MemorySubSpace *previousSubSpace, bool shouldCollectOnFailure)
+void*
+MM_MemorySubSpaceSemiSpace::allocateTLH(MM_EnvironmentBase* env,
+                                        MM_AllocateDescription* allocDescription,
+                                        MM_ObjectAllocationInterface* objectAllocationInterface,
+                                        MM_MemorySubSpace* baseSubSpace,
+                                        MM_MemorySubSpace* previousSubSpace,
+                                        bool shouldCollectOnFailure)
 {
 	/* We may receive this call from the MemorySubSpaceGeneric for which we are the parent but we shouldn't satisfy TLH allocates 
 	 * in this space (since that would allow us to fill old space before collecting new space) so just return NULL.
@@ -203,9 +246,9 @@ MM_MemorySubSpaceSemiSpace::allocateTLH(MM_EnvironmentBase *env, MM_AllocateDesc
  ****************************************
  */
 void
-MM_MemorySubSpaceSemiSpace::systemGarbageCollect(MM_EnvironmentBase *env, uint32_t gcCode)
+MM_MemorySubSpaceSemiSpace::systemGarbageCollect(MM_EnvironmentBase* env, uint32_t gcCode)
 {
-	if(_collector) {
+	if (_collector) {
 		env->acquireExclusiveVMAccessForGC(_collector);
 		reportSystemGCStart(env, gcCode);
 
@@ -215,7 +258,7 @@ MM_MemorySubSpaceSemiSpace::systemGarbageCollect(MM_EnvironmentBase *env, uint32
 		if (_extensions->isScavengerBackOutFlagRaised()) {
 			_parent->getCollector()->garbageCollect(env, this, NULL, gcCode, NULL, NULL, NULL);
 		}
-		
+
 		reportSystemGCEnd(env);
 		env->releaseExclusiveVMAccessForGC();
 	}
@@ -225,7 +268,7 @@ MM_MemorySubSpaceSemiSpace::systemGarbageCollect(MM_EnvironmentBase *env, uint32
  * If the child subSpace is active return true, else return false. 
  */
 bool
-MM_MemorySubSpaceSemiSpace::isChildActive(MM_MemorySubSpace *memorySubSpace)
+MM_MemorySubSpaceSemiSpace::isChildActive(MM_MemorySubSpace* memorySubSpace)
 {
 	return memorySubSpace == _memorySubSpaceAllocate;
 }
@@ -234,7 +277,7 @@ MM_MemorySubSpaceSemiSpace::isChildActive(MM_MemorySubSpace *memorySubSpace)
  * Sub Space Categorization
  ****************************************
  */
-MM_MemorySubSpace *
+MM_MemorySubSpace*
 MM_MemorySubSpaceSemiSpace::getDefaultMemorySubSpace()
 {
 	return _memorySubSpaceAllocate;
@@ -244,17 +287,17 @@ bool
 MM_MemorySubSpaceSemiSpace::isObjectInEvacuateMemory(omrobjectptr_t objectPtr)
 {
 	/* check if the object in cached allocate (from GC perspective evacuate) ranges */
-	return ((void *)objectPtr >= _allocateSpaceBase) && ((void *)objectPtr < _allocateSpaceTop);
+	return ((void*)objectPtr >= _allocateSpaceBase) && ((void*)objectPtr < _allocateSpaceTop);
 }
 
 bool
 MM_MemorySubSpaceSemiSpace::isObjectInNewSpace(omrobjectptr_t objectPtr)
 {
-	return ((void *)objectPtr >= _survivorSpaceBase) && ((void *)objectPtr < _survivorSpaceTop);
+	return ((void*)objectPtr >= _survivorSpaceBase) && ((void*)objectPtr < _survivorSpaceTop);
 }
 
 bool
-MM_MemorySubSpaceSemiSpace::isObjectInNewSpace(void *objectBase, void *objectTop)
+MM_MemorySubSpaceSemiSpace::isObjectInNewSpace(void* objectBase, void* objectTop)
 {
 	return (objectBase >= _survivorSpaceBase) && (objectTop <= _survivorSpaceTop);
 }
@@ -278,11 +321,14 @@ MM_MemorySubSpaceSemiSpace::getActiveMemorySize(uintptr_t includeMemoryType)
 {
 	if (includeMemoryType & MEMORY_TYPE_NEW) {
 		if (_memorySubSpaceSurvivor == _memorySubSpaceEvacuate) {
-			return _memorySubSpaceAllocate->getActiveMemorySize() + _memorySubSpaceSurvivor->getActiveMemorySize();
+			return _memorySubSpaceAllocate->getActiveMemorySize()
+			        + _memorySubSpaceSurvivor->getActiveMemorySize();
 		} else if (_memorySubSpaceSurvivor == _memorySubSpaceAllocate) {
-			return _memorySubSpaceSurvivor->getActiveMemorySize() + _memorySubSpaceEvacuate->getActiveMemorySize();
+			return _memorySubSpaceSurvivor->getActiveMemorySize()
+			        + _memorySubSpaceEvacuate->getActiveMemorySize();
 		} else if (_memorySubSpaceEvacuate == _memorySubSpaceAllocate) {
-			return _memorySubSpaceSurvivor->getActiveMemorySize() + _memorySubSpaceEvacuate->getActiveMemorySize();
+			return _memorySubSpaceSurvivor->getActiveMemorySize()
+			        + _memorySubSpaceEvacuate->getActiveMemorySize();
 		} else {
 			Assert_MM_unreachable();
 		}
@@ -307,11 +353,11 @@ MM_MemorySubSpaceSemiSpace::getActualActiveFreeMemorySize()
 uintptr_t
 MM_MemorySubSpaceSemiSpace::getActualActiveFreeMemorySize(uintptr_t includeMemoryType)
 {
-	if (includeMemoryType & MEMORY_TYPE_NEW){ 
+	if (includeMemoryType & MEMORY_TYPE_NEW) {
 		return _memorySubSpaceAllocate->getActualActiveFreeMemorySize();
 	} else {
 		return 0;
-	}	
+	}
 }
 
 /**
@@ -331,11 +377,11 @@ MM_MemorySubSpaceSemiSpace::getApproximateActiveFreeMemorySize()
 uintptr_t
 MM_MemorySubSpaceSemiSpace::getApproximateActiveFreeMemorySize(uintptr_t includeMemoryType)
 {
-	if (includeMemoryType & MEMORY_TYPE_NEW){ 
+	if (includeMemoryType & MEMORY_TYPE_NEW) {
 		return _memorySubSpaceAllocate->getApproximateActiveFreeMemorySize();
 	} else {
 		return 0;
-	}	
+	}
 }
 
 uintptr_t
@@ -351,7 +397,7 @@ MM_MemorySubSpaceSemiSpace::getActiveSurvivorMemorySize(uintptr_t includeMemoryT
 uintptr_t
 MM_MemorySubSpaceSemiSpace::getApproximateActiveFreeSurvivorMemorySize(uintptr_t includeMemoryType)
 {
-	if (includeMemoryType & MEMORY_TYPE_NEW){
+	if (includeMemoryType & MEMORY_TYPE_NEW) {
 		return _memorySubSpaceSurvivor->getApproximateActiveFreeMemorySize();
 	} else {
 		return 0;
@@ -369,7 +415,7 @@ MM_MemorySubSpaceSemiSpace::getActualActiveFreeSurvivorMemorySize(uintptr_t incl
 }
 
 void
-MM_MemorySubSpaceSemiSpace::abandonHeapChunk(void *addrBase, void *addrTop)
+MM_MemorySubSpaceSemiSpace::abandonHeapChunk(void* addrBase, void* addrTop)
 {
 	Assert_MM_unreachable();
 }
@@ -377,32 +423,43 @@ MM_MemorySubSpaceSemiSpace::abandonHeapChunk(void *addrBase, void *addrTop)
 /**
  */
 void
-MM_MemorySubSpaceSemiSpace::mergeHeapStats(MM_HeapStats *heapStats)
+MM_MemorySubSpaceSemiSpace::mergeHeapStats(MM_HeapStats* heapStats)
 {
 	_memorySubSpaceAllocate->mergeHeapStats(heapStats);
 	_memorySubSpaceSurvivor->mergeHeapStats(heapStats);
-} 
- 
+}
+
 void
-MM_MemorySubSpaceSemiSpace::mergeHeapStats(MM_HeapStats *heapStats, uintptr_t includeMemoryType)
+MM_MemorySubSpaceSemiSpace::mergeHeapStats(MM_HeapStats* heapStats, uintptr_t includeMemoryType)
 {
-	if (includeMemoryType & MEMORY_TYPE_NEW){ 
+	if (includeMemoryType & MEMORY_TYPE_NEW) {
 		_memorySubSpaceAllocate->mergeHeapStats(heapStats);
 		_memorySubSpaceSurvivor->mergeHeapStats(heapStats);
-	}	
+	}
 }
 
 /**
  * Initialization
  */
-MM_MemorySubSpaceSemiSpace *
-MM_MemorySubSpaceSemiSpace::newInstance(MM_EnvironmentBase *env, MM_Collector *collector, MM_PhysicalSubArena *physicalSubArena, MM_MemorySubSpace *memorySubSpaceAllocate, MM_MemorySubSpace *memorySubSpaceSurvivor, bool usesGlobalCollector, uintptr_t minimumSize, uintptr_t initialSize, uintptr_t maximumSize)
+MM_MemorySubSpaceSemiSpace*
+MM_MemorySubSpaceSemiSpace::newInstance(MM_EnvironmentBase* env,
+                                        MM_Collector* collector,
+                                        MM_PhysicalSubArena* physicalSubArena,
+                                        MM_MemorySubSpace* memorySubSpaceAllocate,
+                                        MM_MemorySubSpace* memorySubSpaceSurvivor,
+                                        bool usesGlobalCollector,
+                                        uintptr_t minimumSize,
+                                        uintptr_t initialSize,
+                                        uintptr_t maximumSize)
 {
-	MM_MemorySubSpaceSemiSpace *memorySubSpace;
-	
-	memorySubSpace = (MM_MemorySubSpaceSemiSpace *)env->getForge()->allocate(sizeof(MM_MemorySubSpaceSemiSpace), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_MemorySubSpaceSemiSpace* memorySubSpace;
+
+	memorySubSpace = (MM_MemorySubSpaceSemiSpace*)env->getForge()->allocate(
+	        sizeof(MM_MemorySubSpaceSemiSpace), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (memorySubSpace) {
-		new(memorySubSpace) MM_MemorySubSpaceSemiSpace(env, collector, physicalSubArena, memorySubSpaceAllocate, memorySubSpaceSurvivor, usesGlobalCollector, minimumSize, initialSize, maximumSize);
+		new (memorySubSpace) MM_MemorySubSpaceSemiSpace(
+		        env, collector, physicalSubArena, memorySubSpaceAllocate, memorySubSpaceSurvivor,
+		        usesGlobalCollector, minimumSize, initialSize, maximumSize);
 		if (!memorySubSpace->initialize(env)) {
 			memorySubSpace->kill(env);
 			memorySubSpace = NULL;
@@ -412,9 +469,9 @@ MM_MemorySubSpaceSemiSpace::newInstance(MM_EnvironmentBase *env, MM_Collector *c
 }
 
 bool
-MM_MemorySubSpaceSemiSpace::initialize(MM_EnvironmentBase *env)
+MM_MemorySubSpaceSemiSpace::initialize(MM_EnvironmentBase* env)
 {
-	if(!MM_MemorySubSpace::initialize(env)) {
+	if (!MM_MemorySubSpace::initialize(env)) {
 		return false;
 	}
 
@@ -428,7 +485,7 @@ MM_MemorySubSpaceSemiSpace::initialize(MM_EnvironmentBase *env)
 	_avgBytesAllocatedDuringConcurrent = getMinimumSize() / 10;
 	_deviationBytesAllocatedDuringConcurrent = (float)_avgBytesAllocatedDuringConcurrent / 10;
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
-	
+
 	/* register the children */
 	registerMemorySubSpace(_memorySubSpaceSurvivor);
 	registerMemorySubSpace(_memorySubSpaceAllocate);
@@ -437,8 +494,13 @@ MM_MemorySubSpaceSemiSpace::initialize(MM_EnvironmentBase *env)
 
 	/* this memoryPool can be used by scavenger, maximum tlh size should be max(_extensions->tlhMaximumSize, _extensions->scavengerScanCacheMaximumSize) */
 	uintptr_t tlhMaximumSize = OMR_MAX(_extensions->tlhMaximumSize, _extensions->scavengerScanCacheMaximumSize);
-	_largeObjectAllocateStats = MM_LargeObjectAllocateStats::newInstance(env, (uint16_t)_extensions->largeObjectAllocationProfilingTopK, _extensions->largeObjectAllocationProfilingThreshold, _extensions->largeObjectAllocationProfilingVeryLargeObjectThreshold, (float)_extensions->largeObjectAllocationProfilingSizeClassRatio / (float)100.0,
-			_extensions->heap->getMaximumMemorySize(), tlhMaximumSize + _extensions->minimumFreeEntrySize, _extensions->tlhMinimumSize);
+	_largeObjectAllocateStats = MM_LargeObjectAllocateStats::newInstance(
+	        env, (uint16_t)_extensions->largeObjectAllocationProfilingTopK,
+	        _extensions->largeObjectAllocationProfilingThreshold,
+	        _extensions->largeObjectAllocationProfilingVeryLargeObjectThreshold,
+	        (float)_extensions->largeObjectAllocationProfilingSizeClassRatio / (float)100.0,
+	        _extensions->heap->getMaximumMemorySize(), tlhMaximumSize + _extensions->minimumFreeEntrySize,
+	        _extensions->tlhMinimumSize);
 	if (NULL == _largeObjectAllocateStats) {
 		return false;
 	}
@@ -447,7 +509,7 @@ MM_MemorySubSpaceSemiSpace::initialize(MM_EnvironmentBase *env)
 }
 
 void
-MM_MemorySubSpaceSemiSpace::tearDown(MM_EnvironmentBase *env)
+MM_MemorySubSpaceSemiSpace::tearDown(MM_EnvironmentBase* env)
 {
 	MM_MemorySubSpace::tearDown(env);
 
@@ -462,7 +524,7 @@ MM_MemorySubSpaceSemiSpace::tearDown(MM_EnvironmentBase *env)
  ****************************************
  */
 void
-MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
+MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase* env, Flip_step step)
 {
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
@@ -479,23 +541,21 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		/* Let know MemorySpace about new default MemorySubSpace */
 		getMemorySpace()->setDefaultMemorySubSpace(getDefaultMemorySubSpace());
 		break;
-	case disable_allocation:
-		_memorySubSpaceAllocate->isAllocatable(false);
-		break;
-	case restore_allocation:
-		_memorySubSpaceAllocate->isAllocatable(true);
-		break;
+	case disable_allocation: _memorySubSpaceAllocate->isAllocatable(false); break;
+	case restore_allocation: _memorySubSpaceAllocate->isAllocatable(true); break;
 	case restore_allocation_and_set_survivor:
 		_memorySubSpaceAllocate->isAllocatable(true);
 		_memorySubSpaceSurvivor = _memorySubSpaceEvacuate;
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 		_bytesAllocatedDuringConcurrent = _extensions->allocationStats.bytesAllocated();
-		_avgBytesAllocatedDuringConcurrent = (uintptr_t)MM_Math::weightedAverage((float)_avgBytesAllocatedDuringConcurrent,
-											 (float)(_bytesAllocatedDuringConcurrent), 0.7f);
-		_deviationBytesAllocatedDuringConcurrent = ((float)_bytesAllocatedDuringConcurrent - (float)_avgBytesAllocatedDuringConcurrent);
-		_avgDeviationBytesAllocatedDuringConcurrent =
-				sqrtf(MM_Math::weightedAverage(_avgDeviationBytesAllocatedDuringConcurrent * _avgDeviationBytesAllocatedDuringConcurrent,
-												(float)_deviationBytesAllocatedDuringConcurrent * _deviationBytesAllocatedDuringConcurrent, 0.7f));
+		_avgBytesAllocatedDuringConcurrent = (uintptr_t)MM_Math::weightedAverage(
+		        (float)_avgBytesAllocatedDuringConcurrent, (float)(_bytesAllocatedDuringConcurrent), 0.7f);
+		_deviationBytesAllocatedDuringConcurrent =
+		        ((float)_bytesAllocatedDuringConcurrent - (float)_avgBytesAllocatedDuringConcurrent);
+		_avgDeviationBytesAllocatedDuringConcurrent = sqrtf(MM_Math::weightedAverage(
+		        _avgDeviationBytesAllocatedDuringConcurrent * _avgDeviationBytesAllocatedDuringConcurrent,
+		        (float)_deviationBytesAllocatedDuringConcurrent * _deviationBytesAllocatedDuringConcurrent,
+		        0.7f));
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 		break;
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
@@ -509,55 +569,71 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 			_memorySubSpaceAllocate = _memorySubSpaceEvacuate;
 			_memorySubSpaceEvacuate = _memorySubSpaceSurvivor;
 			getMemorySpace()->setDefaultMemorySubSpace(getDefaultMemorySubSpace());
-			if(debug) {
-				omrtty_printf("tilt backout _allocateSpaceBase/Top %llx/%llx _survivorSpaceBase/Top %llx/%llx tilt sizes %llx %llx\n",
-						_allocateSpaceBase, _allocateSpaceTop, _survivorSpaceBase, _survivorSpaceTop,
-						(uintptr_t)_allocateSpaceTop - (uintptr_t)_allocateSpaceBase +  (uintptr_t)_survivorSpaceTop - (uintptr_t)_survivorSpaceBase, (uintptr_t)0);
+			if (debug) {
+				omrtty_printf("tilt backout _allocateSpaceBase/Top %llx/%llx _survivorSpaceBase/Top "
+				              "%llx/%llx tilt sizes %llx %llx\n",
+				              _allocateSpaceBase, _allocateSpaceTop, _survivorSpaceBase,
+				              _survivorSpaceTop,
+				              (uintptr_t)_allocateSpaceTop - (uintptr_t)_allocateSpaceBase
+				                      + (uintptr_t)_survivorSpaceTop - (uintptr_t)_survivorSpaceBase,
+				              (uintptr_t)0);
 			}
 		} else {
 			_memorySubSpaceSurvivor = _memorySubSpaceEvacuate;
 			cacheRanges(_memorySubSpaceAllocate, &_allocateSpaceBase, &_allocateSpaceTop);
 			cacheRanges(_memorySubSpaceSurvivor, &_survivorSpaceBase, &_survivorSpaceTop);
-			if(debug) {
-				omrtty_printf("tilt backout forced flip _allocateSpaceBase/Top %llx/%llx _survivorSpaceBase/Top %llx/%llx tilt sizes %llx %llx\n",
-						_allocateSpaceBase, _allocateSpaceTop, _survivorSpaceBase, _survivorSpaceTop,
-						(uintptr_t)_allocateSpaceTop - (uintptr_t)_allocateSpaceBase +  (uintptr_t)_survivorSpaceTop - (uintptr_t)_survivorSpaceBase, (uintptr_t)0);
+			if (debug) {
+				omrtty_printf("tilt backout forced flip _allocateSpaceBase/Top %llx/%llx "
+				              "_survivorSpaceBase/Top %llx/%llx tilt sizes %llx %llx\n",
+				              _allocateSpaceBase, _allocateSpaceTop, _survivorSpaceBase,
+				              _survivorSpaceTop,
+				              (uintptr_t)_allocateSpaceTop - (uintptr_t)_allocateSpaceBase
+				                      + (uintptr_t)_survivorSpaceTop - (uintptr_t)_survivorSpaceBase,
+				              (uintptr_t)0);
 			}
 		}
 
 		/* Tilt 100% on PhysicalSubArena level (leave SubSpaces unchanged). Give everything to the low address (Allocate) part */
-		_physicalSubArena->tilt(env, (uintptr_t)_allocateSpaceTop - (uintptr_t)_allocateSpaceBase +  (uintptr_t)_survivorSpaceTop - (uintptr_t)_survivorSpaceBase, (uintptr_t)0, false);
+		_physicalSubArena->tilt(env,
+		                        (uintptr_t)_allocateSpaceTop - (uintptr_t)_allocateSpaceBase
+		                                + (uintptr_t)_survivorSpaceTop - (uintptr_t)_survivorSpaceBase,
+		                        (uintptr_t)0, false);
 
 		/* disable potentially successful allocation (in case of forced abort) to trigger another (percolate) GC */
 		_memorySubSpaceAllocate->isAllocatable(false);
 		getMemorySpace()->getTenureMemorySubSpace()->isAllocatable(false);
 
 		break;
-	case restore_tilt_after_percolate:
-	{
+	case restore_tilt_after_percolate: {
 		Assert_MM_true(_extensions->concurrentScavenger);
 		uintptr_t lastFreeEntrySize = 0;
-		MM_HeapLinkedFreeHeader *lastFreeEntry = getDefaultMemorySubSpace()->getMemoryPool()->getLastFreeEntry();
+		MM_HeapLinkedFreeHeader* lastFreeEntry =
+		        getDefaultMemorySubSpace()->getMemoryPool()->getLastFreeEntry();
 		if (NULL != lastFreeEntry) {
 			lastFreeEntrySize = lastFreeEntry->getSize();
-			if(debug) {
+			if (debug) {
 				omrtty_printf("tilt restore_tilt_after_percolate last free entry %llx size %llx\n",
-						lastFreeEntry, lastFreeEntrySize);
+				              lastFreeEntry, lastFreeEntrySize);
 			}
 			/* rely on the last free entry only if at the very end of SemiSpace (no objects after it) */
-			if (((uintptr_t)lastFreeEntry + lastFreeEntrySize) != OMR_MAX((uintptr_t)_allocateSpaceTop, (uintptr_t)_survivorSpaceTop)) {
+			if (((uintptr_t)lastFreeEntry + lastFreeEntrySize)
+			    != OMR_MAX((uintptr_t)_allocateSpaceTop, (uintptr_t)_survivorSpaceTop)) {
 				lastFreeEntrySize = 0;
 			}
 		}
 		/* Make Survivor space from the last free entry in the unified Nursery */
-		uintptr_t heapAlignedLastFreeEntrySize = MM_Math::roundToFloor(_extensions->heapAlignment, lastFreeEntrySize);
+		uintptr_t heapAlignedLastFreeEntrySize =
+		        MM_Math::roundToFloor(_extensions->heapAlignment, lastFreeEntrySize);
 
 		/* Region size is aligned to Concurrent Scavenger Page Section size already */
-		heapAlignedLastFreeEntrySize = MM_Math::roundToFloor(_extensions->regionSize, heapAlignedLastFreeEntrySize);
+		heapAlignedLastFreeEntrySize =
+		        MM_Math::roundToFloor(_extensions->regionSize, heapAlignedLastFreeEntrySize);
 
-		if(debug) {
-			omrtty_printf("tilt restore_tilt_after_percolate heapAlignedLastFreeEntry %llx section (%llx) aligned size %llx\n",
-					lastFreeEntrySize, _extensions->getConcurrentScavengerPageSectionSize(), heapAlignedLastFreeEntrySize);
+		if (debug) {
+			omrtty_printf("tilt restore_tilt_after_percolate heapAlignedLastFreeEntry %llx section (%llx) "
+			              "aligned size %llx\n",
+			              lastFreeEntrySize, _extensions->getConcurrentScavengerPageSectionSize(),
+			              heapAlignedLastFreeEntrySize);
 		}
 
 		/* allocate/survivor base/top still hold the values from before when we did 100% tilt */
@@ -568,15 +644,18 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 			survivorSize = (uintptr_t)_allocateSpaceTop - (uintptr_t)_allocateSpaceBase;
 		}
 
-		if(debug) {
-			omrtty_printf("tilt restore_tilt_after_percolate allocateSize %llx survivorSize %llx\n", allocateSize, survivorSize);
+		if (debug) {
+			omrtty_printf("tilt restore_tilt_after_percolate allocateSize %llx survivorSize %llx\n",
+			              allocateSize, survivorSize);
 		}
 		if (heapAlignedLastFreeEntrySize < survivorSize) {
 			allocateSize += (survivorSize - heapAlignedLastFreeEntrySize);
 			survivorSize = heapAlignedLastFreeEntrySize;
 		}
-		if(debug) {
-			omrtty_printf("tilt restore_tilt_after_percolate adjusted allocateSize %llx survivorSize %llx\n", allocateSize, survivorSize);
+		if (debug) {
+			omrtty_printf(
+			        "tilt restore_tilt_after_percolate adjusted allocateSize %llx survivorSize %llx\n",
+			        allocateSize, survivorSize);
 		}
 
 		tilt(env, allocateSize, survivorSize);
@@ -586,16 +665,14 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		getMemorySpace()->getTenureMemorySubSpace()->isAllocatable(true);
 
 		_extensions->setScavengerBackOutState(backOutFlagCleared);
-	}
-		break;
+	} break;
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
-	default:
-		Assert_MM_unreachable();
+	default: Assert_MM_unreachable();
 	}
 }
 
 void
-MM_MemorySubSpaceSemiSpace::cacheRanges(MM_MemorySubSpace *subSpace, void **base, void **top)
+MM_MemorySubSpaceSemiSpace::cacheRanges(MM_MemorySubSpace* subSpace, void** base, void** top)
 {
 	GC_MemorySubSpaceRegionIterator regionIterator(subSpace);
 	MM_HeapRegionDescriptor* region = regionIterator.nextRegion();
@@ -606,7 +683,7 @@ MM_MemorySubSpaceSemiSpace::cacheRanges(MM_MemorySubSpace *subSpace, void **base
 }
 
 void
-MM_MemorySubSpaceSemiSpace::masterSetupForGC(MM_EnvironmentBase *env)
+MM_MemorySubSpaceSemiSpace::masterSetupForGC(MM_EnvironmentBase* env)
 {
 	/* cache allocate (effectively evacuate for GC) ranges */
 	cacheRanges(_memorySubSpaceAllocate, &_allocateSpaceBase, &_allocateSpaceTop);
@@ -620,41 +697,44 @@ MM_MemorySubSpaceSemiSpace::poisonEvacuateSpace()
 {
 	/* poison allocate (effectively effectively evacuate for the caller, GC) */
 	const uintptr_t pattern = (uintptr_t)-1;
-	uintptr_t* current = (uintptr_t*) _allocateSpaceBase;
-	uintptr_t* end = (uintptr_t*) _allocateSpaceTop;
+	uintptr_t* current = (uintptr_t*)_allocateSpaceBase;
+	uintptr_t* end = (uintptr_t*)_allocateSpaceTop;
 
 #if defined(OMR_VALGRIND_MEMCHECK)
-	//clear dead objects before getting their size bits overwritten.	
-	valgrindClearRange(_extensions,(uintptr_t) _allocateSpaceBase, (uintptr_t) _allocateSpaceTop - (uintptr_t) _allocateSpaceBase);
-		
+	//clear dead objects before getting their size bits overwritten.
+	valgrindClearRange(_extensions, (uintptr_t)_allocateSpaceBase,
+	                   (uintptr_t)_allocateSpaceTop - (uintptr_t)_allocateSpaceBase);
+
 	//The space is already dead (objects).... lets redefine so it can be poisoned!
-	valgrindMakeMemDefined((uintptr_t) _allocateSpaceBase, (uintptr_t) _allocateSpaceTop - (uintptr_t) _allocateSpaceBase);	
+	valgrindMakeMemDefined((uintptr_t)_allocateSpaceBase,
+	                       (uintptr_t)_allocateSpaceTop - (uintptr_t)_allocateSpaceBase);
 #endif /* defined(OMR_VALGRIND_MEMCHECK) */
-	
+
 	while (current < end) {
 		*current = pattern;
 		current += 1;
 	}
 
 #if defined(OMR_VALGRIND_MEMCHECK)
-	valgrindMakeMemNoaccess((uintptr_t) _allocateSpaceBase, (uintptr_t) _allocateSpaceTop - (uintptr_t) _allocateSpaceBase);	
-#endif /* defined(OMR_VALGRIND_MEMCHECK) */	
+	valgrindMakeMemNoaccess((uintptr_t)_allocateSpaceBase,
+	                        (uintptr_t)_allocateSpaceTop - (uintptr_t)_allocateSpaceBase);
+#endif /* defined(OMR_VALGRIND_MEMCHECK) */
 }
 
 void
-MM_MemorySubSpaceSemiSpace::tilt(MM_EnvironmentBase *env, uintptr_t allocateSpaceSize, uintptr_t survivorSpaceSize)
+MM_MemorySubSpaceSemiSpace::tilt(MM_EnvironmentBase* env, uintptr_t allocateSpaceSize, uintptr_t survivorSpaceSize)
 {
 	_physicalSubArena->tilt(env, allocateSpaceSize, survivorSpaceSize);
 }
 
 void
-MM_MemorySubSpaceSemiSpace::tilt(MM_EnvironmentBase *env, uintptr_t survivorSpaceSizeRatioRequest)
+MM_MemorySubSpaceSemiSpace::tilt(MM_EnvironmentBase* env, uintptr_t survivorSpaceSizeRatioRequest)
 {
 	_physicalSubArena->tilt(env, survivorSpaceSizeRatioRequest);
 }
 
 void
-MM_MemorySubSpaceSemiSpace::masterTeardownForSuccessfulGC(MM_EnvironmentBase *env)
+MM_MemorySubSpaceSemiSpace::masterTeardownForSuccessfulGC(MM_EnvironmentBase* env)
 {
 	_memorySubSpaceEvacuate->rebuildFreeList(env);
 
@@ -670,9 +750,8 @@ MM_MemorySubSpaceSemiSpace::masterTeardownForSuccessfulGC(MM_EnvironmentBase *en
 	performResize(env);
 }
 
-
 void
-MM_MemorySubSpaceSemiSpace::masterTeardownForAbortedGC(MM_EnvironmentBase *env)
+MM_MemorySubSpaceSemiSpace::masterTeardownForAbortedGC(MM_EnvironmentBase* env)
 {
 	/* Build free list in survivor. */
 	if (_extensions->isConcurrentScavengerEnabled()) {
@@ -687,18 +766,17 @@ MM_MemorySubSpaceSemiSpace::masterTeardownForAbortedGC(MM_EnvironmentBase *env)
 		 */
 		flip(env, restore_allocation);
 	}
-
 }
 
 /**
  * Adjust the sub space memory by tilting the split between allocate and survivor space.
  */
 void
-MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectTilt(MM_EnvironmentBase *env)
+MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectTilt(MM_EnvironmentBase* env)
 {
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
 
-	if(extensions->tiltedScavenge) {
+	if (extensions->tiltedScavenge) {
 		uintptr_t flipBytes;
 		uintptr_t flipBytesDelta;
 		bool debug = extensions->debugTiltedScavenge;
@@ -706,27 +784,25 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectTilt(MM_EnvironmentBas
 
 		uintptr_t currentSize = getTopLevelMemorySubSpace(MEMORY_TYPE_NEW)->getCurrentSize();
 
-		if(debug) {
+		if (debug) {
 			omrtty_printf("\nTilt check:\n");
 		}
 
 		flipBytes = extensions->scavengerStats._flipBytes + extensions->scavengerStats._failedFlipBytes;
 
-		if(debug) {
-			omrtty_printf("\tBytes flip:%zu fail:%zu total:%zu\n",
-				extensions->scavengerStats._flipBytes,
-				extensions->scavengerStats._failedFlipBytes,
-				flipBytes);
+		if (debug) {
+			omrtty_printf("\tBytes flip:%zu fail:%zu total:%zu\n", extensions->scavengerStats._flipBytes,
+			              extensions->scavengerStats._failedFlipBytes, flipBytes);
 		}
 
 		/* Determine the absolute value of the change in bytes flipped since the last scavenge */
-		if(flipBytes > _previousBytesFlipped) {
+		if (flipBytes > _previousBytesFlipped) {
 			flipBytesDelta = flipBytes - _previousBytesFlipped;
 		} else {
 			flipBytesDelta = _previousBytesFlipped - flipBytes;
 		}
 
-		if(debug) {
+		if (debug) {
 			omrtty_printf("\tflip delta from last (%zu):%zu\n", _previousBytesFlipped, flipBytesDelta);
 		}
 
@@ -736,72 +812,83 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectTilt(MM_EnvironmentBas
 		/* The average bytes flipped weighted average is more heavily affected if the current size is
 		 * greater than the current average
 		 */
-		if(debug) {
+		if (debug) {
 			omrtty_printf("\tcurrent average bytes flipped: %zu (avg delta %zu)\n",
-				_tiltedAverageBytesFlipped,
-				_tiltedAverageBytesFlippedDelta);
+			              _tiltedAverageBytesFlipped, _tiltedAverageBytesFlippedDelta);
 		}
 
 		/* Check if there was any failed to flip objects - which puts us into a bit of a panic mode */
-		if(0 != extensions->scavengerStats._failedFlipCount) {
+		if (0 != extensions->scavengerStats._failedFlipCount) {
 			/* Panic mode - the current numbers should heavily influence the averages */
-			if(debug) {
+			if (debug) {
 				omrtty_printf("\tfailed flip weight\n");
 			}
-			_tiltedAverageBytesFlipped = (uintptr_t)MM_Math::weightedAverage((float)_tiltedAverageBytesFlipped, (float)flipBytes, 0.0f);
-			_tiltedAverageBytesFlippedDelta = (uintptr_t)MM_Math::weightedAverage((float)_tiltedAverageBytesFlippedDelta, (float)flipBytesDelta, 0.0f);
+			_tiltedAverageBytesFlipped = (uintptr_t)MM_Math::weightedAverage(
+			        (float)_tiltedAverageBytesFlipped, (float)flipBytes, 0.0f);
+			_tiltedAverageBytesFlippedDelta = (uintptr_t)MM_Math::weightedAverage(
+			        (float)_tiltedAverageBytesFlippedDelta, (float)flipBytesDelta, 0.0f);
 		} else {
 			/* No panic situation - determine the new tilt ratio through normal means */
-			if(flipBytes > _tiltedAverageBytesFlipped) {
-				if(debug) {
+			if (flipBytes > _tiltedAverageBytesFlipped) {
+				if (debug) {
 					omrtty_printf("\tincrease flip weight\n");
 				}
-				_tiltedAverageBytesFlipped = (uintptr_t)MM_Math::weightedAverage((float)_tiltedAverageBytesFlipped, (float)flipBytes, 0.2f);
-				_tiltedAverageBytesFlippedDelta = (uintptr_t)MM_Math::weightedAverage((float)_tiltedAverageBytesFlippedDelta, (float)flipBytesDelta, 0.2f);
+				_tiltedAverageBytesFlipped = (uintptr_t)MM_Math::weightedAverage(
+				        (float)_tiltedAverageBytesFlipped, (float)flipBytes, 0.2f);
+				_tiltedAverageBytesFlippedDelta = (uintptr_t)MM_Math::weightedAverage(
+				        (float)_tiltedAverageBytesFlippedDelta, (float)flipBytesDelta, 0.2f);
 			} else {
-				if(debug) {
+				if (debug) {
 					omrtty_printf("\tdecrease flip weight\n");
 				}
-				_tiltedAverageBytesFlipped = (uintptr_t)MM_Math::weightedAverage((float)_tiltedAverageBytesFlipped, (float)flipBytes, 0.8f);
-				_tiltedAverageBytesFlippedDelta = (uintptr_t)MM_Math::weightedAverage((float)_tiltedAverageBytesFlippedDelta, (float)flipBytesDelta, 0.8f);
+				_tiltedAverageBytesFlipped = (uintptr_t)MM_Math::weightedAverage(
+				        (float)_tiltedAverageBytesFlipped, (float)flipBytes, 0.8f);
+				_tiltedAverageBytesFlippedDelta = (uintptr_t)MM_Math::weightedAverage(
+				        (float)_tiltedAverageBytesFlippedDelta, (float)flipBytesDelta, 0.8f);
 			}
 		}
 
-		if(debug) {
-			omrtty_printf("\tnew average bytes flipped: %zu (avg delta %zu)\n",
-				_tiltedAverageBytesFlipped,
-				_tiltedAverageBytesFlippedDelta);
+		if (debug) {
+			omrtty_printf("\tnew average bytes flipped: %zu (avg delta %zu)\n", _tiltedAverageBytesFlipped,
+			              _tiltedAverageBytesFlippedDelta);
 		}
 
 		/* Calculate the desired survivor space ratio */
 		double survivorSizeAmplification = 1.04 + extensions->dispatcher->threadCount() / 100.0;
-		double desiredSurvivorSize = (_tiltedAverageBytesFlipped + _tiltedAverageBytesFlippedDelta) * survivorSizeAmplification;
+		double desiredSurvivorSize = (_tiltedAverageBytesFlipped + _tiltedAverageBytesFlippedDelta)
+		        * survivorSizeAmplification;
 
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 		if (_extensions->isConcurrentScavengerEnabled()) {
 			/* Account for mutator allocated objects in hybrid survivor/allocated during concurrent phase of Concurrent Scavenger */
 			desiredSurvivorSize += _avgBytesAllocatedDuringConcurrent * 1.1
-									 + extensions->concurrentScavengerAllocDeviationBoost * (uintptr_t)_avgDeviationBytesAllocatedDuringConcurrent
-									 + extensions->concurrentScavengerSlack;
+			        + extensions->concurrentScavengerAllocDeviationBoost
+			                * (uintptr_t)_avgDeviationBytesAllocatedDuringConcurrent
+			        + extensions->concurrentScavengerSlack;
 			if (debug) {
-				omrtty_printf("\tmutator bytesAllocated current %zu average %zu\n", _bytesAllocatedDuringConcurrent, _avgBytesAllocatedDuringConcurrent);
-				omrtty_printf("\tmutator bytesAllocated deviation current %f average %f (%f%% of average allocation)\n",
-						_deviationBytesAllocatedDuringConcurrent, _avgDeviationBytesAllocatedDuringConcurrent,
-						_avgDeviationBytesAllocatedDuringConcurrent * 100 / _avgBytesAllocatedDuringConcurrent);
+				omrtty_printf("\tmutator bytesAllocated current %zu average %zu\n",
+				              _bytesAllocatedDuringConcurrent, _avgBytesAllocatedDuringConcurrent);
+				omrtty_printf("\tmutator bytesAllocated deviation current %f average %f (%f%% of "
+				              "average allocation)\n",
+				              _deviationBytesAllocatedDuringConcurrent,
+				              _avgDeviationBytesAllocatedDuringConcurrent,
+				              _avgDeviationBytesAllocatedDuringConcurrent * 100
+				                      / _avgBytesAllocatedDuringConcurrent);
 			}
 		}
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 
 		_desiredSurvivorSpaceRatio = desiredSurvivorSize / currentSize;
 
-		if(debug) {
+		if (debug) {
 			omrtty_printf("\tDesired survivor size: %zu  ratio: %zu\n",
-				(uintptr_t)(currentSize * _desiredSurvivorSpaceRatio),	(uintptr_t) (_desiredSurvivorSpaceRatio * 100));
+			              (uintptr_t)(currentSize * _desiredSurvivorSpaceRatio),
+			              (uintptr_t)(_desiredSurvivorSpaceRatio * 100));
 		}
 
 		/* Sanity check for lowest possible ratio */
-		if (_desiredSurvivorSpaceRatio <  extensions->survivorSpaceMinimumSizeRatio) {
-			_desiredSurvivorSpaceRatio =  extensions->survivorSpaceMinimumSizeRatio;
+		if (_desiredSurvivorSpaceRatio < extensions->survivorSpaceMinimumSizeRatio) {
+			_desiredSurvivorSpaceRatio = extensions->survivorSpaceMinimumSizeRatio;
 		}
 
 		/* Never hand out more than 50% to the survivor */
@@ -810,18 +897,23 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectTilt(MM_EnvironmentBas
 		}
 
 		/* we have flipped already, so to get old survivor space ratio we fetch allocate size */
-		double previousSurvivorSpaceRatio = (double) _memorySubSpaceAllocate->getActiveMemorySize() / currentSize;
+		double previousSurvivorSpaceRatio = (double)_memorySubSpaceAllocate->getActiveMemorySize()
+		        / currentSize;
 
 		/* Do not let survivor space shrink by more than the maximum tilt increase */
 		assume0(previousSurvivorSpaceRatio >= extensions->tiltedScavengeMaximumIncrease);
-		if (_desiredSurvivorSpaceRatio < (previousSurvivorSpaceRatio - extensions->tiltedScavengeMaximumIncrease)) {
-			_desiredSurvivorSpaceRatio = previousSurvivorSpaceRatio -  extensions->tiltedScavengeMaximumIncrease;
+		if (_desiredSurvivorSpaceRatio
+		    < (previousSurvivorSpaceRatio - extensions->tiltedScavengeMaximumIncrease)) {
+			_desiredSurvivorSpaceRatio = previousSurvivorSpaceRatio
+			        - extensions->tiltedScavengeMaximumIncrease;
 		}
 
-		if(debug) {
-			omrtty_printf("\tPrevious survivor ratio: %zu\n", (uintptr_t) (previousSurvivorSpaceRatio * 100));
-			omrtty_printf("\tAdjusted survivor size: %zu  ratio: %zu\n",(uintptr_t)(currentSize * _desiredSurvivorSpaceRatio),
-				(uintptr_t) (_desiredSurvivorSpaceRatio * 100));
+		if (debug) {
+			omrtty_printf("\tPrevious survivor ratio: %zu\n",
+			              (uintptr_t)(previousSurvivorSpaceRatio * 100));
+			omrtty_printf("\tAdjusted survivor size: %zu  ratio: %zu\n",
+			              (uintptr_t)(currentSize * _desiredSurvivorSpaceRatio),
+			              (uintptr_t)(_desiredSurvivorSpaceRatio * 100));
 		}
 	}
 }
@@ -830,22 +922,22 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectTilt(MM_EnvironmentBas
  * Adjust the sub space memory by resizing the allocate and survivor space (expand or contract).
  */
 void
-MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectResize(MM_EnvironmentBase *env)
+MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectResize(MM_EnvironmentBase* env)
 {
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
 	uintptr_t regionSize = extensions->getHeap()->getHeapRegionManager()->getRegionSize();
 
-	if(extensions->dynamicNewSpaceSizing) {
+	if (extensions->dynamicNewSpaceSizing) {
 		bool doDynamicNewSpaceSizing = true;
 		bool debug = extensions->debugDynamicNewSpaceSizing;
 		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
-		if(debug) {
+		if (debug) {
 			omrtty_printf("New space resize check:\n");
 		}
 
-		if (extensions->scavengerStats._gcCount == 1){
-			if(debug) {
+		if (extensions->scavengerStats._gcCount == 1) {
+			if (debug) {
 				omrtty_printf("\tNo previous scavenge - ABORTING\n");
 			}
 			doDynamicNewSpaceSizing = false;
@@ -854,7 +946,7 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectResize(MM_EnvironmentB
 		/* the wall clock might be shifted backwards externally */
 		if (extensions->scavengerStats._startTime < _lastScavengeEndTime) {
 			/* clock has been shifted backwards between scavenges */
-			if(debug) {
+			if (debug) {
 				omrtty_printf("\tClock shifted backwards between scavenges - ABORTING\n");
 			}
 			doDynamicNewSpaceSizing = false;
@@ -862,25 +954,28 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectResize(MM_EnvironmentB
 
 		if (extensions->scavengerStats._endTime < extensions->scavengerStats._startTime) {
 			/* clock has been shifted backwards at the time of the scavenge */
-			if(debug) {
+			if (debug) {
 				omrtty_printf("\tClock shifted backwards at the time of the scavenge - ABORTING\n");
 			}
 			doDynamicNewSpaceSizing = false;
 		}
 
-		uint64_t intervalTime = omrtime_hires_delta(_lastScavengeEndTime, extensions->scavengerStats._endTime, OMRPORT_TIME_DELTA_IN_MILLISECONDS);
+		uint64_t intervalTime = omrtime_hires_delta(_lastScavengeEndTime, extensions->scavengerStats._endTime,
+		                                            OMRPORT_TIME_DELTA_IN_MILLISECONDS);
 
-		if(0 == intervalTime) {
-			if(debug) {
+		if (0 == intervalTime) {
+			if (debug) {
 				omrtty_printf("\tInterval time 0 - ABORTING\n");
 			}
 			doDynamicNewSpaceSizing = false;
 		}
 
-		uint64_t scavengeTime = omrtime_hires_delta(extensions->scavengerStats._startTime, extensions->scavengerStats._endTime, OMRPORT_TIME_DELTA_IN_MILLISECONDS );
+		uint64_t scavengeTime = omrtime_hires_delta(extensions->scavengerStats._startTime,
+		                                            extensions->scavengerStats._endTime,
+		                                            OMRPORT_TIME_DELTA_IN_MILLISECONDS);
 
-		if(0 == scavengeTime) {
-			if(debug) {
+		if (0 == scavengeTime) {
+			if (debug) {
 				omrtty_printf("\tScavenge time 0 - ABORTING\n");
 			}
 			doDynamicNewSpaceSizing = false;
@@ -889,13 +984,16 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectResize(MM_EnvironmentB
 		_lastScavengeEndTime = extensions->scavengerStats._endTime;
 
 		if (doDynamicNewSpaceSizing) {
-			double expectedTimeRatio = (extensions->dnssExpectedTimeRatioMaximum + extensions->dnssExpectedTimeRatioMinimum) / 2;
+			double expectedTimeRatio =
+			        (extensions->dnssExpectedTimeRatioMaximum + extensions->dnssExpectedTimeRatioMinimum)
+			        / 2;
 
 			/* Find the ratio of time to scavenge versus the interval time since the last scavenge */
-			double timeRatio = (double)((int64_t)scavengeTime) / (double)((int64_t) intervalTime);
-			
-			if(debug) {
-				omrtty_printf("\tTime scav:%llu interval:%llu ratio:%lf\n", scavengeTime, intervalTime, timeRatio);
+			double timeRatio = (double)((int64_t)scavengeTime) / (double)((int64_t)intervalTime);
+
+			if (debug) {
+				omrtty_printf("\tTime scav:%llu interval:%llu ratio:%lf\n", scavengeTime, intervalTime,
+				              timeRatio);
 			}
 
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
@@ -903,14 +1001,15 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectResize(MM_EnvironmentB
 				/* In CS world, we cannot easily measure GC overhead. This is just a simple adjustment, which is somewhat ok for light to medium
 				 * loaded systems. In overloaded systems (where GC background threads are starved and GC prolonged), we may expand more than necessary.
 				 * Multi JVM configuration may skew this even more (perhaps it's better to base it on CPU count, rather than GC thread count?). */
-				timeRatio = timeRatio * _extensions->concurrentScavengerBackgroundThreads / _extensions->dispatcher->activeThreadCount();
-				if(debug) {
+				timeRatio = timeRatio * _extensions->concurrentScavengerBackgroundThreads
+				        / _extensions->dispatcher->activeThreadCount();
+				if (debug) {
 					omrtty_printf("\tCS adjusted ratio:%lf\n", timeRatio);
 				}
 			}
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 
-			if(debug) {
+			if (debug) {
 				omrtty_printf("\tAverage scavenge time ratio: %lf -> ", _averageScavengeTimeRatio);
 			}
 
@@ -918,9 +1017,9 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectResize(MM_EnvironmentB
 			 * calculating the new average
 			 */
 			double weight;
-			if(timeRatio > _averageScavengeTimeRatio) {
-				if(timeRatio > expectedTimeRatio) {
-					if(timeRatio > extensions->dnssExpectedTimeRatioMaximum) {
+			if (timeRatio > _averageScavengeTimeRatio) {
+				if (timeRatio > expectedTimeRatio) {
+					if (timeRatio > extensions->dnssExpectedTimeRatioMaximum) {
 						weight = extensions->dnssWeightedTimeRatioFactorIncreaseLarge;
 					} else {
 						weight = extensions->dnssWeightedTimeRatioFactorIncreaseMedium;
@@ -935,13 +1034,14 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectResize(MM_EnvironmentB
 			/* Weight determined - calculate the new average */
 			_averageScavengeTimeRatio = (timeRatio * weight) + (_averageScavengeTimeRatio * (1.0 - weight));
 
-			if(debug) {
+			if (debug) {
 				omrtty_printf("%lf (weight %lf)\n", _averageScavengeTimeRatio, weight);
 			}
 
 			/* If the average scavenge to interval ratio is greater than the maximum, try to expand */
-			if((_averageScavengeTimeRatio > extensions->dnssExpectedTimeRatioMaximum)
-					&& (NULL != _physicalSubArena) && _physicalSubArena->canExpand(env) && (maxExpansionInSpace(env) != 0)) {
+			if ((_averageScavengeTimeRatio > extensions->dnssExpectedTimeRatioMaximum)
+			    && (NULL != _physicalSubArena) && _physicalSubArena->canExpand(env)
+			    && (maxExpansionInSpace(env) != 0)) {
 				double desiredExpansionFactor, adjustedExpansionFactor;
 
 				/* Try to reach 50% of the expected time ratio through expansion */
@@ -958,25 +1058,33 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectResize(MM_EnvironmentB
 				/* Adjust the average scavenge to interval ratio */
 				_averageScavengeTimeRatio -= adjustedExpansionFactor;
 
-				_expansionSize = MM_Math::roundToCeiling(extensions->heapAlignment, (uintptr_t)(getCurrentSize() * adjustedExpansionFactor));
+				_expansionSize = MM_Math::roundToCeiling(
+				        extensions->heapAlignment,
+				        (uintptr_t)(getCurrentSize() * adjustedExpansionFactor));
 				_expansionSize = MM_Math::roundToCeiling(2 * regionSize, _expansionSize);
 
-				if(debug) {
-					omrtty_printf("\tExpand decision - expandFactor desired: %lf adjusted: %lf size: %u\n", desiredExpansionFactor, adjustedExpansionFactor, _expansionSize);
-					omrtty_printf("\tExpand decision - current size: %d expanded size: %d\n", getCurrentSize(), getCurrentSize() + _expansionSize);
-					omrtty_printf("\tExpand decision - new time ratio:%lf\n\n\n", _averageScavengeTimeRatio);
+				if (debug) {
+					omrtty_printf("\tExpand decision - expandFactor desired: %lf adjusted: %lf "
+					              "size: %u\n",
+					              desiredExpansionFactor, adjustedExpansionFactor, _expansionSize);
+					omrtty_printf("\tExpand decision - current size: %d expanded size: %d\n",
+					              getCurrentSize(), getCurrentSize() + _expansionSize);
+					omrtty_printf("\tExpand decision - new time ratio:%lf\n\n\n",
+					              _averageScavengeTimeRatio);
 				}
 
 				extensions->heap->getResizeStats()->setLastExpandReason(SCAV_RATIO_TOO_HIGH);
 			}
 
 			/* If the average scavenge to interval ratio is less than the minimum, try to contract */
-			if(_averageScavengeTimeRatio < extensions->dnssExpectedTimeRatioMinimum
-					&& (NULL != _physicalSubArena) && _physicalSubArena->canContract(env) && (maxContractionInSpace(env) != 0)) {
+			if (_averageScavengeTimeRatio < extensions->dnssExpectedTimeRatioMinimum
+			    && (NULL != _physicalSubArena) && _physicalSubArena->canContract(env)
+			    && (maxContractionInSpace(env) != 0)) {
 				double desiredContractionFactor, adjustedContractionFactor;
 
 				/* Try to reach 200% of the expected minimum time ratio through contraction */
-				desiredContractionFactor = OMR_MIN(extensions->dnssExpectedTimeRatioMinimum  * 2, expectedTimeRatio);
+				desiredContractionFactor =
+				        OMR_MIN(extensions->dnssExpectedTimeRatioMinimum * 2, expectedTimeRatio);
 				desiredContractionFactor = desiredContractionFactor - _averageScavengeTimeRatio;
 
 				if (desiredContractionFactor > extensions->dnssMaximumContraction) {
@@ -990,14 +1098,20 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectResize(MM_EnvironmentB
 				/* Adjust the average scavenge to interval ratio */
 				_averageScavengeTimeRatio += adjustedContractionFactor;
 
-
-				_contractionSize = MM_Math::roundToCeiling(extensions->heapAlignment, (uintptr_t)(getCurrentSize() * adjustedContractionFactor));
+				_contractionSize = MM_Math::roundToCeiling(
+				        extensions->heapAlignment,
+				        (uintptr_t)(getCurrentSize() * adjustedContractionFactor));
 				_contractionSize = MM_Math::roundToCeiling(regionSize, _contractionSize);
 
-				if(debug) {
-					omrtty_printf("\tContract decision - contractFactor desired: %lf adjusted: %lf size: %u\n", desiredContractionFactor, adjustedContractionFactor, _contractionSize);
-					omrtty_printf("\tContract decision - current size: %d contracted size: %d\n", getCurrentSize(), getCurrentSize() - _contractionSize);
-					omrtty_printf("\tContract decision - new time ratio:%lf\n\n\n", _averageScavengeTimeRatio);
+				if (debug) {
+					omrtty_printf("\tContract decision - contractFactor desired: %lf adjusted: %lf "
+					              "size: %u\n",
+					              desiredContractionFactor, adjustedContractionFactor,
+					              _contractionSize);
+					omrtty_printf("\tContract decision - current size: %d contracted size: %d\n",
+					              getCurrentSize(), getCurrentSize() - _contractionSize);
+					omrtty_printf("\tContract decision - new time ratio:%lf\n\n\n",
+					              _averageScavengeTimeRatio);
 				}
 
 				extensions->heap->getResizeStats()->setLastContractReason(SCAV_RATIO_TOO_LOW);
@@ -1013,7 +1127,9 @@ MM_MemorySubSpaceSemiSpace::checkSubSpaceMemoryPostCollectResize(MM_EnvironmentB
  * 
  */
 void
-MM_MemorySubSpaceSemiSpace::checkResize(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, bool systemGC)
+MM_MemorySubSpaceSemiSpace::checkResize(MM_EnvironmentBase* env,
+                                        MM_AllocateDescription* allocDescription,
+                                        bool systemGC)
 {
 	uintptr_t oldVMState = env->pushVMstate(OMRVMSTATE_GC_CHECK_RESIZE);
 	/* this we are called at the end of precolate global GC, due to aborted Concurrent Scavenge,
@@ -1028,23 +1144,23 @@ MM_MemorySubSpaceSemiSpace::checkResize(MM_EnvironmentBase *env, MM_AllocateDesc
 }
 
 intptr_t
-MM_MemorySubSpaceSemiSpace::performResize(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription)
+MM_MemorySubSpaceSemiSpace::performResize(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription)
 {
 	uintptr_t oldVMState = env->pushVMstate(OMRVMSTATE_GC_PERFORM_RESIZE);
 	uintptr_t regionSize = env->getExtensions()->getHeap()->getHeapRegionManager()->getRegionSize();
-	
+
 	if (_desiredSurvivorSpaceRatio > 0.0) {
 		uintptr_t desiredSurvivorSpaceSize = (uintptr_t)(getCurrentSize() * _desiredSurvivorSpaceRatio);
 		desiredSurvivorSpaceSize = MM_Math::roundToCeiling(regionSize, desiredSurvivorSpaceSize);
 		tilt(env, desiredSurvivorSpaceSize);
 		_desiredSurvivorSpaceRatio = 0.0;
 	}
-	
-	/* If -Xgc:fvtest=forceNurseryResize is specified, then repeat a sequence of 5 expands followed by 5 contracts */	
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
+
+	/* If -Xgc:fvtest=forceNurseryResize is specified, then repeat a sequence of 5 expands followed by 5 contracts */
+	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
 	if (extensions->fvtest_forceNurseryResize) {
 		uintptr_t resizeAmount = 0;
-		resizeAmount = 2*regionSize;
+		resizeAmount = 2 * regionSize;
 		if (5 > extensions->fvtest_nurseryResizeCounter) {
 			uintptr_t expansionSize = MM_Math::roundToCeiling(extensions->heapAlignment, resizeAmount);
 			expansionSize = MM_Math::roundToCeiling(regionSize, expansionSize);
@@ -1063,13 +1179,13 @@ MM_MemorySubSpaceSemiSpace::performResize(MM_EnvironmentBase *env, MM_AllocateDe
 				_expansionSize = 0;
 				extensions->fvtest_nurseryResizeCounter += 1;
 			}
-		} 
-		
+		}
+
 		if (10 <= extensions->fvtest_nurseryResizeCounter) {
 			extensions->fvtest_nurseryResizeCounter = 0;
 		}
 	}
-	
+
 	if (0 != _expansionSize) {
 		expand(env, _expansionSize);
 	} else if (0 != _contractionSize) {
@@ -1078,27 +1194,28 @@ MM_MemorySubSpaceSemiSpace::performResize(MM_EnvironmentBase *env, MM_AllocateDe
 
 	_expansionSize = 0;
 	_contractionSize = 0;
-	
+
 	env->popVMstate(oldVMState);
 
 	return 0;
 }
 
-MM_LargeObjectAllocateStats *
+MM_LargeObjectAllocateStats*
 MM_MemorySubSpaceSemiSpace::getLargeObjectAllocateStats()
 {
 	return _largeObjectAllocateStats;
 }
 
 void
-MM_MemorySubSpaceSemiSpace::mergeLargeObjectAllocateStats(MM_EnvironmentBase *env)
+MM_MemorySubSpaceSemiSpace::mergeLargeObjectAllocateStats(MM_EnvironmentBase* env)
 {
 	_largeObjectAllocateStats->resetCurrent();
 	_memorySubSpaceAllocate->getMemoryPool()->mergeLargeObjectAllocateStats();
 	_memorySubSpaceSurvivor->getMemoryPool()->mergeLargeObjectAllocateStats();
-	_largeObjectAllocateStats->mergeCurrent(_memorySubSpaceAllocate->getMemoryPool()->getLargeObjectAllocateStats());
-	_largeObjectAllocateStats->mergeCurrent(_memorySubSpaceSurvivor->getMemoryPool()->getLargeObjectAllocateStats());
+	_largeObjectAllocateStats->mergeCurrent(
+	        _memorySubSpaceAllocate->getMemoryPool()->getLargeObjectAllocateStats());
+	_largeObjectAllocateStats->mergeCurrent(
+	        _memorySubSpaceSurvivor->getMemoryPool()->getLargeObjectAllocateStats());
 }
 
 #endif /* OMR_GC_MODRON_SCAVENGER */
-

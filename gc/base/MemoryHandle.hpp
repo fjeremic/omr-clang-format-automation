@@ -20,13 +20,13 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 #if !defined(MEMORYHANDLE_HPP)
 #define MEMORYHANDLE_HPP
 
 class MM_VirtualMemory;
 
-class MM_MemoryHandle {
+class MM_MemoryHandle
+{
 	/*
 	 * Data members
 	 */
@@ -37,7 +37,6 @@ private:
 
 protected:
 public:
-
 	/*
 	 * Function members
 	 */
@@ -47,61 +46,40 @@ protected:
 	 * Set _virtualMemory field
 	 * @param virtualMemory virtual memory pointer to set
 	 */
-	MMINLINE void setVirtualMemory(MM_VirtualMemory* virtualMemory)
-	{
-		_virtualMemory = virtualMemory;
-	}
+	MMINLINE void setVirtualMemory(MM_VirtualMemory* virtualMemory) { _virtualMemory = virtualMemory; }
 
 	/**
 	 * Return back virtual memory pointer
 	 * @return virtual memory pointer
 	 */
-	MMINLINE MM_VirtualMemory* getVirtualMemory() const
-	{
-		return _virtualMemory;
-	}
+	MMINLINE MM_VirtualMemory* getVirtualMemory() const { return _virtualMemory; }
 
 	/**
 	 * Set memory base pointer
 	 * @param memoryBase memory base pointer
 	 */
-	MMINLINE void setMemoryBase(void* memoryBase)
-	{
-		_memoryBase = memoryBase;
-	}
+	MMINLINE void setMemoryBase(void* memoryBase) { _memoryBase = memoryBase; }
 
 	/**
 	 * Return back memory base pointer
 	 * @return memory base pointer
 	 */
-	MMINLINE void* getMemoryBase()
-	{
-		return _memoryBase;
-	}
+	MMINLINE void* getMemoryBase() { return _memoryBase; }
 
 	/**
 	 * Set memory top pointer
 	 * @param memoryTop memory top pointer
 	 */
-	MMINLINE void setMemoryTop(void* memoryTop)
-	{
-		_memoryTop = memoryTop;
-	}
+	MMINLINE void setMemoryTop(void* memoryTop) { _memoryTop = memoryTop; }
 
 	/**
 	 * Return back memory top pointer
 	 * @return memory top pointer
 	 */
-	MMINLINE void* getMemoryTop()
-	{
-		return _memoryTop;
-	}
+	MMINLINE void* getMemoryTop() { return _memoryTop; }
 
 public:
-	MM_MemoryHandle()
-		: _virtualMemory(NULL)
-		, _memoryBase(NULL)
-		, _memoryTop(NULL) {};
+	MM_MemoryHandle() : _virtualMemory(NULL), _memoryBase(NULL), _memoryTop(NULL){};
 
 	/*
 	 * friends

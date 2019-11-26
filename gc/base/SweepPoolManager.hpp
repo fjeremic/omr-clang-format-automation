@@ -20,7 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 /**
  * @file
  * @ingroup GC_Base
@@ -29,11 +28,10 @@
 #if !defined(SWEEPPOOLMANAGER_HPP_)
 #define SWEEPPOOLMANAGER_HPP_
 
-#include "omrcfg.h"
-#include "modronopt.h"
-#include "modronbase.h"
-
 #include "BaseVirtual.hpp"
+#include "modronbase.h"
+#include "modronopt.h"
+#include "omrcfg.h"
 
 class MM_EnvironmentBase;
 class MM_GCExtensionsBase;
@@ -48,29 +46,26 @@ class MM_SweepPoolState;
 class MM_SweepPoolManager : public MM_BaseVirtual
 {
 private:
-
 protected:
+	MM_GCExtensionsBase* _extensions;
 
-	MM_GCExtensionsBase *_extensions;
-
-	virtual void tearDown(MM_EnvironmentBase *env);
-	virtual bool initialize(MM_EnvironmentBase *env);
+	virtual void tearDown(MM_EnvironmentBase* env);
+	virtual bool initialize(MM_EnvironmentBase* env);
 
 public:
-
-	void kill(MM_EnvironmentBase *env);
+	void kill(MM_EnvironmentBase* env);
 
 	/**
 	 * Flush any unaccounted for free entries to the free list.
 	 */
-	virtual void flushFinalChunk(MM_EnvironmentBase *env, MM_MemoryPool *memoryPool) = 0;
+	virtual void flushFinalChunk(MM_EnvironmentBase* env, MM_MemoryPool* memoryPool) = 0;
 
 	/**
 	 *  Finally if there is at least 1 entry in the subspace, the last entry should be connected to NULL in the free list
 	 */
-	virtual void connectFinalChunk(MM_EnvironmentBase *env, MM_MemoryPool *memoryPool) = 0;
-	
-	virtual void poolPostProcess(MM_EnvironmentBase *env, MM_MemoryPool *memoryPool) = 0;
+	virtual void connectFinalChunk(MM_EnvironmentBase* env, MM_MemoryPool* memoryPool) = 0;
+
+	virtual void poolPostProcess(MM_EnvironmentBase* env, MM_MemoryPool* memoryPool) = 0;
 
 	/**
 	 * Connect a chunk into the free list.
@@ -81,7 +76,7 @@ public:
 	 * @note a chunk can only be connected by a single thread (single threaded routine)
 	 * @todo add the general algorithm to the comment header.
 	 */
-	virtual void connectChunk(MM_EnvironmentBase *env, MM_ParallelSweepChunk *chunk) = 0;
+	virtual void connectChunk(MM_EnvironmentBase* env, MM_ParallelSweepChunk* chunk) = 0;
 
 	/**
 	 * 	Add free memory slot to pool list
@@ -90,7 +85,10 @@ public:
 	 * @param address start address of memory slot
 	 * @param size size of free memory slot
 	 */
-	virtual bool addFreeMemory(MM_EnvironmentBase *env, MM_ParallelSweepChunk *sweepChunk, uintptr_t *heapSlotFreeHead, uintptr_t heapSlotFreeCount) = 0;
+	virtual bool addFreeMemory(MM_EnvironmentBase* env,
+	                           MM_ParallelSweepChunk* sweepChunk,
+	                           uintptr_t* heapSlotFreeHead,
+	                           uintptr_t heapSlotFreeCount) = 0;
 
 	/**
 	 * Update trailing free memory
@@ -99,21 +97,19 @@ public:
 	 * @param trailingCandidate trailing candidate address
 	 * @param trailingCandidateSlotCount trailing candidate size
 	 */
-	virtual void updateTrailingFreeMemory(MM_EnvironmentBase *env, MM_ParallelSweepChunk *sweepChunk, uintptr_t *heapSlotFreeHead, uintptr_t heapSlotFreeCount) = 0;
+	virtual void updateTrailingFreeMemory(MM_EnvironmentBase* env,
+	                                      MM_ParallelSweepChunk* sweepChunk,
+	                                      uintptr_t* heapSlotFreeHead,
+	                                      uintptr_t heapSlotFreeCount) = 0;
 
 	/**
 	 * Get the sweep scheme state for the given memory pool.
 	 */
-	virtual MM_SweepPoolState *getPoolState(MM_MemoryPool *memoryPool) = 0;
+	virtual MM_SweepPoolState* getPoolState(MM_MemoryPool* memoryPool) = 0;
 
 	/**
 	 * Create a SweepPoolManager object.
 	 */
-	MM_SweepPoolManager(MM_EnvironmentBase *env)
-		: _extensions(env->getExtensions())
-	{
-		_typeId = __FUNCTION__;
-	}
-
+	MM_SweepPoolManager(MM_EnvironmentBase* env) : _extensions(env->getExtensions()) { _typeId = __FUNCTION__; }
 };
 #endif /* SWEEPPOOLMANAGER_HPP_ */

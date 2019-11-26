@@ -23,28 +23,29 @@
 #if !defined(FORGE_HPP_)
 #define FORGE_HPP_
 
-#include "omrcfg.h"
-
-#include "omrcomp.h"
-#include "thread_api.h"
-#include "omrport.h"
 #include "AllocationCategory.hpp"
-
+#include "omrcfg.h"
+#include "omrcomp.h"
+#include "omrport.h"
+#include "thread_api.h"
 #include <new>
 
 class MM_EnvironmentBase;
 class MM_GCExtensionsBase;
 
-namespace OMR {
-namespace GC {
+namespace OMR
+{
+namespace GC
+{
 
-class Forge {
+class Forge
+{
 
-/* Data Members */
+	/* Data Members */
 private:
 	OMRPortLibrary* _portLibrary;
-	
-/* Function Members */
+
+	/* Function Members */
 public:
 	/**
 	 * Initialize internal structures of the memory forge.  An instance of Forge must be initialized before
@@ -55,7 +56,7 @@ public:
 	 * 		   should not be used before it has been successfully initialized.
 	 */
 	bool initialize(OMRPortLibrary* port);
-	
+
 	/**
 	 * Release any internal structures of the memory forge.  After tear down, there should be no calls to the 
 	 * methods allocate or free.
@@ -93,7 +94,12 @@ public:
  *   MyStruct* s = new(forge, AllocationCategory::FIXED, OMR_GET_CALLSITE(), std::nothrow) MyStruct(constructor params...);
  */
 inline void*
-operator new(std::size_t size, OMR::GC::Forge* forge, OMR::GC::AllocationCategory::Enum category, const char* site, const std::nothrow_t&) throw() {
+operator new(std::size_t size,
+             OMR::GC::Forge* forge,
+             OMR::GC::AllocationCategory::Enum category,
+             const char* site,
+             const std::nothrow_t&) throw()
+{
 	return forge->allocate(size, category, site);
 }
 
@@ -102,7 +108,12 @@ operator new(std::size_t size, OMR::GC::Forge* forge, OMR::GC::AllocationCategor
  *   MyStruct* s = new(forge, AllocationCategory::FIXED, OMR_GET_CALLSITE(), std::nothrow) MyStruct(constructor params...);
  */
 inline void*
-operator new[](std::size_t size, OMR::GC::Forge* forge, OMR::GC::AllocationCategory::Enum category, const char* site, const std::nothrow_t&) throw() {
+operator new[](std::size_t size,
+               OMR::GC::Forge* forge,
+               OMR::GC::AllocationCategory::Enum category,
+               const char* site,
+               const std::nothrow_t&) throw()
+{
 	return operator new(size, forge, category, site, std::nothrow);
 }
 

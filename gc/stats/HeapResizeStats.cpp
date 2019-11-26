@@ -23,7 +23,7 @@
 #include "HeapResizeStats.hpp"
 
 uint32_t
-MM_HeapResizeStats::calculateGCPercentage() 
+MM_HeapResizeStats::calculateGCPercentage()
 {
 	uint32_t percentage = 0;
 	uint64_t totalGCTicks = 0;
@@ -32,10 +32,10 @@ MM_HeapResizeStats::calculateGCPercentage()
 	/* Make sure histories has not been cleared in last 3 cycles. This will
 	 * be the case if the first element in the array is zero
 	 */
-	if (_ticksOutsideGC[0] == 0 ) {
-		return 0; 
+	if (_ticksOutsideGC[0] == 0) {
+		return 0;
 	}
-	
+
 	/* Sum up all ticks */
 	for (int i = 0; i < RATIO_RESIZE_HISTORIES; i++) {
 		totalGCTicks += _ticksInGC[i];
@@ -53,7 +53,7 @@ MM_HeapResizeStats::calculateGCPercentage()
 
 	/* Remember the answer; may be need by verbose */
 	_lastGCPercentage = percentage;
-	
+
 	return percentage;
 }
 
@@ -77,15 +77,15 @@ MM_HeapResizeStats::updateHeapResizeStats()
 			timeInGC = cacheLastAFEndTime - cacheThisAFStartTime;
 		}
 		uint64_t timeOutsideGC = _lastTimeOutsideGC;
-		
+
 		/* Clocks are not always accurate on embedded systems.  Subsequent calls
 	 	 * may return the same value (i.e. delta of 0). If this happens round the 
 	 	 * delta up to 1 tick so we never store a 0 into ratio ticks array.
 	 	*/
-	 	timeInGC = (timeInGC == 0 ? 1 : timeInGC);
+		timeInGC = (timeInGC == 0 ? 1 : timeInGC);
 		timeOutsideGC = (timeOutsideGC == 0 ? 1 : timeOutsideGC);
-		
+
 		/* Update the last entry in ratio resize history array*/
 		updateRatioTicks(timeInGC, timeOutsideGC);
-	}			
-}	
+	}
+}

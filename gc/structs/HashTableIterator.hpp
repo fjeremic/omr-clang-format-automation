@@ -23,10 +23,10 @@
 #if !defined(HASHTABLEITERATOR_HPP_)
 #define HASHTABLEITERATOR_HPP_
 
-#include "omrcomp.h"
-#include "modronbase.h"
-#include "omrhashtable.h"
 #include "hashtable_api.h"
+#include "modronbase.h"
+#include "omrcomp.h"
+#include "omrhashtable.h"
 
 /**
  * Iterate over all slots in a J9HashTable.  The hash table is actually backed
@@ -37,27 +37,24 @@
  */
 class GC_HashTableIterator
 {
-	J9HashTable *_hashTable;
+	J9HashTable* _hashTable;
 	J9HashTableState _handle;
-	bool _firstIteration;	
+	bool _firstIteration;
 
 public:
-	GC_HashTableIterator(J9HashTable *hashTable)
-	{
-		initialize(hashTable);
-	}
+	GC_HashTableIterator(J9HashTable* hashTable) { initialize(hashTable); }
 
-	void **nextSlot();
+	void** nextSlot();
 
 	virtual void removeSlot();
-	
+
 	/**
 	 * Prevent the hash table from growing. This allows the iteration to be interrupted and more
 	 * elements may be added to the table before resuming. Elements still should not be deleted
 	 * while iteration is interrupted.
 	 */
 	void disableTableGrowth();
-	
+
 	/**
 	 * Re-enable table growth which has been disabled by disableTableGrowth().
 	 */
@@ -66,8 +63,7 @@ public:
 	/**
 	 * Reuse this iterator on a different hashTable
 	 */
-	MMINLINE void 
-	initialize(J9HashTable *hashTable)
+	MMINLINE void initialize(J9HashTable* hashTable)
 	{
 		_firstIteration = true;
 		_hashTable = hashTable;

@@ -21,6 +21,7 @@
  *******************************************************************************/
 
 #include "GlobalCollector.hpp"
+
 #include "GlobalCollectorDelegate.hpp"
 
 void
@@ -40,6 +41,4 @@ MM_GlobalCollector::isTimeForGlobalGCKickoff()
  */
 void
 MM_GlobalCollector::abortCollection(MM_EnvironmentBase* env, CollectionAbortReason reason)
-{
-}
-
+{}

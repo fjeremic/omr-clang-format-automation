@@ -20,7 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 /**
  * @file
  * @ingroup GC_Base_Core
@@ -29,17 +28,17 @@
 #if !defined(MEMORYPOOLSPLITADDRESSORDEREDLISTBASE_HPP_)
 #define MEMORYPOOLSPLITADDRESSORDEREDLISTBASE_HPP_
 
-#include "omrcfg.h"
-#include "modronopt.h"
-
+#include "EnvironmentBase.hpp"
 #include "HeapLinkedFreeHeader.hpp"
 #include "LightweightNonReentrantLock.hpp"
 #include "MemoryPoolAddressOrderedListBase.hpp"
-#include "EnvironmentBase.hpp"
+#include "modronopt.h"
+#include "omrcfg.h"
 
 class MM_AllocateDescription;
 
-class J9ModronFreeList {
+class J9ModronFreeList
+{
 public:
 	MM_LightweightNonReentrantLock _lock;
 	MM_HeapLinkedFreeHeader* _freeList;
@@ -98,7 +97,7 @@ public:
 
 			continue;
 
-	removeHint:
+		removeHint:
 			/* Remove the currentActiveHint */
 			nextActiveHint = currentActiveHint->next;
 			if (previousActiveHint) {
@@ -110,7 +109,6 @@ public:
 			_hintInactive = currentActiveHint;
 			currentActiveHint = nextActiveHint;
 		}
-
 
 		/* Get a hint from the list */
 		J9ModronAllocateHint* hint;
@@ -141,7 +139,7 @@ public:
 		hint->size = lookupSize;
 		hint->heapFreeHeader = freeEntry;
 	}
-	
+
 	MMINLINE J9ModronAllocateHint* findHint(uintptr_t lookupSize)
 	{
 		J9ModronAllocateHint* hint = NULL;
@@ -186,7 +184,7 @@ public:
 
 		return hint;
 	}
-	
+
 	MMINLINE void removeHint(MM_HeapLinkedFreeHeader* freeEntry)
 	{
 		J9ModronAllocateHint* hint = _hintActive;
@@ -214,7 +212,7 @@ public:
 			}
 		}
 	}
-	
+
 	MMINLINE void updateHint(MM_HeapLinkedFreeHeader* oldFreeEntry, MM_HeapLinkedFreeHeader* newFreeEntry)
 	{
 		J9ModronAllocateHint* hint = _hintActive;
@@ -238,22 +236,22 @@ public:
 	}
 
 	J9ModronFreeList()
-		: _freeList(NULL)
-		, _timesLocked(0)
-		, _freeSize(0)
-		, _freeCount(0)
-		, _hintActive(NULL)
-		, _hintInactive(NULL)
-		, _hintLru(0)
-	{
-	}
+	        : _freeList(NULL),
+	          _timesLocked(0),
+	          _freeSize(0),
+	          _freeCount(0),
+	          _hintActive(NULL),
+	          _hintInactive(NULL),
+	          _hintLru(0)
+	{}
 };
 
 /**
  * @todo Provide class documentation
  * @ingroup GC_Base
  */
-class MM_MemoryPoolSplitAddressOrderedListBase : public MM_MemoryPoolAddressOrderedListBase {
+class MM_MemoryPoolSplitAddressOrderedListBase : public MM_MemoryPoolAddressOrderedListBase
+{
 	/*
 	 * Data members
 	 */
@@ -265,19 +263,33 @@ protected:
 	uintptr_t* _currentThreadFreeList;
 	J9ModronFreeList* _heapFreeLists;
 
-	MM_LargeObjectAllocateStats* _largeObjectAllocateStatsForFreeList; /**< Approximate allocation profile for large objects. An array of stat structs for each free list */
-	MM_LargeObjectAllocateStats* _largeObjectCollectorAllocateStatsForFreeList; /**< Same as _largeObjectAllocateStatsForFreeList except specifically for collector allocates */
+	MM_LargeObjectAllocateStats*
+	        _largeObjectAllocateStatsForFreeList; /**< Approximate allocation profile for large objects. An array of stat structs for each free list */
+	MM_LargeObjectAllocateStats*
+	        _largeObjectCollectorAllocateStatsForFreeList; /**< Same as _largeObjectAllocateStatsForFreeList except specifically for collector allocates */
 public:
 	/*
 	 * Function members
 	 */
 private:
-
 protected:
-	virtual void *internalAllocate(MM_EnvironmentBase *env, uintptr_t sizeInBytesRequired, bool lockingRequired, MM_LargeObjectAllocateStats *largeObjectAllocateStats) = 0;
-	virtual bool internalAllocateTLH(MM_EnvironmentBase *env, uintptr_t maximumSizeInBytesRequired, void * &addrBase, void * &addrTop, bool lockingRequired, MM_LargeObjectAllocateStats *largeObjectAllocateStats) = 0;
+	virtual void* internalAllocate(MM_EnvironmentBase* env,
+	                               uintptr_t sizeInBytesRequired,
+	                               bool lockingRequired,
+	                               MM_LargeObjectAllocateStats* largeObjectAllocateStats) = 0;
+	virtual bool internalAllocateTLH(MM_EnvironmentBase* env,
+	                                 uintptr_t maximumSizeInBytesRequired,
+	                                 void*& addrBase,
+	                                 void*& addrTop,
+	                                 bool lockingRequired,
+	                                 MM_LargeObjectAllocateStats* largeObjectAllocateStats) = 0;
 
-	bool recycleHeapChunk(MM_EnvironmentBase* env, void* addrBase, void* addrTop, MM_HeapLinkedFreeHeader* previousFreeEntry, MM_HeapLinkedFreeHeader* nextFreeEntry, uintptr_t curFreeList);
+	bool recycleHeapChunk(MM_EnvironmentBase* env,
+	                      void* addrBase,
+	                      void* addrTop,
+	                      MM_HeapLinkedFreeHeader* previousFreeEntry,
+	                      MM_HeapLinkedFreeHeader* nextFreeEntry,
+	                      uintptr_t curFreeList);
 
 	MMINLINE uintptr_t findGoodStartFreeList()
 	{
@@ -299,7 +311,9 @@ protected:
 	 * @param[in] 	freeEntry if freeEntry is NULL, set head of freelist with new freeEntry pointer
 	 * @param[in] 	next	the new freeEntry pointer, if it is NULL, reset Next of freeEntry
 	 */
-	MMINLINE void setNextForFreeEntryInFreeList(J9ModronFreeList* freelist, MM_HeapLinkedFreeHeader* freeEntry, MM_HeapLinkedFreeHeader* next)
+	MMINLINE void setNextForFreeEntryInFreeList(J9ModronFreeList* freelist,
+	                                            MM_HeapLinkedFreeHeader* freeEntry,
+	                                            MM_HeapLinkedFreeHeader* next)
 	{
 		bool const compressed = compressObjectReferences();
 		if (NULL == freeEntry) {
@@ -310,11 +324,22 @@ protected:
 	}
 
 	bool printFreeListValidity(MM_EnvironmentBase* env);
+
 public:
 	virtual void* allocateObject(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription);
-	virtual void* allocateTLH(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, uintptr_t maximumSizeInBytesRequired, void*& addrBase, void*& addrTop);
-	virtual void* collectorAllocate(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, bool lockingRequired);
-	virtual void* collectorAllocateTLH(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, uintptr_t maximumSizeInBytesRequired, void*& addrBase, void*& addrTop, bool lockingRequired);
+	virtual void* allocateTLH(MM_EnvironmentBase* env,
+	                          MM_AllocateDescription* allocDescription,
+	                          uintptr_t maximumSizeInBytesRequired,
+	                          void*& addrBase,
+	                          void*& addrTop);
+	virtual void*
+	collectorAllocate(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, bool lockingRequired);
+	virtual void* collectorAllocateTLH(MM_EnvironmentBase* env,
+	                                   MM_AllocateDescription* allocDescription,
+	                                   uintptr_t maximumSizeInBytesRequired,
+	                                   void*& addrBase,
+	                                   void*& addrTop,
+	                                   bool lockingRequired);
 
 	virtual void lock(MM_EnvironmentBase* env);
 	virtual void unlock(MM_EnvironmentBase* env);
@@ -323,7 +348,9 @@ public:
 	virtual void tearDown(MM_EnvironmentBase* env);
 
 	virtual void reset(Cause cause = any);
-	virtual MM_HeapLinkedFreeHeader* rebuildFreeListInRegion(MM_EnvironmentBase* env, MM_HeapRegionDescriptor* region, MM_HeapLinkedFreeHeader* previousFreeEntry);
+	virtual MM_HeapLinkedFreeHeader* rebuildFreeListInRegion(MM_EnvironmentBase* env,
+	                                                         MM_HeapRegionDescriptor* region,
+	                                                         MM_HeapLinkedFreeHeader* previousFreeEntry);
 
 #if defined(DEBUG)
 	virtual bool isValidListOrdering();
@@ -332,7 +359,10 @@ public:
 	virtual void* findAddressAfterFreeSize(MM_EnvironmentBase* env, uintptr_t sizeRequired, uintptr_t minimumSize);
 
 	virtual void* findFreeEntryEndingAtAddr(MM_EnvironmentBase* env, void* addr);
-	virtual uintptr_t getAvailableContractionSizeForRangeEndingAt(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, void* lowAddr, void* highAddr);
+	virtual uintptr_t getAvailableContractionSizeForRangeEndingAt(MM_EnvironmentBase* env,
+	                                                              MM_AllocateDescription* allocDescription,
+	                                                              void* lowAddr,
+	                                                              void* highAddr);
 	virtual void* findFreeEntryTopStartingAtAddr(MM_EnvironmentBase* env, void* addr);
 	virtual void* getFirstFreeStartingAddr(MM_EnvironmentBase* env);
 	void* getFirstFreeStartingAddr(MM_EnvironmentBase* env, uintptr_t* currentFreeListReturn);
@@ -372,32 +402,34 @@ public:
 	/**
 	 * Create a MemoryPoolAddressOrderedList object.
 	 */
-	MM_MemoryPoolSplitAddressOrderedListBase(MM_EnvironmentBase* env, uintptr_t minimumFreeEntrySize, uintptr_t splitAmount)
-		: MM_MemoryPoolAddressOrderedListBase(env, minimumFreeEntrySize)
-		, _heapFreeListCount(splitAmount)
-		, _heapFreeListCountExtended(splitAmount)
-		, _currentThreadFreeList(0)
-		, _heapFreeLists(NULL)
-		, _largeObjectAllocateStatsForFreeList(NULL)
-		, _largeObjectCollectorAllocateStatsForFreeList(NULL)
-	{
-	}
+	MM_MemoryPoolSplitAddressOrderedListBase(MM_EnvironmentBase* env,
+	                                         uintptr_t minimumFreeEntrySize,
+	                                         uintptr_t splitAmount)
+	        : MM_MemoryPoolAddressOrderedListBase(env, minimumFreeEntrySize),
+	          _heapFreeListCount(splitAmount),
+	          _heapFreeListCountExtended(splitAmount),
+	          _currentThreadFreeList(0),
+	          _heapFreeLists(NULL),
+	          _largeObjectAllocateStatsForFreeList(NULL),
+	          _largeObjectCollectorAllocateStatsForFreeList(NULL)
+	{}
 
-	MM_MemoryPoolSplitAddressOrderedListBase(MM_EnvironmentBase* env, uintptr_t minimumFreeEntrySize, uintptr_t splitAmount, const char* name)
-		: MM_MemoryPoolAddressOrderedListBase(env, minimumFreeEntrySize, name)
-		, _heapFreeListCount(splitAmount)
-		, _heapFreeListCountExtended(splitAmount)
-		, _currentThreadFreeList(0)
-		, _heapFreeLists(NULL)
-		, _largeObjectAllocateStatsForFreeList(NULL)
-		, _largeObjectCollectorAllocateStatsForFreeList(NULL)
-	{
-	}
+	MM_MemoryPoolSplitAddressOrderedListBase(MM_EnvironmentBase* env,
+	                                         uintptr_t minimumFreeEntrySize,
+	                                         uintptr_t splitAmount,
+	                                         const char* name)
+	        : MM_MemoryPoolAddressOrderedListBase(env, minimumFreeEntrySize, name),
+	          _heapFreeListCount(splitAmount),
+	          _heapFreeListCountExtended(splitAmount),
+	          _currentThreadFreeList(0),
+	          _heapFreeLists(NULL),
+	          _largeObjectAllocateStatsForFreeList(NULL),
+	          _largeObjectCollectorAllocateStatsForFreeList(NULL)
+	{}
 
 	/*
 	 * Friends
 	 */
 };
-
 
 #endif /* MEMORYPOOLSPLITADDRESSORDEREDLISTBASE_HPP_ */

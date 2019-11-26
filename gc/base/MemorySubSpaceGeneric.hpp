@@ -20,13 +20,11 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 #if !defined(MEMORYSUBSPACEGENERIC_HPP_)
 #define MEMORYSUBSPACEGENERIC_HPP_
 
-#include "omrcfg.h"
-
 #include "MemorySubSpace.hpp"
+#include "omrcfg.h"
 
 class MM_AllocateDescription;
 class MM_EnvironmentBase;
@@ -40,13 +38,22 @@ class MM_RegionPool;
  * @todo Provide class documentation
  * @ingroup GC_Base_Core
  */
-class MM_MemorySubSpaceGeneric : public MM_MemorySubSpace {
+class MM_MemorySubSpaceGeneric : public MM_MemorySubSpace
+{
 	MM_MemoryPool* _memoryPool; /**< the memory pool associated with this subspace */
 	MM_RegionPool* _regionPool; /**< the region pool associated with this subspace */
 	bool _allocateAtSafePointOnly;
 
 public:
-	static MM_MemorySubSpaceGeneric* newInstance(MM_EnvironmentBase* env, MM_MemoryPool* memoryPool, MM_RegionPool* regionPool, bool usesGlobalCollector, uintptr_t minimumSize, uintptr_t initialSize, uintptr_t maximumSize, uintptr_t memoryType, uint32_t objectFlags);
+	static MM_MemorySubSpaceGeneric* newInstance(MM_EnvironmentBase* env,
+	                                             MM_MemoryPool* memoryPool,
+	                                             MM_RegionPool* regionPool,
+	                                             bool usesGlobalCollector,
+	                                             uintptr_t minimumSize,
+	                                             uintptr_t initialSize,
+	                                             uintptr_t maximumSize,
+	                                             uintptr_t memoryType,
+	                                             uint32_t objectFlags);
 
 	virtual const char* getName() { return MEMORY_SUBSPACE_NAME_GENERIC; }
 	virtual const char* getDescription() { return MEMORY_SUBSPACE_DESCRIPTION_GENERIC; }
@@ -79,22 +86,47 @@ public:
 	virtual void resetHeapStatistics(bool globalCollect);
 	virtual MM_AllocationFailureStats* getAllocationFailureStats();
 
-	virtual void* allocateObject(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, MM_MemorySubSpace* baseSubSpace, MM_MemorySubSpace* previousSubSpace, bool shouldCollectOnFailure);
-	virtual void* allocateArrayletLeaf(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, MM_MemorySubSpace* baseSubSpace, MM_MemorySubSpace* previousSubSpace, bool shouldCollectOnFailure);
+	virtual void* allocateObject(MM_EnvironmentBase* env,
+	                             MM_AllocateDescription* allocDescription,
+	                             MM_MemorySubSpace* baseSubSpace,
+	                             MM_MemorySubSpace* previousSubSpace,
+	                             bool shouldCollectOnFailure);
+	virtual void* allocateArrayletLeaf(MM_EnvironmentBase* env,
+	                                   MM_AllocateDescription* allocDescription,
+	                                   MM_MemorySubSpace* baseSubSpace,
+	                                   MM_MemorySubSpace* previousSubSpace,
+	                                   bool shouldCollectOnFailure);
 
 #if defined(OMR_GC_THREAD_LOCAL_HEAP)
-	virtual void* allocateTLH(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription, MM_ObjectAllocationInterface* objectAllocationInterface, MM_MemorySubSpace* baseSubSpace, MM_MemorySubSpace* previousSubSpace, bool shouldCollectOnFailure);
+	virtual void* allocateTLH(MM_EnvironmentBase* env,
+	                          MM_AllocateDescription* allocDescription,
+	                          MM_ObjectAllocationInterface* objectAllocationInterface,
+	                          MM_MemorySubSpace* baseSubSpace,
+	                          MM_MemorySubSpace* previousSubSpace,
+	                          bool shouldCollectOnFailure);
 #endif /* OMR_GC_THREAD_LOCAL_HEAP */
 
-	virtual void setAllocateAtSafePointOnly(MM_EnvironmentBase* env, bool safePoint) { _allocateAtSafePointOnly = safePoint; }
+	virtual void setAllocateAtSafePointOnly(MM_EnvironmentBase* env, bool safePoint)
+	{
+		_allocateAtSafePointOnly = safePoint;
+	}
 	virtual bool shouldAllocateAtSafePointOnly() { return _allocateAtSafePointOnly; }
 
 	/* Calls for internal collection routines */
-	virtual void* collectorAllocate(MM_EnvironmentBase* env, MM_Collector* requestCollector, MM_AllocateDescription* allocDescription);
+	virtual void* collectorAllocate(MM_EnvironmentBase* env,
+	                                MM_Collector* requestCollector,
+	                                MM_AllocateDescription* allocDescription);
 #if defined(OMR_GC_THREAD_LOCAL_HEAP)
-	virtual void* collectorAllocateTLH(MM_EnvironmentBase* env, MM_Collector* requestCollector, MM_AllocateDescription* allocDescription, uintptr_t maximumBytesRequired, void*& addrBase, void*& addrTop);
+	virtual void* collectorAllocateTLH(MM_EnvironmentBase* env,
+	                                   MM_Collector* requestCollector,
+	                                   MM_AllocateDescription* allocDescription,
+	                                   uintptr_t maximumBytesRequired,
+	                                   void*& addrBase,
+	                                   void*& addrTop);
 #endif /* OMR_GC_THREAD_LOCAL_HEAP */
-	virtual uintptr_t collectorExpand(MM_EnvironmentBase* env, MM_Collector* requestCollector, MM_AllocateDescription* allocDescription);
+	virtual uintptr_t collectorExpand(MM_EnvironmentBase* env,
+	                                  MM_Collector* requestCollector,
+	                                  MM_AllocateDescription* allocDescription);
 
 	virtual void abandonHeapChunk(void* addrBase, void* addrTop);
 
@@ -106,11 +138,28 @@ public:
 
 	virtual bool completeFreelistRebuildRequired(MM_EnvironmentBase* env);
 
-	virtual bool expanded(MM_EnvironmentBase* env, MM_PhysicalSubArena* subArena, MM_HeapRegionDescriptor* region, bool canCoalesce);
-	virtual bool expanded(MM_EnvironmentBase* env, MM_PhysicalSubArena* subArena, uintptr_t size, void* lowAddress, void* highAddress, bool canCoalesce);
+	virtual bool expanded(MM_EnvironmentBase* env,
+	                      MM_PhysicalSubArena* subArena,
+	                      MM_HeapRegionDescriptor* region,
+	                      bool canCoalesce);
+	virtual bool expanded(MM_EnvironmentBase* env,
+	                      MM_PhysicalSubArena* subArena,
+	                      uintptr_t size,
+	                      void* lowAddress,
+	                      void* highAddress,
+	                      bool canCoalesce);
 
-	virtual void addExistingMemory(MM_EnvironmentBase* env, MM_PhysicalSubArena* subArena, uintptr_t size, void* lowAddress, void* highAddress, bool canCoalesce);
-	virtual void* removeExistingMemory(MM_EnvironmentBase* env, MM_PhysicalSubArena* subArena, uintptr_t size, void* lowAddress, void* highAddress);
+	virtual void addExistingMemory(MM_EnvironmentBase* env,
+	                               MM_PhysicalSubArena* subArena,
+	                               uintptr_t size,
+	                               void* lowAddress,
+	                               void* highAddress,
+	                               bool canCoalesce);
+	virtual void* removeExistingMemory(MM_EnvironmentBase* env,
+	                                   MM_PhysicalSubArena* subArena,
+	                                   uintptr_t size,
+	                                   void* lowAddress,
+	                                   void* highAddress);
 
 #if defined(OMR_GC_MODRON_STANDARD)
 	virtual void* findFreeEntryEndingAtAddr(MM_EnvironmentBase* env, void* addr);
@@ -129,17 +178,38 @@ public:
 	/**
 	 * Create a MemorySubSpaceGeneric object
 	 */
-	MM_MemorySubSpaceGeneric(MM_EnvironmentBase* env, MM_MemoryPool* memoryPool, MM_RegionPool* regionPool, bool usesGlobalCollector, uintptr_t minimumSize, uintptr_t initialSize, uintptr_t maximumSize, uintptr_t memoryType, uint32_t objectFlags)
-		: MM_MemorySubSpace(env, (MM_Collector*)NULL, NULL, usesGlobalCollector, minimumSize, initialSize, maximumSize, memoryType, objectFlags)
-		, _memoryPool(memoryPool)
-		, _regionPool(regionPool)
-		, _allocateAtSafePointOnly(false)
+	MM_MemorySubSpaceGeneric(MM_EnvironmentBase* env,
+	                         MM_MemoryPool* memoryPool,
+	                         MM_RegionPool* regionPool,
+	                         bool usesGlobalCollector,
+	                         uintptr_t minimumSize,
+	                         uintptr_t initialSize,
+	                         uintptr_t maximumSize,
+	                         uintptr_t memoryType,
+	                         uint32_t objectFlags)
+	        : MM_MemorySubSpace(env,
+	                            (MM_Collector*)NULL,
+	                            NULL,
+	                            usesGlobalCollector,
+	                            minimumSize,
+	                            initialSize,
+	                            maximumSize,
+	                            memoryType,
+	                            objectFlags),
+	          _memoryPool(memoryPool),
+	          _regionPool(regionPool),
+	          _allocateAtSafePointOnly(false)
 	{
 		_typeId = __FUNCTION__;
 	};
 
 protected:
-	virtual void* allocationRequestFailed(MM_EnvironmentBase* env, MM_AllocateDescription* allocateDescription, AllocationType allocationType, MM_ObjectAllocationInterface* objectAllocationInterface, MM_MemorySubSpace* baseSubSpace, MM_MemorySubSpace* previousSubSpace);
+	virtual void* allocationRequestFailed(MM_EnvironmentBase* env,
+	                                      MM_AllocateDescription* allocateDescription,
+	                                      AllocationType allocationType,
+	                                      MM_ObjectAllocationInterface* objectAllocationInterface,
+	                                      MM_MemorySubSpace* baseSubSpace,
+	                                      MM_MemorySubSpace* previousSubSpace);
 	bool initialize(MM_EnvironmentBase* env);
 	virtual void tearDown(MM_EnvironmentBase* env);
 

@@ -20,32 +20,31 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "omr.h"
-
 #include "OverflowStandard.hpp"
 
 #include "CollectorLanguageInterface.hpp"
-#include "MarkMap.hpp"
-#include "MarkingScheme.hpp"
-#include "ParallelGlobalGC.hpp"
 #include "EnvironmentBase.hpp"
 #include "GCExtensionsBase.hpp"
 #include "Heap.hpp"
+#include "HeapRegionIterator.hpp"
+#include "MarkMap.hpp"
+#include "MarkingScheme.hpp"
+#include "ObjectHeapIteratorAddressOrderedList.hpp"
 #include "Packet.hpp"
+#include "ParallelGlobalGC.hpp"
 #include "ParallelTask.hpp"
 #include "WorkPackets.hpp"
-
-#include "HeapRegionIterator.hpp"
-#include "ObjectHeapIteratorAddressOrderedList.hpp"
+#include "omr.h"
 /**
  * Create a new MM_OverflowStandard object
  */
-MM_OverflowStandard *
-MM_OverflowStandard::newInstance(MM_EnvironmentBase *env, MM_WorkPackets *workPackets)
+MM_OverflowStandard*
+MM_OverflowStandard::newInstance(MM_EnvironmentBase* env, MM_WorkPackets* workPackets)
 {
-	MM_OverflowStandard *overflow = (MM_OverflowStandard *)env->getForge()->allocate(sizeof(MM_OverflowStandard), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	MM_OverflowStandard* overflow = (MM_OverflowStandard*)env->getForge()->allocate(
+	        sizeof(MM_OverflowStandard), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (NULL != overflow) {
-		new(overflow) MM_OverflowStandard(env,workPackets);
+		new (overflow) MM_OverflowStandard(env, workPackets);
 		if (!overflow->initialize(env)) {
 			overflow->kill(env);
 			overflow = NULL;
@@ -55,30 +54,31 @@ MM_OverflowStandard::newInstance(MM_EnvironmentBase *env, MM_WorkPackets *workPa
 }
 
 bool
-MM_OverflowStandard::initialize(MM_EnvironmentBase *env)
+MM_OverflowStandard::initialize(MM_EnvironmentBase* env)
 {
 	return MM_WorkPacketOverflow::initialize(env);
 }
 
 void
-MM_OverflowStandard::tearDown(MM_EnvironmentBase *env)
+MM_OverflowStandard::tearDown(MM_EnvironmentBase* env)
 {
 	MM_WorkPacketOverflow::tearDown(env);
 }
 
 void
-MM_OverflowStandard::emptyToOverflow(MM_EnvironmentBase *env, MM_Packet *packet, MM_OverflowType type)
+MM_OverflowStandard::emptyToOverflow(MM_EnvironmentBase* env, MM_Packet* packet, MM_OverflowType type)
 {
-	void *objectPtr;
+	void* objectPtr;
 
 	_overflow = true;
 
 	_extensions->globalGCStats.workPacketStats.setSTWWorkStackOverflowOccured(true);
 	_extensions->globalGCStats.workPacketStats.incrementSTWWorkStackOverflowCount();
-	_extensions->globalGCStats.workPacketStats.setSTWWorkpacketCountAtOverflow(_workPackets->getActivePacketCount());
+	_extensions->globalGCStats.workPacketStats.setSTWWorkpacketCountAtOverflow(
+	        _workPackets->getActivePacketCount());
 
 	/* Empty the current packet by setting its overflow bit (double marking) */
-	while(NULL != (objectPtr = packet->pop(env))) {
+	while (NULL != (objectPtr = packet->pop(env))) {
 		overflowItemInternal(env, objectPtr);
 	}
 
@@ -86,27 +86,29 @@ MM_OverflowStandard::emptyToOverflow(MM_EnvironmentBase *env, MM_Packet *packet,
 }
 
 void
-MM_OverflowStandard::overflowItem(MM_EnvironmentBase *env, void *item, MM_OverflowType type)
+MM_OverflowStandard::overflowItem(MM_EnvironmentBase* env, void* item, MM_OverflowType type)
 {
 	_overflow = true;
 
 	_extensions->globalGCStats.workPacketStats.setSTWWorkStackOverflowOccured(true);
 	_extensions->globalGCStats.workPacketStats.incrementSTWWorkStackOverflowCount();
-	_extensions->globalGCStats.workPacketStats.setSTWWorkpacketCountAtOverflow(_workPackets->getActivePacketCount());
+	_extensions->globalGCStats.workPacketStats.setSTWWorkpacketCountAtOverflow(
+	        _workPackets->getActivePacketCount());
 
 	overflowItemInternal(env, item);
 }
 
 void
-MM_OverflowStandard::overflowItemInternal(MM_EnvironmentBase *env, void *item)
+MM_OverflowStandard::overflowItemInternal(MM_EnvironmentBase* env, void* item)
 {
-	void *heapBase = _extensions->heap->getHeapBase();
-	void *heapTop = _extensions->heap->getHeapTop();
+	void* heapBase = _extensions->heap->getHeapBase();
+	void* heapTop = _extensions->heap->getHeapTop();
 
-	if ((PACKET_ARRAY_SPLIT_TAG != ((uintptr_t)item & PACKET_ARRAY_SPLIT_TAG)) &&  (item >= heapBase) && (item < heapTop)) {
-		MM_ParallelGlobalGC *globalCollector = (MM_ParallelGlobalGC *)_extensions->getGlobalCollector();
-		MM_MarkingScheme *markingScheme = globalCollector->getMarkingScheme();
-		MM_MarkMap *markMap = markingScheme->getMarkMap();
+	if ((PACKET_ARRAY_SPLIT_TAG != ((uintptr_t)item & PACKET_ARRAY_SPLIT_TAG)) && (item >= heapBase)
+	    && (item < heapTop)) {
+		MM_ParallelGlobalGC* globalCollector = (MM_ParallelGlobalGC*)_extensions->getGlobalCollector();
+		MM_MarkingScheme* markingScheme = globalCollector->getMarkingScheme();
+		MM_MarkMap* markMap = markingScheme->getMarkMap();
 		omrobjectptr_t objectPtr = (omrobjectptr_t)item;
 
 		/* object has to be marked already */
@@ -117,40 +119,43 @@ MM_OverflowStandard::overflowItemInternal(MM_EnvironmentBase *env, void *item)
 		markMap->atomicSetBit((omrobjectptr_t)((uintptr_t)item + markMap->getObjectGrain()));
 
 		/* Perform language specific actions */
-		markingScheme->getMarkingDelegate()->handleWorkPacketOverflowItem(env,objectPtr);
+		markingScheme->getMarkingDelegate()->handleWorkPacketOverflowItem(env, objectPtr);
 	}
 }
 
 void
-MM_OverflowStandard::fillFromOverflow(MM_EnvironmentBase *env, MM_Packet *packet)
+MM_OverflowStandard::fillFromOverflow(MM_EnvironmentBase* env, MM_Packet* packet)
 {
 	Assert_MM_unreachable();
 }
 
 void
-MM_OverflowStandard::handleOverflow(MM_EnvironmentBase *env)
+MM_OverflowStandard::handleOverflow(MM_EnvironmentBase* env)
 {
 
 	if (env->_currentTask->synchronizeGCThreadsAndReleaseMaster(env, UNIQUE_ID)) {
 		_overflow = false;
 
-		MM_Heap *heap = _extensions->heap;
-		MM_HeapRegionManager *regionManager = heap->getHeapRegionManager();
+		MM_Heap* heap = _extensions->heap;
+		MM_HeapRegionManager* regionManager = heap->getHeapRegionManager();
 		GC_HeapRegionIterator regionIterator(regionManager);
-		MM_HeapRegionDescriptor *region = NULL;
-		MM_ParallelGlobalGC *globalCollector = (MM_ParallelGlobalGC *)_extensions->getGlobalCollector();
-		MM_MarkingScheme *markingScheme = globalCollector->getMarkingScheme();
-		MM_MarkMap *markMap = markingScheme->getMarkMap();
+		MM_HeapRegionDescriptor* region = NULL;
+		MM_ParallelGlobalGC* globalCollector = (MM_ParallelGlobalGC*)_extensions->getGlobalCollector();
+		MM_MarkingScheme* markingScheme = globalCollector->getMarkingScheme();
+		MM_MarkMap* markMap = markingScheme->getMarkMap();
 
-		while((region = regionIterator.nextRegion()) != NULL) {
+		while ((region = regionIterator.nextRegion()) != NULL) {
 			GC_ObjectHeapIteratorAddressOrderedList objectIterator(_extensions, region, false);
 			omrobjectptr_t object;
 
-			while((object = objectIterator.nextObject()) != NULL) {
+			while ((object = objectIterator.nextObject()) != NULL) {
 				/* search for double marked (overflowed) objects */
-				if ((markMap->isBitSet(object)) && (markMap->isBitSet((omrobjectptr_t)((uintptr_t)object + markMap->getObjectGrain())))) {
+				if ((markMap->isBitSet(object))
+				    && (markMap->isBitSet(
+				            (omrobjectptr_t)((uintptr_t)object + markMap->getObjectGrain())))) {
 					/* clean overflow mark */
-					markMap->clearBit((omrobjectptr_t)((uintptr_t)object + markMap->getObjectGrain()));
+					markMap->clearBit(
+					        (omrobjectptr_t)((uintptr_t)object + markMap->getObjectGrain()));
 
 					/* scan overflowed object */
 					markingScheme->scanObject(env, object, SCAN_REASON_OVERFLOWED_OBJECT);
@@ -162,10 +167,8 @@ MM_OverflowStandard::handleOverflow(MM_EnvironmentBase *env)
 }
 
 void
-MM_OverflowStandard::reset(MM_EnvironmentBase *env)
-{
-
-}
+MM_OverflowStandard::reset(MM_EnvironmentBase* env)
+{}
 
 bool
 MM_OverflowStandard::isEmpty()

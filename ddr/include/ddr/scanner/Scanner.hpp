@@ -42,19 +42,19 @@ using std::set;
 using std::string;
 using std::vector;
 
-class Scanner
-{
+class Scanner {
 public:
-	virtual DDR_RC startScan(OMRPortLibrary *portLibrary, Symbol_IR *ir,
-			vector<string> *debugFiles, const char *blacklistPath) = 0;
+    virtual DDR_RC startScan(
+        OMRPortLibrary* portLibrary, Symbol_IR* ir, vector<string>* debugFiles, const char* blacklistPath)
+        = 0;
 
 protected:
-	set<string> _blacklistedFiles;
-	set<string> _blacklistedTypes;
+    set<string> _blacklistedFiles;
+    set<string> _blacklistedTypes;
 
-	bool checkBlacklistedType(const string &name) const;
-	bool checkBlacklistedFile(const string &name) const;
-	DDR_RC loadBlacklist(OMRPortLibrary *portLibrary, const char *file);
+    bool checkBlacklistedType(const string& name) const;
+    bool checkBlacklistedFile(const string& name) const;
+    DDR_RC loadBlacklist(OMRPortLibrary* portLibrary, const char* file);
 };
 
 #endif /* SCANNER_HPP */

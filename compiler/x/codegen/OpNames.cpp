@@ -26,16 +26,14 @@
 #include "ras/Debug.hpp"
 #include "x/codegen/X86Ops.hpp"
 
-const char *
-TR_X86OpCode::getOpCodeName(TR::CodeGenerator *cg)
-   {
-   return cg->comp()->getDebug()->getOpCodeName(this);
-   }
+const char* TR_X86OpCode::getOpCodeName(TR::CodeGenerator* cg)
+{
+    return cg->comp()->getDebug()->getOpCodeName(this);
+}
 
-const char *
-TR_X86OpCode::getMnemonicName(TR::CodeGenerator *cg)
-   {
-   return cg->comp()->getDebug()->getMnemonicName(this);
-   }
+const char* TR_X86OpCode::getMnemonicName(TR::CodeGenerator* cg)
+{
+    return cg->comp()->getDebug()->getMnemonicName(this);
+}
 
 #endif // ifdef DEBUG

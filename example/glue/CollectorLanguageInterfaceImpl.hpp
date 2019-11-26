@@ -44,28 +44,26 @@ class MM_MemorySubSpaceSemiSpace;
 class MM_CollectorLanguageInterfaceImpl : public MM_CollectorLanguageInterface {
 private:
 protected:
-	OMR_VM *_omrVM;
-	MM_GCExtensionsBase *_extensions;
-public:
+    OMR_VM* _omrVM;
+    MM_GCExtensionsBase* _extensions;
 
+public:
 private:
 protected:
-	bool initialize(OMR_VM *omrVM);
-	void tearDown(OMR_VM *omrVM);
+    bool initialize(OMR_VM* omrVM);
+    void tearDown(OMR_VM* omrVM);
 
-	MM_CollectorLanguageInterfaceImpl(OMR_VM *omrVM)
-		: MM_CollectorLanguageInterface()
-		,_omrVM(omrVM)
-		,_extensions(MM_GCExtensionsBase::getExtensions(omrVM))
-	{
-		_typeId = __FUNCTION__;
-	}
+    MM_CollectorLanguageInterfaceImpl(OMR_VM* omrVM)
+        : MM_CollectorLanguageInterface()
+        , _omrVM(omrVM)
+        , _extensions(MM_GCExtensionsBase::getExtensions(omrVM))
+    {
+        _typeId = __FUNCTION__;
+    }
 
 public:
-	static MM_CollectorLanguageInterfaceImpl *newInstance(MM_EnvironmentBase *env);
-	virtual void kill(MM_EnvironmentBase *env);
-
-
+    static MM_CollectorLanguageInterfaceImpl* newInstance(MM_EnvironmentBase* env);
+    virtual void kill(MM_EnvironmentBase* env);
 };
 
 #endif /* COLLECTORLANGUAGEINTERFACEIMPL_HPP_ */

@@ -23,13 +23,12 @@
 #if !defined(COLLECTOR_HPP_)
 #define COLLECTOR_HPP_
 
-#include "omrcfg.h"
-#include "omrcomp.h"
-#include "modronbase.h"
-#include "omrgcconsts.h"
-
 #include "BaseVirtual.hpp"
 #include "EnvironmentBase.hpp"
+#include "modronbase.h"
+#include "omrcfg.h"
+#include "omrcomp.h"
+#include "omrgcconsts.h"
 
 class MM_AllocateDescription;
 class MM_AllocationContext;
@@ -49,10 +48,10 @@ class MM_Collector : public MM_BaseVirtual
 	 * Data members
 	 */
 private:
-	uintptr_t _exclusiveAccessCount; /**< The number of times exclusive access requests have been made to use the receiver */
+	uintptr_t
+	        _exclusiveAccessCount; /**< The number of times exclusive access requests have been made to use the receiver */
 
 protected:
-
 	uintptr_t _bytesRequested;
 
 	bool _globalCollector;
@@ -91,13 +90,12 @@ public:
 	bool gcCompleted() { return _gcCompleted; }
 
 private:
-	void setThreadFailAllocFlag(MM_EnvironmentBase *env, bool flag);
-	bool checkForExcessiveGC(MM_EnvironmentBase* env, MM_Collector *collector);
-	void recordExcessiveStatsForGCStart(MM_EnvironmentBase *env);
-	void recordExcessiveStatsForGCEnd(MM_EnvironmentBase *env);
+	void setThreadFailAllocFlag(MM_EnvironmentBase* env, bool flag);
+	bool checkForExcessiveGC(MM_EnvironmentBase* env, MM_Collector* collector);
+	void recordExcessiveStatsForGCStart(MM_EnvironmentBase* env);
+	void recordExcessiveStatsForGCEnd(MM_EnvironmentBase* env);
 
 protected:
-
 	/**
  	 * Perform collector specific initailization 
  	 */
@@ -113,7 +111,9 @@ protected:
  	 * request that this collect should be more aggressive, ie clear any soft references. 
  	 * @return true if gc completed OK, false otherwise
  	 */
-	virtual bool internalGarbageCollect(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace, MM_AllocateDescription* allocDescription) = 0;
+	virtual bool internalGarbageCollect(MM_EnvironmentBase* env,
+	                                    MM_MemorySubSpace* subSpace,
+	                                    MM_AllocateDescription* allocDescription) = 0;
 
 	/**
 	 * Perform any collector setup activities.
@@ -122,7 +122,10 @@ protected:
 	 * @param allocDescription Allocation description causing the GC (or detailing the GC request)
 	 * @param gcCode High level reason for invoking the GC
 	 */
-	virtual void internalPreCollect(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace, MM_AllocateDescription* allocDescription, uint32_t gcCode) = 0;
+	virtual void internalPreCollect(MM_EnvironmentBase* env,
+	                                MM_MemorySubSpace* subSpace,
+	                                MM_AllocateDescription* allocDescription,
+	                                uint32_t gcCode) = 0;
 
 	/**
 	 * Post collection activities,  indicating that the collection has been completed.
@@ -139,23 +142,22 @@ protected:
 	 * @param allocDescription Allocation description causing the GC (or detailing the GC request)
 	 * @param gcCode High level reason for invoking the GC
 	 */
-	void preCollect(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace, MM_AllocateDescription* allocDescription, uint32_t gcCode);
+	void preCollect(MM_EnvironmentBase* env,
+	                MM_MemorySubSpace* subSpace,
+	                MM_AllocateDescription* allocDescription,
+	                uint32_t gcCode);
 
 	/**
 	 * process LargeAllocateStats before GC
 	 * @param env Master GC thread.
 	 */
-	virtual void processLargeAllocateStatsBeforeGC(MM_EnvironmentBase* env)
-	{
-	}
+	virtual void processLargeAllocateStatsBeforeGC(MM_EnvironmentBase* env) {}
 
 	/**
 	 * process LargeAllocateStats after GC
 	 * @param env Master GC thread.
 	 */
-	virtual void processLargeAllocateStatsAfterGC(MM_EnvironmentBase* env)
-	{
-	}
+	virtual void processLargeAllocateStatsAfterGC(MM_EnvironmentBase* env) {}
 
 public:
 	/**
@@ -174,7 +176,11 @@ public:
 	 * @param highAddress The top address (non-inclusive) of the memory added to the heap
 	 * @return true if operation completes with success
 	 */
-	virtual bool heapAddRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uintptr_t size, void* lowAddress, void* highAddress) = 0;
+	virtual bool heapAddRange(MM_EnvironmentBase* env,
+	                          MM_MemorySubSpace* subspace,
+	                          uintptr_t size,
+	                          void* lowAddress,
+	                          void* highAddress) = 0;
 
 	/**
 	 * Adjust internal structures to reflect the change in heap size.
@@ -186,7 +192,13 @@ public:
 	 * @param highValidAddress The first valid address following the highest in the heap range being removed
 	 * @return true if operation completes with success
 	 */
-	virtual bool heapRemoveRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uintptr_t size, void* lowAddress, void* highAddress, void* validLowAddress, void* validHighAddress) = 0;
+	virtual bool heapRemoveRange(MM_EnvironmentBase* env,
+	                             MM_MemorySubSpace* subspace,
+	                             uintptr_t size,
+	                             void* lowAddress,
+	                             void* highAddress,
+	                             void* validLowAddress,
+	                             void* validHighAddress) = 0;
 
 	/**
 	 * Called after the heap geometry changes to allow any data structures dependent on this to be updated.
@@ -202,49 +214,48 @@ public:
 	 */
 	void postCollect(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace);
 
-	void* garbageCollect(MM_EnvironmentBase* env, MM_MemorySubSpace* callingSubSpace, MM_AllocateDescription* allocDescription, uint32_t gcCode, MM_ObjectAllocationInterface* objectAllocationInterface, MM_MemorySubSpace* baseSubSpace, MM_AllocationContext* context);
-	virtual bool forceKickoff(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace, MM_AllocateDescription* allocDescription, uint32_t gcCode);
+	void* garbageCollect(MM_EnvironmentBase* env,
+	                     MM_MemorySubSpace* callingSubSpace,
+	                     MM_AllocateDescription* allocDescription,
+	                     uint32_t gcCode,
+	                     MM_ObjectAllocationInterface* objectAllocationInterface,
+	                     MM_MemorySubSpace* baseSubSpace,
+	                     MM_AllocationContext* context);
+	virtual bool forceKickoff(MM_EnvironmentBase* env,
+	                          MM_MemorySubSpace* subSpace,
+	                          MM_AllocateDescription* allocDescription,
+	                          uint32_t gcCode);
 
 	virtual void collectorExpanded(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace, uintptr_t expandSize);
 	virtual bool canCollectorExpand(MM_EnvironmentBase* env, MM_MemorySubSpace* subSpace, uintptr_t expandSize);
 	virtual uintptr_t getCollectorExpandSize(MM_EnvironmentBase* env);
-	virtual uint32_t getGCTimePercentage(MM_EnvironmentBase* env)
-	{
-		return 0;
-	};
+	virtual uint32_t getGCTimePercentage(MM_EnvironmentBase* env) { return 0; };
 
-	virtual void scanThread(MM_EnvironmentBase* env) {};
+	virtual void scanThread(MM_EnvironmentBase* env){};
 
-	virtual void payAllocationTax(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace,
-								  MM_MemorySubSpace* baseSubSpace, MM_AllocateDescription* allocDescription);
+	virtual void payAllocationTax(MM_EnvironmentBase* env,
+	                              MM_MemorySubSpace* subspace,
+	                              MM_MemorySubSpace* baseSubSpace,
+	                              MM_AllocateDescription* allocDescription);
 
 	virtual bool replenishPoolForAllocate(MM_EnvironmentBase* env, MM_MemoryPool* memoryPool, uintptr_t size);
 
 	/**
 	 * Marks this collector instance as a global or local collector
 	 */
-	void setGlobalCollector(bool isGlobal)
-	{
-		_globalCollector = isGlobal;
-	}
+	void setGlobalCollector(bool isGlobal) { _globalCollector = isGlobal; }
 
 	/**
 	 * Called to request the number of times the environment has incremented the exclusive access count of the receiver.
 	 * This is most often used to determine if a GC completed while a thread was blocked requesting exclusive.
 	 * @return The number of exclusive access requests made to use this collector
 	 */
-	MMINLINE uintptr_t getExclusiveAccessCount()
-	{
-		return _exclusiveAccessCount;
-	}
+	MMINLINE uintptr_t getExclusiveAccessCount() { return _exclusiveAccessCount; }
 
 	/**
 	 * Called by the environment to increment the number of exclusive access requests made to use this collector.
 	 */
-	MMINLINE void incrementExclusiveAccessCount()
-	{
-		_exclusiveAccessCount += 1;
-	}
+	MMINLINE void incrementExclusiveAccessCount() { _exclusiveAccessCount += 1; }
 
 	/**
  	* Abstract for request to create sweepPoolState class for pool
@@ -267,41 +278,47 @@ public:
 	 * GC
 	 */
 	/* TODO: RTJ Merge: Somewhat scary to use a virtual with inline implementation */
-	virtual void setGCThreadPriority(OMR_VMThread* vmThread, uintptr_t priority)
-	{
-	}
+	virtual void setGCThreadPriority(OMR_VMThread* vmThread, uintptr_t priority) {}
 
 	/**
 	 * @param objectPtr[in] The object pointer to check
 	 * @return true if the collector implementation knows that the given objectPtr is marked (false if not or if the implementation doesn't know)
 	 */
 	virtual bool isMarked(void* objectPtr);
-	
-	virtual void preMasterGCThreadInitialize(MM_EnvironmentBase *env) {}
-	virtual	void masterThreadGarbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, bool initMarkMap = false, bool rebuildMarkBits = false) {}
-	virtual bool isConcurrentWorkAvailable(MM_EnvironmentBase *env) { return false; }
-	virtual	void preConcurrentInitializeStatsAndReport(MM_EnvironmentBase *env, MM_ConcurrentPhaseStatsBase *stats) {}
-	virtual uintptr_t masterThreadConcurrentCollect(MM_EnvironmentBase *env) { return 0; }
-	virtual	void postConcurrentUpdateStatsAndReport(MM_EnvironmentBase *env, MM_ConcurrentPhaseStatsBase *stats, UDATA bytesConcurrentlyScanned) {}
+
+	virtual void preMasterGCThreadInitialize(MM_EnvironmentBase* env) {}
+	virtual void masterThreadGarbageCollect(MM_EnvironmentBase* env,
+	                                        MM_AllocateDescription* allocDescription,
+	                                        bool initMarkMap = false,
+	                                        bool rebuildMarkBits = false)
+	{}
+	virtual bool isConcurrentWorkAvailable(MM_EnvironmentBase* env) { return false; }
+	virtual void preConcurrentInitializeStatsAndReport(MM_EnvironmentBase* env, MM_ConcurrentPhaseStatsBase* stats)
+	{}
+	virtual uintptr_t masterThreadConcurrentCollect(MM_EnvironmentBase* env) { return 0; }
+	virtual void postConcurrentUpdateStatsAndReport(MM_EnvironmentBase* env,
+	                                                MM_ConcurrentPhaseStatsBase* stats,
+	                                                UDATA bytesConcurrentlyScanned)
+	{}
 	virtual void forceConcurrentFinish() {}
-	virtual void completeExternalConcurrentCycle(MM_EnvironmentBase *env) {}
-	virtual bool isDisabled(MM_EnvironmentBase *env) { return _disableGC; }
+	virtual void completeExternalConcurrentCycle(MM_EnvironmentBase* env) {}
+	virtual bool isDisabled(MM_EnvironmentBase* env) { return _disableGC; }
 	/**
 	 * @return pointer to collector/phase specific concurrent stats structure
 	 */
-	virtual MM_ConcurrentPhaseStatsBase *getConcurrentPhaseStats() { return NULL; }
-	
+	virtual MM_ConcurrentPhaseStatsBase* getConcurrentPhaseStats() { return NULL; }
+
 	MM_Collector()
-		: MM_BaseVirtual()
-		, _exclusiveAccessCount(0)
-		, _bytesRequested(0)
-		, _globalCollector(false)
-		, _gcCompleted(false)
-		, _isRecursiveGC(false)
-		, _disableGC(false)
-		, _collectorExpandedSize(0)
-		, _cycleType(OMR_GC_CYCLE_TYPE_DEFAULT)
-		, _masterThreadCpuTimeStart(0)
+	        : MM_BaseVirtual(),
+	          _exclusiveAccessCount(0),
+	          _bytesRequested(0),
+	          _globalCollector(false),
+	          _gcCompleted(false),
+	          _isRecursiveGC(false),
+	          _disableGC(false),
+	          _collectorExpandedSize(0),
+	          _cycleType(OMR_GC_CYCLE_TYPE_DEFAULT),
+	          _masterThreadCpuTimeStart(0)
 	{
 		_typeId = __FUNCTION__;
 	}

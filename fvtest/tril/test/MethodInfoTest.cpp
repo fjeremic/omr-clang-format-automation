@@ -25,7 +25,8 @@
 #define ASSERT_NULL(pointer) ASSERT_EQ(NULL, (pointer))
 #define ASSERT_NOTNULL(pointer) ASSERT_TRUE(NULL != (pointer))
 
-TEST(MethodInfoTest, EmptyMethod) {
+TEST(MethodInfoTest, EmptyMethod)
+{
     auto methodAST = parseString("(method return=\"NoType\")");
     auto methodInfo = Tril::MethodInfo(methodAST);
 
@@ -36,7 +37,8 @@ TEST(MethodInfoTest, EmptyMethod) {
     ASSERT_EQ(reinterpret_cast<const ASTNode*>(NULL), methodInfo.getBodyAST());
 }
 
-TEST(MethodInfoTest, EmptyMethodWithInt16Return) {
+TEST(MethodInfoTest, EmptyMethodWithInt16Return)
+{
     auto methodAST = parseString("(method return=\"Int16\")");
     auto methodInfo = Tril::MethodInfo(methodAST);
 
@@ -47,7 +49,8 @@ TEST(MethodInfoTest, EmptyMethodWithInt16Return) {
     ASSERT_EQ(reinterpret_cast<const ASTNode*>(NULL), methodInfo.getBodyAST());
 }
 
-TEST(MethodInfoTest, EmptyMethodWithDoubleReturn) {
+TEST(MethodInfoTest, EmptyMethodWithDoubleReturn)
+{
     auto methodAST = parseString("(method return=\"Double\")");
     auto methodInfo = Tril::MethodInfo(methodAST);
 
@@ -58,7 +61,8 @@ TEST(MethodInfoTest, EmptyMethodWithDoubleReturn) {
     ASSERT_EQ(reinterpret_cast<const ASTNode*>(NULL), methodInfo.getBodyAST());
 }
 
-TEST(MethodInfoTest, EmptyMethodWithName) {
+TEST(MethodInfoTest, EmptyMethodWithName)
+{
     auto methodAST = parseString("(method name=\"empty\" return=\"NoType\")");
     auto methodInfo = Tril::MethodInfo(methodAST);
 
@@ -69,7 +73,8 @@ TEST(MethodInfoTest, EmptyMethodWithName) {
     ASSERT_EQ(reinterpret_cast<const ASTNode*>(NULL), methodInfo.getBodyAST());
 }
 
-TEST(MethodInfoTest, EmptyMethodWithInt32Argument) {
+TEST(MethodInfoTest, EmptyMethodWithInt32Argument)
+{
     auto methodAST = parseString("(method return=\"NoType\" args=[\"Int32\"])");
     auto methodInfo = Tril::MethodInfo(methodAST);
 
@@ -81,7 +86,8 @@ TEST(MethodInfoTest, EmptyMethodWithInt32Argument) {
     ASSERT_EQ(reinterpret_cast<const ASTNode*>(NULL), methodInfo.getBodyAST());
 }
 
-TEST(MethodInfoTest, EmptyMethodWithFloatAndInt32Arguments) {
+TEST(MethodInfoTest, EmptyMethodWithFloatAndInt32Arguments)
+{
     auto methodAST = parseString("(method return=\"NoType\" args=[\"Float\", \"Int32\"])");
     auto methodInfo = Tril::MethodInfo(methodAST);
 
@@ -94,7 +100,8 @@ TEST(MethodInfoTest, EmptyMethodWithFloatAndInt32Arguments) {
     ASSERT_EQ(reinterpret_cast<const ASTNode*>(NULL), methodInfo.getBodyAST());
 }
 
-TEST(MethodInfoTest, MethodWithBody) {
+TEST(MethodInfoTest, MethodWithBody)
+{
     auto methodAST = parseString("(method return=\"NoType\" (block (return)))");
     auto methodInfo = Tril::MethodInfo(methodAST);
 
@@ -105,8 +112,10 @@ TEST(MethodInfoTest, MethodWithBody) {
     ASSERT_NOTNULL(methodInfo.getBodyAST());
 }
 
-TEST(MethodInfoTest, MethodWithBodyInt8ReturnInt32andInt64Args) {
-    auto methodAST = parseString("(method name=\"foo\" return=\"Int8\" args=[\"Int32\", \"Int64\"] (block (breturn (bconst 3))))");
+TEST(MethodInfoTest, MethodWithBodyInt8ReturnInt32andInt64Args)
+{
+    auto methodAST
+        = parseString("(method name=\"foo\" return=\"Int8\" args=[\"Int32\", \"Int64\"] (block (breturn (bconst 3))))");
     auto methodInfo = Tril::MethodInfo(methodAST);
 
     ASSERT_EQ("foo", methodInfo.getName());

@@ -28,11 +28,10 @@
 #if !defined(CONCURRENTPREPARECARDTABLETASK_HPP_)
 #define CONCURRENTPREPARECARDTABLETASK_HPP_
 
+#include "ConcurrentCardTableForWC.hpp"
+#include "ParallelTask.hpp"
 #include "omrcfg.h"
 #include "omrmodroncore.h"
-
-#include "ParallelTask.hpp"
-#include "ConcurrentCardTableForWC.hpp"
 
 class MM_Dispatcher;
 class MM_EnvironmentBase;
@@ -44,22 +43,27 @@ class MM_EnvironmentBase;
 class MM_ConcurrentPrepareCardTableTask : public MM_ParallelTask
 {
 private:
-	MM_ConcurrentCardTableForWC *_cardTable;
-	Card *_firstCard;
-	Card *_lastCard;
+	MM_ConcurrentCardTableForWC* _cardTable;
+	Card* _firstCard;
+	Card* _lastCard;
 	CardAction _action;
 
 public:
 	virtual UDATA getVMStateID() { return OMRVMSTATE_GC_CONCURRENT_MARK_PREPARE_CARD_TABLE; }
-	
-	virtual void run(MM_EnvironmentBase *env);
 
-	MM_ConcurrentPrepareCardTableTask(MM_EnvironmentBase *env, MM_Dispatcher *dispatcher, MM_ConcurrentCardTableForWC *cardTable, Card *firstCard, Card *lastCard, CardAction action) :
-		MM_ParallelTask(env, dispatcher),
-		_cardTable(cardTable),
-		_firstCard(firstCard),
-		_lastCard(lastCard),
-		_action(action)
+	virtual void run(MM_EnvironmentBase* env);
+
+	MM_ConcurrentPrepareCardTableTask(MM_EnvironmentBase* env,
+	                                  MM_Dispatcher* dispatcher,
+	                                  MM_ConcurrentCardTableForWC* cardTable,
+	                                  Card* firstCard,
+	                                  Card* lastCard,
+	                                  CardAction action)
+	        : MM_ParallelTask(env, dispatcher),
+	          _cardTable(cardTable),
+	          _firstCard(firstCard),
+	          _lastCard(lastCard),
+	          _action(action)
 	{
 		_typeId = __FUNCTION__;
 	}

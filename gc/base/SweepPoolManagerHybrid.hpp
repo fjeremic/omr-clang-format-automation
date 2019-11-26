@@ -28,9 +28,9 @@
 #if !defined(SWEEPPOOLMANAGERHYBRID_HPP_)
 #define SWEEPPOOLMANAGERHYBRID_HPP_
 
-#include "omrcfg.h"
-#include "modronopt.h"
 #include "modronbase.h"
+#include "modronopt.h"
+#include "omrcfg.h"
 
 #if defined(OMR_GC_MODRON_STANDARD)
 #include "SweepPoolManagerSplitAddressOrderedList.hpp"
@@ -40,18 +40,15 @@ class MM_SweepPoolManagerHybrid : public MM_SweepPoolManagerSplitAddressOrderedL
 private:
 protected:
 public:
-
-	static MM_SweepPoolManagerHybrid *newInstance(MM_EnvironmentBase *env);
+	static MM_SweepPoolManagerHybrid* newInstance(MM_EnvironmentBase* env);
 
 	/**
 	 * Create a SweepPoolManager object.
 	 */
-	MM_SweepPoolManagerHybrid(MM_EnvironmentBase *env)
-		: MM_SweepPoolManagerSplitAddressOrderedList(env)
+	MM_SweepPoolManagerHybrid(MM_EnvironmentBase* env) : MM_SweepPoolManagerSplitAddressOrderedList(env)
 	{
 		_typeId = __FUNCTION__;
 	}
-
 };
 
 #endif /* defined(OMR_GC_MODRON_STANDARD) */

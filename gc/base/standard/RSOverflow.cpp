@@ -26,16 +26,16 @@
 
 #include "EnvironmentBase.hpp"
 #include "GCExtensionsBase.hpp"
+#include "HeapMapIterator.hpp"
 #include "MarkMap.hpp"
 #include "MarkingScheme.hpp"
-#include "HeapMapIterator.hpp"
 #include "ObjectModel.hpp"
 #include "ParallelGlobalGC.hpp"
 
 void
-MM_RSOverflow::initialize(MM_EnvironmentBase *env)
+MM_RSOverflow::initialize(MM_EnvironmentBase* env)
 {
-	MM_Collector *globalCollector = _extensions->getGlobalCollector();
+	MM_Collector* globalCollector = _extensions->getGlobalCollector();
 	Assert_MM_true(NULL != globalCollector);
 
 	/*
@@ -44,7 +44,7 @@ MM_RSOverflow::initialize(MM_EnvironmentBase *env)
 	globalCollector->abortCollection(env, ABORT_COLLECTION_SCAVENGE_REMEMBEREDSET_OVERFLOW);
 
 	/* to get Mark Map need Marking Scheme first */
-	MM_MarkingScheme *markingScheme = ((MM_ParallelGlobalGC *)globalCollector)->getMarkingScheme();
+	MM_MarkingScheme* markingScheme = ((MM_ParallelGlobalGC*)globalCollector)->getMarkingScheme();
 	Assert_MM_true(NULL != markingScheme);
 
 	/* get Mark Map */

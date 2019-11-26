@@ -23,10 +23,9 @@
 #if !defined(SWEEPSCHEMESEGREGATED_HPP_)
 #define SWEEPSCHEMESEGREGATED_HPP_
 
+#include "Base.hpp"
 #include "HeapLinkedFreeHeader.hpp"
 #include "MemoryPoolAggregatedCellList.hpp"
-
-#include "Base.hpp"
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
 
@@ -48,9 +47,10 @@ class MM_SweepSchemeSegregated : public MM_BaseVirtual
 	 */
 public:
 protected:
-	MM_MemoryPoolSegregated *_memoryPool;
-	MM_MarkMap *_markMap;
-	MM_GCExtensionsBase *_extensions;
+	MM_MemoryPoolSegregated* _memoryPool;
+	MM_MarkMap* _markMap;
+	MM_GCExtensionsBase* _extensions;
+
 private:
 	bool _isFixHeapForWalk;
 	bool _clearMarkMapAfterSweep; /**< If a region should be unmarked after it is swept */
@@ -59,50 +59,58 @@ private:
 	 * Function members
 	 */
 public:
-	static MM_SweepSchemeSegregated *newInstance(MM_EnvironmentBase *env, MM_MarkMap *markMap);
-	void kill(MM_EnvironmentBase *env);
-	
-	MM_MarkMap *getMarkMap(MM_EnvironmentBase * env);
+	static MM_SweepSchemeSegregated* newInstance(MM_EnvironmentBase* env, MM_MarkMap* markMap);
+	void kill(MM_EnvironmentBase* env);
 
-	void sweep(MM_EnvironmentBase *env, MM_MemoryPoolSegregated *memoryPool, bool isFixHeapForWalk);
-	virtual void sweepRegion(MM_EnvironmentBase *env, MM_HeapRegionDescriptorSegregated *region);
+	MM_MarkMap* getMarkMap(MM_EnvironmentBase* env);
+
+	void sweep(MM_EnvironmentBase* env, MM_MemoryPoolSegregated* memoryPool, bool isFixHeapForWalk);
+	virtual void sweepRegion(MM_EnvironmentBase* env, MM_HeapRegionDescriptorSegregated* region);
 
 	bool isClearMarkMapAfterSweep() { return _clearMarkMapAfterSweep; }
-	void setClearMarkMapAfterSweep(bool clearMarkMapAfterSweep) { _clearMarkMapAfterSweep = clearMarkMapAfterSweep; }
+	void setClearMarkMapAfterSweep(bool clearMarkMapAfterSweep)
+	{
+		_clearMarkMapAfterSweep = clearMarkMapAfterSweep;
+	}
+
 protected:
-	bool initialize(MM_EnvironmentBase *env);
-	void tearDown(MM_EnvironmentBase *env);
+	bool initialize(MM_EnvironmentBase* env);
+	void tearDown(MM_EnvironmentBase* env);
 
-	virtual void preSweep(MM_EnvironmentBase *env);
-	virtual void postSweep(MM_EnvironmentBase *env);
+	virtual void preSweep(MM_EnvironmentBase* env);
+	virtual void postSweep(MM_EnvironmentBase* env);
 
-	virtual void incrementalSweepArraylet(MM_EnvironmentBase *env);
+	virtual void incrementalSweepArraylet(MM_EnvironmentBase* env);
 
 	/**
 	 * Create a MM_SweepSchemeSegregated object
 	 */
-	MM_SweepSchemeSegregated(MM_EnvironmentBase *env, MM_MarkMap *markMap) :
-		MM_BaseVirtual()
-		,_memoryPool(NULL)
-		,_markMap(markMap)
-		,_extensions(env->getExtensions())
-		,_isFixHeapForWalk(false)
-		,_clearMarkMapAfterSweep(true)
+	MM_SweepSchemeSegregated(MM_EnvironmentBase* env, MM_MarkMap* markMap)
+	        : MM_BaseVirtual(),
+	          _memoryPool(NULL),
+	          _markMap(markMap),
+	          _extensions(env->getExtensions()),
+	          _isFixHeapForWalk(false),
+	          _clearMarkMapAfterSweep(true)
 	{
 		_typeId = __FUNCTION__;
 	};
-	
-private:
-	void unmarkRegion(MM_EnvironmentBase *env, MM_HeapRegionDescriptorSegregated *region);
-	void sweepSmallRegion(MM_EnvironmentBase *env, MM_HeapRegionDescriptorSegregated *region);
-	void sweepArrayletRegion(MM_EnvironmentBase *env, MM_HeapRegionDescriptorSegregated *region);
-	void sweepLargeRegion(MM_EnvironmentBase *env, MM_HeapRegionDescriptorSegregated *region);
-	void addBytesFreedAfterSweep(MM_EnvironmentBase *env, MM_HeapRegionDescriptorSegregated *region);
-	void incrementalSweepSmall(MM_EnvironmentBase *env);
-	void incrementalSweepLarge(MM_EnvironmentBase *env);
-	void incrementalCoalesceFreeRegions(MM_EnvironmentBase *env);
 
-	MMINLINE bool addFreeChunk(MM_MemoryPoolAggregatedCellList *memoryPoolACL, uintptr_t *freeChunk, uintptr_t freeChunkSize, uintptr_t minimumFreeEntrySize, uintptr_t freeChunkCellCount)
+private:
+	void unmarkRegion(MM_EnvironmentBase* env, MM_HeapRegionDescriptorSegregated* region);
+	void sweepSmallRegion(MM_EnvironmentBase* env, MM_HeapRegionDescriptorSegregated* region);
+	void sweepArrayletRegion(MM_EnvironmentBase* env, MM_HeapRegionDescriptorSegregated* region);
+	void sweepLargeRegion(MM_EnvironmentBase* env, MM_HeapRegionDescriptorSegregated* region);
+	void addBytesFreedAfterSweep(MM_EnvironmentBase* env, MM_HeapRegionDescriptorSegregated* region);
+	void incrementalSweepSmall(MM_EnvironmentBase* env);
+	void incrementalSweepLarge(MM_EnvironmentBase* env);
+	void incrementalCoalesceFreeRegions(MM_EnvironmentBase* env);
+
+	MMINLINE bool addFreeChunk(MM_MemoryPoolAggregatedCellList* memoryPoolACL,
+	                           uintptr_t* freeChunk,
+	                           uintptr_t freeChunkSize,
+	                           uintptr_t minimumFreeEntrySize,
+	                           uintptr_t freeChunkCellCount)
 	{
 		bool result = false;
 		bool const compressed = _extensions->compressObjectReferences();
@@ -122,13 +130,13 @@ private:
 	/**
 	 * Called to allow subclasses to yield to mutators if required (eg, realtime constraints)
 	 */
-	virtual void yieldFromSweep(MM_EnvironmentBase *env, uintptr_t yieldSlackTime = 0);
+	virtual void yieldFromSweep(MM_EnvironmentBase* env, uintptr_t yieldSlackTime = 0);
 
 	/**
 	 * Called from incrementalCoalesceFreeRegions() to track range of regions processed since last yield
 	 * @return A nonzero value to indicate yield slack time when yield is required
 	 */
-	virtual uintptr_t resetCoalesceFreeRegionCount(MM_EnvironmentBase *env);
+	virtual uintptr_t resetCoalesceFreeRegionCount(MM_EnvironmentBase* env);
 
 	/**
 	 * @return True to indicate that yield is required
@@ -139,7 +147,7 @@ private:
 	 * Called from incrementalSweepSmall() to track range of regions processed since last yield
 	 * @return A nonzero value to indicate yield slack time when yield is required
 	 */
-	virtual uintptr_t resetSweepSmallRegionCount(MM_EnvironmentBase *env, uintptr_t yieldSmallRegionCount);
+	virtual uintptr_t resetSweepSmallRegionCount(MM_EnvironmentBase* env, uintptr_t yieldSmallRegionCount);
 
 	/**
 	 * @return True to indicate that yield is required
@@ -150,8 +158,7 @@ private:
 	 * Calculate the maximum number of regions of a single small region size class to sweep before proceeding to the next size class
 	 * while sweeping small regions.
 	 */
-	uintptr_t
-	calcSweepSmallRegionsPerIteration(uintptr_t numCellsPerSizeClass)
+	uintptr_t calcSweepSmallRegionsPerIteration(uintptr_t numCellsPerSizeClass)
 	{
 		uintptr_t regionCost = (SWEEP_CELL_COST * numCellsPerSizeClass) + SWEEP_REGION_COST;
 		return 8 * OMR_MAX(1, SWEEP_BUDGET / regionCost);

@@ -20,42 +20,41 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "modronopt.h"
-#include "ModronAssertions.h"
-#include "omrport.h"
-
 #include "MasterGCThread.hpp"
 
+#include "Collector.hpp"
 #include "CollectorLanguageInterfaceImpl.hpp"
 #include "ConcurrentGMPStats.hpp"
 #include "ConcurrentPhaseStatsBase.hpp"
-#include "ParallelDispatcher.hpp"
 #include "EnvironmentBase.hpp"
-#include "Collector.hpp"
+#include "ModronAssertions.h"
+#include "ParallelDispatcher.hpp"
+#include "modronopt.h"
+#include "omrport.h"
 
 /**
  * Initialization
  */
-MM_MasterGCThread::MM_MasterGCThread(MM_EnvironmentBase *env)
-	: MM_BaseNonVirtual()
-	, _collectorControlMutex(NULL)
-	, _masterThreadState(STATE_ERROR)
-	, _masterGCThread(NULL)
-	, _incomingCycleState(NULL)
-	, _allocDesc(NULL)
-	, _extensions(env->getExtensions())
-	, _collector(NULL)
-	, _runAsImplicit(false)
-	, _acquireVMAccessDuringConcurrent(false)
-	, _concurrentResumable(false)
+MM_MasterGCThread::MM_MasterGCThread(MM_EnvironmentBase* env)
+        : MM_BaseNonVirtual(),
+          _collectorControlMutex(NULL),
+          _masterThreadState(STATE_ERROR),
+          _masterGCThread(NULL),
+          _incomingCycleState(NULL),
+          _allocDesc(NULL),
+          _extensions(env->getExtensions()),
+          _collector(NULL),
+          _runAsImplicit(false),
+          _acquireVMAccessDuringConcurrent(false),
+          _concurrentResumable(false)
 {
 	_typeId = __FUNCTION__;
 }
 
 uintptr_t
-MM_MasterGCThread::master_thread_proc2(OMRPortLibrary* portLib, void *info)
+MM_MasterGCThread::master_thread_proc2(OMRPortLibrary* portLib, void* info)
 {
-	MM_MasterGCThread *masterGCThread = (MM_MasterGCThread*)info;
+	MM_MasterGCThread* masterGCThread = (MM_MasterGCThread*)info;
 	/* jump into the master thread procedure and wait for work.  This method will NOT return */
 	masterGCThread->masterThreadEntryPoint();
 	Assert_MM_unreachable();
@@ -63,27 +62,26 @@ MM_MasterGCThread::master_thread_proc2(OMRPortLibrary* portLib, void *info)
 }
 
 int J9THREAD_PROC
-MM_MasterGCThread::master_thread_proc(void *info)
+MM_MasterGCThread::master_thread_proc(void* info)
 {
-	MM_MasterGCThread *masterGCThread = (MM_MasterGCThread*)info;
-	MM_GCExtensionsBase *extensions = masterGCThread->_extensions;
-	OMR_VM *omrVM = extensions->getOmrVM();
+	MM_MasterGCThread* masterGCThread = (MM_MasterGCThread*)info;
+	MM_GCExtensionsBase* extensions = masterGCThread->_extensions;
+	OMR_VM* omrVM = extensions->getOmrVM();
 	OMRPORT_ACCESS_FROM_OMRVM(omrVM);
 	uintptr_t rc = 0;
-	omrsig_protect(master_thread_proc2, info,
-			((MM_ParallelDispatcher *)extensions->dispatcher)->getSignalHandler(), omrVM,
-		OMRPORT_SIG_FLAG_SIGALLSYNC | OMRPORT_SIG_FLAG_MAY_CONTINUE_EXECUTION,
-		&rc);
+	omrsig_protect(master_thread_proc2, info, ((MM_ParallelDispatcher*)extensions->dispatcher)->getSignalHandler(),
+	               omrVM, OMRPORT_SIG_FLAG_SIGALLSYNC | OMRPORT_SIG_FLAG_MAY_CONTINUE_EXECUTION, &rc);
 	return 0;
 }
 
-
-
 bool
-MM_MasterGCThread::initialize(MM_Collector *collector, bool runAsImplicit, bool acquireVMAccessDuringConcurrent, bool concurrentResumable)
+MM_MasterGCThread::initialize(MM_Collector* collector,
+                              bool runAsImplicit,
+                              bool acquireVMAccessDuringConcurrent,
+                              bool concurrentResumable)
 {
 	bool success = true;
-	if(omrthread_monitor_init_with_name(&_collectorControlMutex, 0, "MM_MasterGCThread::_collectorControlMutex")) {
+	if (omrthread_monitor_init_with_name(&_collectorControlMutex, 0, "MM_MasterGCThread::_collectorControlMutex")) {
 		success = false;
 	}
 
@@ -96,7 +94,7 @@ MM_MasterGCThread::initialize(MM_Collector *collector, bool runAsImplicit, bool 
 }
 
 void
-MM_MasterGCThread::tearDown(MM_EnvironmentBase *env)
+MM_MasterGCThread::tearDown(MM_EnvironmentBase* env)
 {
 	if (NULL != _collectorControlMutex) {
 		omrthread_monitor_destroy(_collectorControlMutex);
@@ -104,7 +102,6 @@ MM_MasterGCThread::tearDown(MM_EnvironmentBase *env)
 	}
 	_collector = NULL;
 }
-
 
 bool
 MM_MasterGCThread::startup()
@@ -120,14 +117,9 @@ MM_MasterGCThread::startup()
 		/* hold the monitor over start-up of this thread so that we eliminate any timing hole where it might notify us of its start-up state before we wait */
 		omrthread_monitor_enter(_collectorControlMutex);
 		_masterThreadState = STATE_STARTING;
-		intptr_t forkResult = createThreadWithCategory(
-			NULL,
-			OMR_OS_STACK_SIZE,
-			J9THREAD_PRIORITY_NORMAL,
-			0,
-			master_thread_proc,
-			this,
-			J9THREAD_CATEGORY_SYSTEM_GC_THREAD);
+		intptr_t forkResult = createThreadWithCategory(NULL, OMR_OS_STACK_SIZE, J9THREAD_PRIORITY_NORMAL, 0,
+		                                               master_thread_proc, this,
+		                                               J9THREAD_CATEGORY_SYSTEM_GC_THREAD);
 		if (forkResult == 0) {
 			/* thread creation success */
 			/* wait to find out if they started up, successfully */
@@ -154,20 +146,19 @@ MM_MasterGCThread::shutdown()
 	if ((STATE_ERROR != _masterThreadState) && (STATE_DISABLED != _masterThreadState)) {
 		/* tell the background thread to shut down and then wait for it to exit */
 		omrthread_monitor_enter(_collectorControlMutex);
-		while(STATE_TERMINATED != _masterThreadState) {
+		while (STATE_TERMINATED != _masterThreadState) {
 			_masterThreadState = STATE_TERMINATION_REQUESTED;
 			omrthread_monitor_notify(_collectorControlMutex);
 			omrthread_monitor_wait(_collectorControlMutex);
 		}
 		omrthread_monitor_exit(_collectorControlMutex);
-		
+
 		/* don't NULL _collector as RAS could still trigger a collection after we've started shutting down */
 	}
 }
 
-
 void
-MM_MasterGCThread::handleSTW(MM_EnvironmentBase *env)
+MM_MasterGCThread::handleSTW(MM_EnvironmentBase* env)
 {
 	Assert_MM_true(NULL != _incomingCycleState);
 	env->_cycleState = _incomingCycleState;
@@ -187,7 +178,7 @@ MM_MasterGCThread::handleSTW(MM_EnvironmentBase *env)
 }
 
 bool
-MM_MasterGCThread::handleConcurrent(MM_EnvironmentBase *env)
+MM_MasterGCThread::handleConcurrent(MM_EnvironmentBase* env)
 {
 	bool workDone = false;
 
@@ -199,7 +190,7 @@ MM_MasterGCThread::handleConcurrent(MM_EnvironmentBase *env)
 			env->acquireVMAccess();
 		}
 		if (_collector->isConcurrentWorkAvailable(env)) {
-			MM_ConcurrentPhaseStatsBase *stats = _collector->getConcurrentPhaseStats();
+			MM_ConcurrentPhaseStatsBase* stats = _collector->getConcurrentPhaseStats();
 			stats->clear();
 
 			_collector->preConcurrentInitializeStatsAndReport(env, stats);
@@ -231,13 +222,14 @@ MM_MasterGCThread::handleConcurrent(MM_EnvironmentBase *env)
 void
 MM_MasterGCThread::masterThreadEntryPoint()
 {
-	OMR_VMThread *omrVMThread = NULL;
+	OMR_VMThread* omrVMThread = NULL;
 	Assert_MM_true(NULL != _collectorControlMutex);
 	Assert_MM_true(NULL == _masterGCThread);
 
-	/* Attach the thread as a system daemon thread */	
+	/* Attach the thread as a system daemon thread */
 	/* You need a VM thread so that the stack walker can work */
-	omrVMThread = MM_EnvironmentBase::attachVMThread(_extensions->getOmrVM(), "Dedicated GC Master", MM_EnvironmentBase::ATTACH_GC_MASTER_THREAD);
+	omrVMThread = MM_EnvironmentBase::attachVMThread(_extensions->getOmrVM(), "Dedicated GC Master",
+	                                                 MM_EnvironmentBase::ATTACH_GC_MASTER_THREAD);
 	if (NULL == omrVMThread) {
 		/* we failed to attach so notify the creating thread that we should fail to start up */
 		omrthread_monitor_enter(_collectorControlMutex);
@@ -246,7 +238,7 @@ MM_MasterGCThread::masterThreadEntryPoint()
 		omrthread_exit(_collectorControlMutex);
 	} else {
 		/* thread attached successfully */
-		MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(omrVMThread);
+		MM_EnvironmentBase* env = MM_EnvironmentBase::getEnvironment(omrVMThread);
 
 		/* attachVMThread could allocate an execute a barrier (since it that point, this thread acted as a mutator thread.
 		 * Flush GC chaches (like barrier buffers) before turning into the master thread */
@@ -256,9 +248,9 @@ MM_MasterGCThread::masterThreadEntryPoint()
 
 		/* Begin running the thread */
 		omrthread_monitor_enter(_collectorControlMutex);
-		
+
 		_collector->preMasterGCThreadInitialize(env);
-		
+
 		_masterThreadState = STATE_WAITING;
 		_masterGCThread = omrthread_self();
 		omrthread_monitor_notify(_collectorControlMutex);
@@ -281,17 +273,18 @@ MM_MasterGCThread::masterThreadEntryPoint()
 		_masterThreadState = STATE_TERMINATED;
 		_masterGCThread = NULL;
 		omrthread_monitor_notify(_collectorControlMutex);
-		MM_EnvironmentBase::detachVMThread(_extensions->getOmrVM(), omrVMThread, MM_EnvironmentBase::ATTACH_GC_MASTER_THREAD);
+		MM_EnvironmentBase::detachVMThread(_extensions->getOmrVM(), omrVMThread,
+		                                   MM_EnvironmentBase::ATTACH_GC_MASTER_THREAD);
 		omrthread_exit(_collectorControlMutex);
 	}
 }
 
 bool
-MM_MasterGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription)
+MM_MasterGCThread::garbageCollect(MM_EnvironmentBase* env, MM_AllocateDescription* allocDescription)
 {
 	Assert_MM_mustHaveExclusiveVMAccess(env->getOmrVMThread());
 	bool didAttemptCollect = false;
-	
+
 	if (NULL != _collector) {
 		/* the collector has started up so try to run */
 		/* once the master thread has stored itself in the _masterGCThread, it should never need to collect - this would hang */
@@ -332,7 +325,7 @@ MM_MasterGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescriptio
 			} else {
 				Assert_MM_unreachable();
 			}
-			
+
 			/* The master thread will claim exclusive VM access. Artificially give it up in this thread so that tools like -Xcheck:vm continue to work. */
 			uintptr_t savedExclusiveCount = env->relinquishExclusiveVMAccess();
 			while (STATE_GC_REQUESTED == _masterThreadState) {
@@ -343,7 +336,7 @@ MM_MasterGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescriptio
 			Assert_MM_true(NULL == _incomingCycleState);
 			omrthread_monitor_exit(_collectorControlMutex);
 		}
-		
+
 		didAttemptCollect = true;
 	}
 	return didAttemptCollect;

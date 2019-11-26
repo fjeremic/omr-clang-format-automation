@@ -51,18 +51,18 @@
 #define J9VM_MODRON_SCAVENGER_CACHE_TYPE_HEAP OMR_SCAVENGER_CACHE_TYPE_HEAP
 #define J9VM_MODRON_SCAVENGER_CACHE_MASK_PERSISTENT OMR_SCAVENGER_CACHE_MASK_PERSISTENT
 
-#include "omrcomp.h"
-#include "modronbase.h"
-
 #include "Base.hpp"
 #include "ObjectIteratorState.hpp"
+#include "modronbase.h"
+#include "omrcomp.h"
 
 /**
  * @todo Provide class documentation
  * @ingroup GC_Base_Core
  */
 
-class MM_CopyScanCache : public MM_Base {
+class MM_CopyScanCache : public MM_Base
+{
 	/* Data Members */
 private:
 protected:
@@ -82,17 +82,11 @@ public:
 	/**
 	 * Sets the flag on the cache which denotes it is currently in use as a scan cache
 	 */
-	MMINLINE void setCurrentlyBeingScanned()
-	{
-		flags |= OMR_SCAVENGER_CACHE_TYPE_SCAN;
-	}
+	MMINLINE void setCurrentlyBeingScanned() { flags |= OMR_SCAVENGER_CACHE_TYPE_SCAN; }
 	/**
 	 * Clears the flag on the cache which denotes it is currently in use as a scan cache
 	 */
-	MMINLINE void clearCurrentlyBeingScanned()
-	{
-		flags &= ~OMR_SCAVENGER_CACHE_TYPE_SCAN;
-	}
+	MMINLINE void clearCurrentlyBeingScanned() { flags &= ~OMR_SCAVENGER_CACHE_TYPE_SCAN; }
 
 	/**
 	 * Checks the flag on the cache which denotes if it is currently in use as a scan cache
@@ -105,37 +99,32 @@ public:
 	/**
 	 * @return whether there is scanning work in the receiver
 	 */
-	MMINLINE bool isScanWorkAvailable() const
-	{
-		return scanCurrent < cacheAlloc;
-	}
+	MMINLINE bool isScanWorkAvailable() const { return scanCurrent < cacheAlloc; }
 
 	/**
 	 * Create a CopyScanCache object.
 	 */
 	MM_CopyScanCache()
-		: MM_Base()
-		, next(NULL)
-		, flags(0)
-		, _hasPartiallyScannedObject(false)
-		, cacheBase(NULL)
-		, cacheTop(NULL)
-		, cacheAlloc(NULL)
-		, scanCurrent(NULL)
-	{
-	}
+	        : MM_Base(),
+	          next(NULL),
+	          flags(0),
+	          _hasPartiallyScannedObject(false),
+	          cacheBase(NULL),
+	          cacheTop(NULL),
+	          cacheAlloc(NULL),
+	          scanCurrent(NULL)
+	{}
 
 	MM_CopyScanCache(uintptr_t givenFlags)
-		: MM_Base()
-		, next(NULL)
-		, flags(givenFlags)
-		, _hasPartiallyScannedObject(false)
-		, cacheBase(NULL)
-		, cacheTop(NULL)
-		, cacheAlloc(NULL)
-		, scanCurrent(NULL)
-	{
-	}
+	        : MM_Base(),
+	          next(NULL),
+	          flags(givenFlags),
+	          _hasPartiallyScannedObject(false),
+	          cacheBase(NULL),
+	          cacheTop(NULL),
+	          cacheAlloc(NULL),
+	          scanCurrent(NULL)
+	{}
 };
 
 #endif /* COPYSCANCACHEBASE_HPP_ */

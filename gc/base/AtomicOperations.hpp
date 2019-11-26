@@ -23,14 +23,12 @@
 #if !defined(ATOMIC_OPERATIONS_HPP_)
 #define ATOMIC_OPERATIONS_HPP_
 
-#include <stdlib.h>
-
-#include "omrcfg.h"
-#include "omrcomp.h"
-
 #include "AtomicSupport.hpp"
 #include "Math.hpp"
+#include "omrcfg.h"
+#include "omrcomp.h"
 #include "omrutil.h"
+#include <stdlib.h>
 
 /**
  * Provide atomic access to data store.
@@ -38,51 +36,30 @@
 class MM_AtomicOperations
 {
 public:
-
 	/**
 	 * If the CPU supports it, emit an instruction to yield the CPU to another thread.
 	 */
-	MMINLINE_DEBUG static void
-	yieldCPU()
-	{
-		VM_AtomicSupport::yieldCPU();
-	}
+	MMINLINE_DEBUG static void yieldCPU() { VM_AtomicSupport::yieldCPU(); }
 
 	/**
 	 * Generates platform-specific machine code that performs no operation.
 	 */
-	MMINLINE_DEBUG static void
-	nop()
-	{
-		VM_AtomicSupport::nop();
-	}
+	MMINLINE_DEBUG static void nop() { VM_AtomicSupport::nop(); }
 
 	/**
 	 * @Deprecated use the readWriteBarrier
 	 */
-	MMINLINE_DEBUG static void
-	sync()
-	{
-		readWriteBarrier();
-	}
+	MMINLINE_DEBUG static void sync() { readWriteBarrier(); }
 
 	/**
 	 * @Deprecated use the writeBarrier
 	 */
-	MMINLINE_DEBUG static void
-	storeSync()
-	{
-		writeBarrier();
-	}
+	MMINLINE_DEBUG static void storeSync() { writeBarrier(); }
 
 	/**
 	 * @Deprecated use the readBarrier
 	 */
-	MMINLINE_DEBUG static void
-	loadSync()
-	{
-		readBarrier();
-	}
+	MMINLINE_DEBUG static void loadSync() { readBarrier(); }
 
 	/**
 	 * Creates a memory barrier.
@@ -90,11 +67,7 @@ public:
 	 * of the sync instruction in the program sequence must complete their accesses to memory
 	 * first, and then any load or store instructions after sync can begin.
 	 */
-	MMINLINE_DEBUG static void
-	readWriteBarrier()
-	{
-		VM_AtomicSupport::readWriteBarrier();
-	}
+	MMINLINE_DEBUG static void readWriteBarrier() { VM_AtomicSupport::readWriteBarrier(); }
 
 	/**
 	 * Creates a store barrier.
@@ -102,12 +75,8 @@ public:
 	 * by an instruction following the storeSync may be performed before a store caused by 
 	 * an instruction that precedes the storeSync, and the ordering does not apply to accesses 
 	 * to I/O memory (memory-mapped I/O).
-	 */ 
-	MMINLINE_DEBUG static void
-	writeBarrier()
-	{
-		VM_AtomicSupport::writeBarrier();
-	}
+	 */
+	MMINLINE_DEBUG static void writeBarrier() { VM_AtomicSupport::writeBarrier(); }
 
 	/**
 	 * Creates a load barrier.
@@ -116,11 +85,7 @@ public:
 	 * no loads following entry into a critical section can access data (because of aggressive 
 	 * out-of-order and speculative execution in the processor) before the lock is acquired.
 	 */
-	MMINLINE_DEBUG static void
-	readBarrier()
-	{
-		VM_AtomicSupport::readBarrier();
-	}
+	MMINLINE_DEBUG static void readBarrier() { VM_AtomicSupport::readBarrier(); }
 
 	/**
 	 * Store unsigned 32 bit value at memory location as an atomic operation.
@@ -135,7 +100,7 @@ public:
 	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
 	 */
 	MMINLINE_DEBUG static uint32_t
-	lockCompareExchangeU32(volatile uint32_t *address, uint32_t oldValue, uint32_t newValue)
+	lockCompareExchangeU32(volatile uint32_t* address, uint32_t oldValue, uint32_t newValue)
 	{
 		return VM_AtomicSupport::lockCompareExchangeU32(address, oldValue, newValue);
 	}
@@ -153,7 +118,7 @@ public:
 	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
 	 */
 	MMINLINE_DEBUG static uintptr_t
-	lockCompareExchange(volatile uintptr_t * address, uintptr_t oldValue, uintptr_t newValue)
+	lockCompareExchange(volatile uintptr_t* address, uintptr_t oldValue, uintptr_t newValue)
 	{
 		return VM_AtomicSupport::lockCompareExchange(address, oldValue, newValue);
 	}
@@ -171,7 +136,7 @@ public:
 	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
 	 */
 	MMINLINE_DEBUG static uint64_t
-	lockCompareExchangeU64(volatile uint64_t *address, uint64_t oldValue, uint64_t newValue)
+	lockCompareExchangeU64(volatile uint64_t* address, uint64_t oldValue, uint64_t newValue)
 	{
 		return VM_AtomicSupport::lockCompareExchangeU64(address, oldValue, newValue);
 	}
@@ -186,8 +151,7 @@ public:
 	 *
 	 * @return The value at memory location <b>address</b> AFTER the add is completed
 	 */
-	MMINLINE_DEBUG static uintptr_t
-	add(volatile uintptr_t *address, uintptr_t addend)
+	MMINLINE_DEBUG static uintptr_t add(volatile uintptr_t* address, uintptr_t addend)
 	{
 		return VM_AtomicSupport::add(address, addend);
 	}
@@ -202,8 +166,7 @@ public:
 	 *
 	 * @return The value at memory location <b>address</b>
 	 */
-	MMINLINE_DEBUG static uintptr_t
-	addU32(volatile uint32_t *address, uint32_t addend)
+	MMINLINE_DEBUG static uintptr_t addU32(volatile uint32_t* address, uint32_t addend)
 	{
 		return VM_AtomicSupport::addU32(address, addend);
 	}
@@ -218,8 +181,7 @@ public:
 	 *
 	 * @return The value at memory location <b>address</b>
 	 */
-	MMINLINE_DEBUG static uint64_t
-	addU64(volatile uint64_t *address, uint64_t addend)
+	MMINLINE_DEBUG static uint64_t addU64(volatile uint64_t* address, uint64_t addend)
 	{
 		return VM_AtomicSupport::addU64(address, addend);
 	}
@@ -234,8 +196,7 @@ public:
 	 *
 	 * @return The value at memory location <b>address</b>
 	 */
-	MMINLINE_DEBUG static double
-	addDouble(volatile double *address, double addend)
+	MMINLINE_DEBUG static double addDouble(volatile double* address, double addend)
 	{
 		return VM_AtomicSupport::addDouble(address, addend);
 	}
@@ -250,12 +211,11 @@ public:
 	 * 
 	 * @return The value at memory location <b>address</b>
 	 */
-	MMINLINE_DEBUG static uintptr_t
-	subtract(volatile uintptr_t *address, uintptr_t value)
+	MMINLINE_DEBUG static uintptr_t subtract(volatile uintptr_t* address, uintptr_t value)
 	{
 		return VM_AtomicSupport::subtract(address, value);
 	}
-	
+
 	/**
 	 * Subtracts a 32 bit number from the value at a specific memory location as an atomic operation.
 	 * Subtracts the value <b>value</b> from the value stored at memory location pointed
@@ -266,8 +226,7 @@ public:
 	 * 
 	 * @return The value at memory location <b>address</b>
 	 */
-	MMINLINE_DEBUG static uintptr_t
-	subtractU32(volatile uint32_t *address, uint32_t value)
+	MMINLINE_DEBUG static uintptr_t subtractU32(volatile uint32_t* address, uint32_t value)
 	{
 		return VM_AtomicSupport::subtractU32(address, value);
 	}
@@ -282,8 +241,7 @@ public:
 	 *
 	 * @return The value at memory location <b>address</b>
 	 */
-	MMINLINE_DEBUG static uint64_t
-	subtractU64(volatile uint64_t *address, uint64_t value)
+	MMINLINE_DEBUG static uint64_t subtractU64(volatile uint64_t* address, uint64_t value)
 	{
 		return VM_AtomicSupport::subtractU64(address, value);
 	}
@@ -297,8 +255,7 @@ public:
 	 * 
 	 * @note This method can spin indefinitely while attempting to write the new value.
 	 */
-	MMINLINE_DEBUG static void
-	set(volatile uintptr_t *address, uintptr_t value)
+	MMINLINE_DEBUG static void set(volatile uintptr_t* address, uintptr_t value)
 	{
 		VM_AtomicSupport::set(address, value);
 	}
@@ -312,8 +269,7 @@ public:
 	 *
 	 * @note This method can spin indefinitely while attempting to write the new value.
 	 */
-	MMINLINE_DEBUG static void
-	setU64(volatile uint64_t *address, uint64_t value)
+	MMINLINE_DEBUG static void setU64(volatile uint64_t* address, uint64_t value)
 	{
 		VM_AtomicSupport::setU64(address, value);
 	}
@@ -326,11 +282,7 @@ public:
 	 *
 	 * @return the value stored at the address.
 	 */
-	MMINLINE_DEBUG static uint64_t
-	getU64(volatile uint64_t *address)
-	{
-		return VM_AtomicSupport::getU64(address);
-	}
+	MMINLINE_DEBUG static uint64_t getU64(volatile uint64_t* address) { return VM_AtomicSupport::getU64(address); }
 
 	/**
 	 * Subtracts the given subtrahend from the value at a specific memory location, saturating to zero, as an atomic operation.
@@ -341,12 +293,11 @@ public:
 	 * 
 	 * @return The value at memory location <b>address</b> AFTER the subtraction operation has been completed
 	 */
-	MMINLINE_DEBUG static uintptr_t
-	saturatingSubtract(volatile uintptr_t *address, uintptr_t subtrahend)
+	MMINLINE_DEBUG static uintptr_t saturatingSubtract(volatile uintptr_t* address, uintptr_t subtrahend)
 	{
 		/* Stop compiler optimizing away load of oldValue */
-		volatile uintptr_t *localAddr = address;
-		
+		volatile uintptr_t* localAddr = address;
+
 		uintptr_t oldValue = (uintptr_t)*localAddr;
 		uintptr_t newValue = MM_Math::saturatingSubtract(oldValue, subtrahend);
 		while ((lockCompareExchange(localAddr, oldValue, newValue)) != oldValue) {
@@ -355,7 +306,6 @@ public:
 		}
 		return newValue;
 	}
-
 };
 
 #endif /* ATOMIC_OPERATIONS_HPP_ */

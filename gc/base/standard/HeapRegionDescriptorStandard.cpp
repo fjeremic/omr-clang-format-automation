@@ -20,23 +20,25 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "omrcfg.h"
-#include "ModronAssertions.h"
+#include "HeapRegionDescriptorStandard.hpp"
 
 #include "Configuration.hpp"
 #include "EnvironmentStandard.hpp"
-#include "HeapRegionDescriptorStandard.hpp"
+#include "ModronAssertions.h"
+#include "omrcfg.h"
 
-MM_HeapRegionDescriptorStandard::MM_HeapRegionDescriptorStandard(MM_EnvironmentStandard *env, void *lowAddress, void *highAddress)
-	: MM_HeapRegionDescriptor(env, lowAddress, highAddress)
+MM_HeapRegionDescriptorStandard::MM_HeapRegionDescriptorStandard(MM_EnvironmentStandard* env,
+                                                                 void* lowAddress,
+                                                                 void* highAddress)
+        : MM_HeapRegionDescriptor(env, lowAddress, highAddress)
 {
 	_typeId = __FUNCTION__;
 }
 
-bool 
-MM_HeapRegionDescriptorStandard::initialize(MM_EnvironmentBase *envBase, MM_HeapRegionManager *regionManager)
+bool
+MM_HeapRegionDescriptorStandard::initialize(MM_EnvironmentBase* envBase, MM_HeapRegionManager* regionManager)
 {
-	MM_EnvironmentStandard *env =  MM_EnvironmentStandard::getEnvironment(envBase);
+	MM_EnvironmentStandard* env = MM_EnvironmentStandard::getEnvironment(envBase);
 
 	if (!MM_HeapRegionDescriptor::initialize(env, regionManager)) {
 		return false;
@@ -45,24 +47,30 @@ MM_HeapRegionDescriptorStandard::initialize(MM_EnvironmentBase *envBase, MM_Heap
 	return env->getExtensions()->configuration->initializeHeapRegionDescriptor(env, this);
 }
 
-void 
-MM_HeapRegionDescriptorStandard::tearDown(MM_EnvironmentBase *env)
+void
+MM_HeapRegionDescriptorStandard::tearDown(MM_EnvironmentBase* env)
 {
 	env->getExtensions()->configuration->teardownHeapRegionDescriptor(env, this);
 
 	MM_HeapRegionDescriptor::tearDown(env);
 }
 
-bool 
-MM_HeapRegionDescriptorStandard::initializer(MM_EnvironmentBase *env, MM_HeapRegionManager *regionManager, MM_HeapRegionDescriptor *descriptor, void *lowAddress, void *highAddress)
+bool
+MM_HeapRegionDescriptorStandard::initializer(MM_EnvironmentBase* env,
+                                             MM_HeapRegionManager* regionManager,
+                                             MM_HeapRegionDescriptor* descriptor,
+                                             void* lowAddress,
+                                             void* highAddress)
 {
-	new((MM_HeapRegionDescriptorStandard*)descriptor) MM_HeapRegionDescriptorStandard((MM_EnvironmentStandard*)env, lowAddress, highAddress);
+	new ((MM_HeapRegionDescriptorStandard*)descriptor)
+	        MM_HeapRegionDescriptorStandard((MM_EnvironmentStandard*)env, lowAddress, highAddress);
 	return ((MM_HeapRegionDescriptorStandard*)descriptor)->initialize(env, regionManager);
 }
 
-void 
-MM_HeapRegionDescriptorStandard::destructor(MM_EnvironmentBase *env, MM_HeapRegionManager *regionManager, MM_HeapRegionDescriptor *descriptor)
+void
+MM_HeapRegionDescriptorStandard::destructor(MM_EnvironmentBase* env,
+                                            MM_HeapRegionManager* regionManager,
+                                            MM_HeapRegionDescriptor* descriptor)
 {
 	((MM_HeapRegionDescriptorStandard*)descriptor)->tearDown((MM_EnvironmentStandard*)env);
 }
-

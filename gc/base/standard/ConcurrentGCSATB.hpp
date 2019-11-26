@@ -23,15 +23,13 @@
 #if !defined(CONCURRENTGCSATB_HPP_)
 #define CONCURRENTGCSATB_HPP_
 
-#include "omrcfg.h"
-#include "modronopt.h"
-
-#include "omr.h"
 #include "OMR_VM.hpp"
+#include "modronopt.h"
+#include "omr.h"
+#include "omrcfg.h"
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
 
 #include "ConcurrentGC.hpp"
-
 
 /**
  * @todo Provide class documentation
@@ -43,28 +41,22 @@ class MM_ConcurrentGCSATB : public MM_ConcurrentGC
 	 * Data members
 	 */
 private:
-
 public:
-	
 	/*
 	 * Function members
 	 */
 
 protected:
-	void tearDown(MM_EnvironmentBase *env);
-	void virtual reportConcurrentHalted(MM_EnvironmentBase *env);
-	uintptr_t virtual localMark(MM_EnvironmentBase *env, uintptr_t sizeToTrace);
+	void tearDown(MM_EnvironmentBase* env);
+	void virtual reportConcurrentHalted(MM_EnvironmentBase* env);
+	uintptr_t virtual localMark(MM_EnvironmentBase* env, uintptr_t sizeToTrace);
 
 public:
 	virtual uintptr_t getVMStateID() { return OMRVMSTATE_GC_COLLECTOR_CONCURRENTGC; };
-	static MM_ConcurrentGCSATB *newInstance(MM_EnvironmentBase *env);
-	virtual void kill(MM_EnvironmentBase *env);
+	static MM_ConcurrentGCSATB* newInstance(MM_EnvironmentBase* env);
+	virtual void kill(MM_EnvironmentBase* env);
 
-	MM_ConcurrentGCSATB(MM_EnvironmentBase *env)
-		: MM_ConcurrentGC(env)
-		{
-			_typeId = __FUNCTION__;
-		}
+	MM_ConcurrentGCSATB(MM_EnvironmentBase* env) : MM_ConcurrentGC(env) { _typeId = __FUNCTION__; }
 };
 
 #endif /* OMR_GC_MODRON_CONCURRENT_MARK */

@@ -20,25 +20,27 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "omrcomp.h"
-#include "omrport.h"
+#include "SegregatedAllocationTracker.hpp"
 
 #include "AtomicOperations.hpp"
 #include "EnvironmentBase.hpp"
 #include "GCExtensionsBase.hpp"
-
-#include "SegregatedAllocationTracker.hpp"
+#include "omrcomp.h"
+#include "omrport.h"
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
 
 MM_SegregatedAllocationTracker*
-MM_SegregatedAllocationTracker::newInstance(MM_EnvironmentBase *env, volatile uintptr_t *globalBytesInUse, uintptr_t flushThreshold)
+MM_SegregatedAllocationTracker::newInstance(MM_EnvironmentBase* env,
+                                            volatile uintptr_t* globalBytesInUse,
+                                            uintptr_t flushThreshold)
 {
 	MM_SegregatedAllocationTracker* allocationTracker;
-	allocationTracker = (MM_SegregatedAllocationTracker*)env->getForge()->allocate(sizeof(MM_SegregatedAllocationTracker), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
-	if(NULL != allocationTracker) {
-		new(allocationTracker) MM_SegregatedAllocationTracker(env);
-		if(!allocationTracker->initialize(env, globalBytesInUse, flushThreshold)) {
+	allocationTracker = (MM_SegregatedAllocationTracker*)env->getForge()->allocate(
+	        sizeof(MM_SegregatedAllocationTracker), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	if (NULL != allocationTracker) {
+		new (allocationTracker) MM_SegregatedAllocationTracker(env);
+		if (!allocationTracker->initialize(env, globalBytesInUse, flushThreshold)) {
 			allocationTracker->kill(env);
 			return NULL;
 		}
@@ -47,14 +49,16 @@ MM_SegregatedAllocationTracker::newInstance(MM_EnvironmentBase *env, volatile ui
 }
 
 void
-MM_SegregatedAllocationTracker::kill(MM_EnvironmentBase *env)
+MM_SegregatedAllocationTracker::kill(MM_EnvironmentBase* env)
 {
 	tearDown(env);
 	env->getForge()->free(this);
 }
 
 bool
-MM_SegregatedAllocationTracker::initialize(MM_EnvironmentBase *env, uintptr_t volatile *globalBytesInUse, uintptr_t flushThreshold)
+MM_SegregatedAllocationTracker::initialize(MM_EnvironmentBase* env,
+                                           uintptr_t volatile* globalBytesInUse,
+                                           uintptr_t flushThreshold)
 {
 	_bytesAllocated = 0;
 	_flushThreshold = flushThreshold;
@@ -64,7 +68,7 @@ MM_SegregatedAllocationTracker::initialize(MM_EnvironmentBase *env, uintptr_t vo
 }
 
 void
-MM_SegregatedAllocationTracker::tearDown(MM_EnvironmentBase *env)
+MM_SegregatedAllocationTracker::tearDown(MM_EnvironmentBase* env)
 {
 	/* This is used to flush the bytes allocated left in the allocation tracker
 	 * due to the allocation tracker flush threshold. It also updates the flush threshold if necessary.
@@ -78,12 +82,13 @@ MM_SegregatedAllocationTracker::updateAllocationTrackerThreshold(MM_EnvironmentB
 {
 	MM_GCExtensionsBase* extensions = env->getExtensions();
 	uintptr_t perThreadFlushThreshold = extensions->allocationTrackerMaxTotalError;
-	
+
 	if (extensions->currentEnvironmentCount > 0) {
 		perThreadFlushThreshold /= extensions->currentEnvironmentCount;
 	}
-	
-	extensions->allocationTrackerFlushThreshold = OMR_MIN(perThreadFlushThreshold, extensions->allocationTrackerMaxThreshold);
+
+	extensions->allocationTrackerFlushThreshold =
+	        OMR_MIN(perThreadFlushThreshold, extensions->allocationTrackerMaxThreshold);
 }
 
 /**
@@ -92,18 +97,18 @@ MM_SegregatedAllocationTracker::updateAllocationTrackerThreshold(MM_EnvironmentB
 void
 MM_SegregatedAllocationTracker::initializeGlobalAllocationTrackerValues(MM_EnvironmentBase* env)
 {
-	MM_GCExtensionsBase* extensions =  env->getExtensions();
-	
+	MM_GCExtensionsBase* extensions = env->getExtensions();
+
 	/* Only set the allocation tracker max total error if it hasn't been specified on the command line */
 	if (UDATA_MAX == extensions->allocationTrackerMaxTotalError) {
 		extensions->allocationTrackerMaxTotalError = extensions->memoryMax / 100; /* 1% of -Xmx */
 	}
-	
+
 	updateAllocationTrackerThreshold(env);
 }
 
 void
-MM_SegregatedAllocationTracker::addBytesAllocated(MM_EnvironmentBase *env, uintptr_t bytesAllocated)
+MM_SegregatedAllocationTracker::addBytesAllocated(MM_EnvironmentBase* env, uintptr_t bytesAllocated)
 {
 	_bytesAllocated += bytesAllocated;
 	if (_bytesAllocated > 0) {
@@ -114,7 +119,7 @@ MM_SegregatedAllocationTracker::addBytesAllocated(MM_EnvironmentBase *env, uintp
 }
 
 void
-MM_SegregatedAllocationTracker::addBytesFreed(MM_EnvironmentBase *env, uintptr_t bytesFreed)
+MM_SegregatedAllocationTracker::addBytesFreed(MM_EnvironmentBase* env, uintptr_t bytesFreed)
 {
 	_bytesAllocated -= bytesFreed;
 	if (_bytesAllocated < 0) {

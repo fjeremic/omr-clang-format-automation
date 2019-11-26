@@ -54,41 +54,35 @@
 /**
  * Initialization
  */
-MM_CollectorLanguageInterfaceImpl *
-MM_CollectorLanguageInterfaceImpl::newInstance(MM_EnvironmentBase *env)
+MM_CollectorLanguageInterfaceImpl* MM_CollectorLanguageInterfaceImpl::newInstance(MM_EnvironmentBase* env)
 {
-	MM_CollectorLanguageInterfaceImpl *cli = NULL;
-	OMR_VM *omrVM = env->getOmrVM();
-	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(omrVM);
+    MM_CollectorLanguageInterfaceImpl* cli = NULL;
+    OMR_VM* omrVM = env->getOmrVM();
+    MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(omrVM);
 
-	cli = (MM_CollectorLanguageInterfaceImpl *)extensions->getForge()->allocate(sizeof(MM_CollectorLanguageInterfaceImpl), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
-	if (NULL != cli) {
-		new(cli) MM_CollectorLanguageInterfaceImpl(omrVM);
-		if (!cli->initialize(omrVM)) {
-			cli->kill(env);
-			cli = NULL;
-		}
-	}
+    cli = (MM_CollectorLanguageInterfaceImpl*)extensions->getForge()->allocate(
+        sizeof(MM_CollectorLanguageInterfaceImpl), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+    if (NULL != cli) {
+        new (cli) MM_CollectorLanguageInterfaceImpl(omrVM);
+        if (!cli->initialize(omrVM)) {
+            cli->kill(env);
+            cli = NULL;
+        }
+    }
 
-	return cli;
+    return cli;
 }
 
-void
-MM_CollectorLanguageInterfaceImpl::kill(MM_EnvironmentBase *env)
+void MM_CollectorLanguageInterfaceImpl::kill(MM_EnvironmentBase* env)
 {
-	OMR_VM *omrVM = env->getOmrVM();
-	tearDown(omrVM);
-	MM_GCExtensionsBase::getExtensions(omrVM)->getForge()->free(this);
+    OMR_VM* omrVM = env->getOmrVM();
+    tearDown(omrVM);
+    MM_GCExtensionsBase::getExtensions(omrVM)->getForge()->free(this);
 }
 
-void
-MM_CollectorLanguageInterfaceImpl::tearDown(OMR_VM *omrVM)
-{
+void MM_CollectorLanguageInterfaceImpl::tearDown(OMR_VM* omrVM) {}
 
-}
-
-bool
-MM_CollectorLanguageInterfaceImpl::initialize(OMR_VM *omrVM)
+bool MM_CollectorLanguageInterfaceImpl::initialize(OMR_VM* omrVM)
 {
-	return true;
+    return true;
 }

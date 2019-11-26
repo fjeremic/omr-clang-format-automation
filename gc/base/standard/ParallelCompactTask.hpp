@@ -28,9 +28,8 @@
 #if !defined(COMPACTTASK_HPP_)
 #define COMPACTTASK_HPP_
 
-#include "objectdescription.h"
-
 #include "ParallelTask.hpp"
+#include "objectdescription.h"
 
 #if defined(OMR_GC_MODRON_COMPACTION)
 
@@ -45,25 +44,29 @@ class MM_EnvironmentBase;
 class MM_ParallelCompactTask : public MM_ParallelTask
 {
 private:
-	MM_CompactScheme *_compactScheme;
+	MM_CompactScheme* _compactScheme;
 	bool _rebuildMarkBits;
 	bool _aggressive;
 
 public:
 	virtual uintptr_t getVMStateID();
-	
-	virtual void run(MM_EnvironmentBase *env);
-	virtual void setup(MM_EnvironmentBase *env);
-	virtual void cleanup(MM_EnvironmentBase *env);
+
+	virtual void run(MM_EnvironmentBase* env);
+	virtual void setup(MM_EnvironmentBase* env);
+	virtual void cleanup(MM_EnvironmentBase* env);
 
 	/**
 	 * Create an ParallelCompactTask object.
 	 */
-	MM_ParallelCompactTask(MM_EnvironmentBase *env, MM_Dispatcher *dispatcher, MM_CompactScheme *compactScheme, bool rebuildMarkBits, bool aggressive) :
-		MM_ParallelTask(env, dispatcher),
-		_compactScheme(compactScheme),
-		_rebuildMarkBits(rebuildMarkBits),
-		_aggressive(aggressive)
+	MM_ParallelCompactTask(MM_EnvironmentBase* env,
+	                       MM_Dispatcher* dispatcher,
+	                       MM_CompactScheme* compactScheme,
+	                       bool rebuildMarkBits,
+	                       bool aggressive)
+	        : MM_ParallelTask(env, dispatcher),
+	          _compactScheme(compactScheme),
+	          _rebuildMarkBits(rebuildMarkBits),
+	          _aggressive(aggressive)
 	{
 		_typeId = __FUNCTION__;
 	};

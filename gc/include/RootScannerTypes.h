@@ -27,7 +27,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
-typedef enum RootScannerEntity {
+typedef enum RootScannerEntity
+{
 	RootScannerEntity_None = 0,
 	RootScannerEntity_ScavengeRememberedSet,
 	RootScannerEntity_Classes,

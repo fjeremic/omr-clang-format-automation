@@ -23,15 +23,10 @@
 #if !defined(ENVIRONMENTBASECORE_HPP_)
 #define ENVIRONMENTBASECORE_HPP_
 
-#include "omrcomp.h"
-#include "modronbase.h"
-#include "omr.h"
-#include "thread_api.h"
-
 #include "BaseVirtual.hpp"
 #include "CardCleaningStats.hpp"
-#include "CycleState.hpp"
 #include "CompactStats.hpp"
+#include "CycleState.hpp"
 #include "EnvironmentDelegate.hpp"
 #include "GCCode.hpp"
 #include "GCExtensionsBase.hpp"
@@ -42,6 +37,10 @@
 #include "SweepStats.hpp"
 #include "WorkPacketStats.hpp"
 #include "WorkStack.hpp"
+#include "modronbase.h"
+#include "omr.h"
+#include "omrcomp.h"
+#include "thread_api.h"
 
 class MM_AllocationContext;
 class MM_AllocateDescription;
@@ -54,14 +53,15 @@ class MM_Task;
 class MM_Validator;
 
 /* Allocation color values -- also used in bit in Metronome -- see Metronome.hpp */
-#define GC_UNMARK	0
-#define GC_MARK		0x20
+#define GC_UNMARK 0
+#define GC_MARK 0x20
 
 /**
  * Type of thread.
  * @ingroup GC_Base_Core
  */
-typedef enum {
+typedef enum
+{
 	MUTATOR_THREAD = 1,
 	WRITE_BARRIER_THREAD,
 	CON_MARK_HELPER_THREAD,
@@ -83,9 +83,9 @@ private:
 	uintptr_t _environmentId;
 
 protected:
-	OMR_VM *_omrVM;
-	OMR_VMThread *_omrVMThread;
-	OMRPortLibrary *_portLibrary; /**< the port library associated with the environment */
+	OMR_VM* _omrVM;
+	OMR_VMThread* _omrVMThread;
+	OMRPortLibrary* _portLibrary; /**< the port library associated with the environment */
 	MM_EnvironmentDelegate _delegate;
 
 private:
@@ -94,20 +94,21 @@ private:
 
 	bool _threadScanned;
 
-	MM_AllocationContext *_allocationContext;	/**< The "second-level caching mechanism" for this thread */
-	MM_AllocationContext *_commonAllocationContext;	/**< Common Allocation Context shared by all threads */
-
+	MM_AllocationContext* _allocationContext; /**< The "second-level caching mechanism" for this thread */
+	MM_AllocationContext* _commonAllocationContext; /**< Common Allocation Context shared by all threads */
 
 	uint64_t _exclusiveAccessTime; /**< time (in ticks) of the last exclusive access request */
 	uint64_t _meanExclusiveAccessIdleTime; /**< mean idle time (in ticks) of the last exclusive access request */
 	OMR_VMThread* _lastExclusiveAccessResponder; /**< last thread to respond to last exclusive access request */
 	uintptr_t _exclusiveAccessHaltedThreads; /**< number of threads halted by last exclusive access request */
 	bool _exclusiveAccessBeatenByOtherThread; /**< true if last exclusive access request had to wait for another GC thread */
-	uintptr_t _exclusiveCount; /**< count of number of times this thread has acquired but not yet released exclusive access */
-	OMR_VMThread* _cachedGCExclusiveAccessThreadId; /** only to be used when a thread requests a GC operation while already holding exclusive VM access */
+	uintptr_t
+	        _exclusiveCount; /**< count of number of times this thread has acquired but not yet released exclusive access */
+	OMR_VMThread*
+	        _cachedGCExclusiveAccessThreadId; /** only to be used when a thread requests a GC operation while already holding exclusive VM access */
 
 protected:
-	bool _allocationFailureReported;	/**< verbose: used to report af-start/af-end once per allocation failure even more then one GC cycle need to resolve AF */
+	bool _allocationFailureReported; /**< verbose: used to report af-start/af-end once per allocation failure even more then one GC cycle need to resolve AF */
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
 	MM_HeapRegionQueue* _regionWorkList;
@@ -121,45 +122,52 @@ public:
 	 *
 	 * @see attachVMThread()
 	 */
-	typedef enum AttachVMThreadReason {
+	typedef enum AttachVMThreadReason
+	{
 		ATTACH_THREAD = 0x0,
 		ATTACH_GC_DISPATCHER_THREAD = 0x1,
 		ATTACH_GC_HELPER_THREAD = 0x2,
 		ATTACH_GC_MASTER_THREAD = 0x3,
 	} AttachVMThreadReason;
 
-	MM_ObjectAllocationInterface *_objectAllocationInterface; /**< Per-thread interface that guides object allocation decisions */
+	MM_ObjectAllocationInterface*
+	        _objectAllocationInterface; /**< Per-thread interface that guides object allocation decisions */
 
 	MM_WorkStack _workStack;
 
-	ThreadType  _threadType;
-	MM_CycleState *_cycleState;	/**< The current GC cycle that this thread is operating on */
-	bool _isInNoGCAllocationCall;	/**< NOTE:  this is a "best-efforts" flag, only, for use by an assertion in the collector.  If this is true, the owning thread is attempting to perform a NoGC allocation.  If it is false, nothing can be implied about the owning thread's state. */
+	ThreadType _threadType;
+	MM_CycleState* _cycleState; /**< The current GC cycle that this thread is operating on */
+	bool _isInNoGCAllocationCall; /**< NOTE:  this is a "best-efforts" flag, only, for use by an assertion in the collector.  If this is true, the owning thread is attempting to perform a NoGC allocation.  If it is false, nothing can be implied about the owning thread's state. */
 	bool _failAllocOnExcessiveGC;
 
-	MM_Task *_currentTask;
-	
+	MM_Task* _currentTask;
+
 	MM_WorkPacketStats _workPacketStats;
-	MM_WorkPacketStats _workPacketStatsRSScan;   /**< work packet Stats specifically for RS Scan Phase of Concurrent STW GC */
+	MM_WorkPacketStats
+	        _workPacketStatsRSScan; /**< work packet Stats specifically for RS Scan Phase of Concurrent STW GC */
 
-	uint64_t _slaveThreadCpuTimeNanos;	/**< Total CPU time used by this slave thread (or 0 for non-slaves) */
+	uint64_t _slaveThreadCpuTimeNanos; /**< Total CPU time used by this slave thread (or 0 for non-slaves) */
 
-	MM_FreeEntrySizeClassStats _freeEntrySizeClassStats;  /**< GC thread local statistics structure for heap free entry size (sizeClass) distribution */
+	MM_FreeEntrySizeClassStats
+	        _freeEntrySizeClassStats; /**< GC thread local statistics structure for heap free entry size (sizeClass) distribution */
 
 	uintptr_t _oolTraceAllocationBytes; /**< Tracks the bytes allocated since the last ool object trace */
 
-	uintptr_t approxScanCacheCount; /**< Local copy of approximate entries in global Cache Scan List. Updated upon allocation of new cache. */
+	uintptr_t
+	        approxScanCacheCount; /**< Local copy of approximate entries in global Cache Scan List. Updated upon allocation of new cache. */
 
-	MM_Validator *_activeValidator; /**< Used to identify and report crashes inside Validators */
+	MM_Validator* _activeValidator; /**< Used to identify and report crashes inside Validators */
 
 	MM_MarkStats _markStats;
 
 	MM_RootScannerStats _rootScannerStats; /**< Per thread stats to track the performance of the root scanner */
 
-	const char * _lastSyncPointReached; /**< string indicating latest sync point reached by this associated env's thread */
+	const char*
+	        _lastSyncPointReached; /**< string indicating latest sync point reached by this associated env's thread */
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
-	MM_SegregatedAllocationTracker* _allocationTracker; /**< tracks bytes allocated per thread and periodically flushes allocation data to MM_MemoryPoolSegregated */
+	MM_SegregatedAllocationTracker*
+	        _allocationTracker; /**< tracks bytes allocated per thread and periodically flushes allocation data to MM_MemoryPoolSegregated */
 #endif /* OMR_GC_SEGREGATED_HEAP */
 
 	volatile uint32_t _allocationColor; /**< Flag field to indicate whether premarking is enabled on the thread */
@@ -179,24 +187,24 @@ public:
 #endif /* defined(OMR_GC_CONCURRENT_SCAVENGER) */
 
 private:
-
 protected:
-	virtual bool initialize(MM_GCExtensionsBase *extensions);
-	virtual void tearDown(MM_GCExtensionsBase *extensions);
-	MMINLINE void setEnvironmentId(uintptr_t environmentId) {_environmentId = environmentId;}
+	virtual bool initialize(MM_GCExtensionsBase* extensions);
+	virtual void tearDown(MM_GCExtensionsBase* extensions);
+	MMINLINE void setEnvironmentId(uintptr_t environmentId) { _environmentId = environmentId; }
 
 	void reportExclusiveAccessRelease();
 	void reportExclusiveAccessAcquire();
 
 public:
-	static MM_EnvironmentBase *newInstance(MM_GCExtensionsBase *extensions, OMR_VMThread *vmThread);
+	static MM_EnvironmentBase* newInstance(MM_GCExtensionsBase* extensions, OMR_VMThread* vmThread);
 
-	static OMR_VMThread *attachVMThread(OMR_VM *omrVM, const char *threadName, AttachVMThreadReason reason = ATTACH_THREAD)
+	static OMR_VMThread*
+	attachVMThread(OMR_VM* omrVM, const char* threadName, AttachVMThreadReason reason = ATTACH_THREAD)
 	{
 		return MM_EnvironmentDelegate::attachVMThread(omrVM, threadName, reason);
 	}
 
-	static void detachVMThread(OMR_VM *omrVM, OMR_VMThread *omrThread, AttachVMThreadReason reason = ATTACH_THREAD)
+	static void detachVMThread(OMR_VM* omrVM, OMR_VMThread* omrThread, AttachVMThreadReason reason = ATTACH_THREAD)
 	{
 		MM_EnvironmentDelegate::detachVMThread(omrVM, omrThread, reason);
 	}
@@ -205,34 +213,36 @@ public:
 	 * Get the Core Environment.
 	 * @return Pointer to the core environment.
 	 */
-	MMINLINE static MM_EnvironmentBase *getEnvironment(OMR_VMThread *omrVMThread) { return (MM_EnvironmentBase *)omrVMThread->_gcOmrVMThreadExtensions; }
+	MMINLINE static MM_EnvironmentBase* getEnvironment(OMR_VMThread* omrVMThread)
+	{
+		return (MM_EnvironmentBase*)omrVMThread->_gcOmrVMThreadExtensions;
+	}
 	virtual void kill();
 
 	/**
 	 * Get the base extensions
 	 * @return The base extensions
 	 */
-	MMINLINE MM_GCExtensionsBase *getExtensions() { return (MM_GCExtensionsBase *)_omrVM->_gcOmrVMExtensions; }
+	MMINLINE MM_GCExtensionsBase* getExtensions() { return (MM_GCExtensionsBase*)_omrVM->_gcOmrVMExtensions; }
 
-	MMINLINE MM_MemorySpace *getMemorySpace() { return (MM_MemorySpace*)(_omrVMThread->memorySpace); }
+	MMINLINE MM_MemorySpace* getMemorySpace() { return (MM_MemorySpace*)(_omrVMThread->memorySpace); }
 
-	MM_MemorySubSpace *getDefaultMemorySubSpace();
-	MM_MemorySubSpace *getTenureMemorySubSpace();
+	MM_MemorySubSpace* getDefaultMemorySubSpace();
+	MM_MemorySubSpace* getTenureMemorySubSpace();
 
 	/**
 	 * Get a pointer to the J9VMThread structure.
 	 * @return Pointer to the J9VMThread structure.
 	 */
-	MMINLINE OMR_VMThread *getOmrVMThread() { return _omrVMThread; }
-	
+	MMINLINE OMR_VMThread* getOmrVMThread() { return _omrVMThread; }
+
 	/**
 	 * Get a pointer to the OMR_VM structure.
 	 * @return Pointer to the OMR_VM structure
 	 */
-	MMINLINE OMR_VM *getOmrVM() { return _omrVM; }
+	MMINLINE OMR_VM* getOmrVM() { return _omrVM; }
 
-	MMINLINE void *
-	getLanguageVMThread()
+	MMINLINE void* getLanguageVMThread()
 	{
 		if (NULL != _omrVMThread) {
 			return _omrVMThread->_language_vmthread;
@@ -240,23 +250,20 @@ public:
 		return NULL;
 	}
 
-	MMINLINE void *getLanguageVM() {return _omrVM->_language_vm;}
+	MMINLINE void* getLanguageVM() { return _omrVM->_language_vm; }
 
 	/**
 	 * Get run-time object alignment in bytes
 	 * @return object alignment in bytes
 	 */
-	MMINLINE uintptr_t
-	getObjectAlignmentInBytes()
-	{
-		return getExtensions()->getObjectAlignmentInBytes();
-	}
+	MMINLINE uintptr_t getObjectAlignmentInBytes() { return getExtensions()->getObjectAlignmentInBytes(); }
 
 	/**
 	 * Return back true if object references are compressed
 	 * @return true, if object references are compressed
 	 */
-	MMINLINE bool compressObjectReferences() {
+	MMINLINE bool compressObjectReferences()
+	{
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 #if defined(OMR_GC_FULL_POINTERS)
 		return _compressObjectReferences;
@@ -272,26 +279,29 @@ public:
 	 * Get a pointer to the port library.
 	 * @return Pointer to the port library.
 	 */
-	MMINLINE OMRPortLibrary *getPortLibrary() { return _portLibrary; }
-	
+	MMINLINE OMRPortLibrary* getPortLibrary() { return _portLibrary; }
+
 	/**
 	 * Get the memory forge
 	 * @return The memory forge
 	 */
-	MMINLINE OMR::GC::Forge *getForge() { return getExtensions()->getForge(); }
+	MMINLINE OMR::GC::Forge* getForge() { return getExtensions()->getForge(); }
 
 	/**
 	 * Get the thread's priority.
 	 * @return The thread's priority.
 	 */
 	MMINLINE uintptr_t getPriority() { return omrthread_get_priority(_omrVMThread->_os_thread); }
-	
+
 	/**
 	 * Set the the thread's priority.
 	 * @param priority The priority to set the thread to.
 	 * @returns 0 on success or negative value on failure (priority wasn't changed)
 	 */
-	MMINLINE intptr_t setPriority(uintptr_t priority) { return omrthread_set_priority(_omrVMThread->_os_thread, priority); }
+	MMINLINE intptr_t setPriority(uintptr_t priority)
+	{
+		return omrthread_set_priority(_omrVMThread->_os_thread, priority);
+	}
 
 	/**
 	 * @deprecated  This function needs to be replaced with one which can describe a set of nodes
@@ -299,17 +309,17 @@ public:
 	 *
 	 * @return the index of the node to associate with, where 1 is the first node. (0 indicates no affinity)
 	 */
-	MMINLINE uintptr_t 
-	getNumaAffinity() 
-	{ 
+	MMINLINE uintptr_t getNumaAffinity()
+	{
 		uintptr_t result = 0;
 		uintptr_t nodeCount = 1;
-		if ((0 != omrthread_numa_get_node_affinity(_omrVMThread->_os_thread, &result, &nodeCount)) || (0 == nodeCount)) {
+		if ((0 != omrthread_numa_get_node_affinity(_omrVMThread->_os_thread, &result, &nodeCount))
+		    || (0 == nodeCount)) {
 			result = 0;
 		}
 		return result;
 	};
-	
+
 	/**
 	 * @deprecated  This function needs to be replaced with one which can describe a set of nodes
 	 * Set the affinity for the thread so that it runs only (or preferentially) on
@@ -320,8 +330,11 @@ public:
 	 *
 	 * @return true on success, false on failure 
 	 */
-	MMINLINE bool setNumaAffinity(uintptr_t *numaNodes, uintptr_t arrayLength) { return 0 == omrthread_numa_set_node_affinity(_omrVMThread->_os_thread, numaNodes, arrayLength, 0); }
-		
+	MMINLINE bool setNumaAffinity(uintptr_t* numaNodes, uintptr_t arrayLength)
+	{
+		return 0 == omrthread_numa_set_node_affinity(_omrVMThread->_os_thread, numaNodes, arrayLength, 0);
+	}
+
 	/**
 	 * Get the threads slave id.
 	 * @return The threads slave id.
@@ -337,20 +350,19 @@ public:
 	 * Enguires if this thread is the master.
 	 * return true if the thread is the master thread, false otherwise.
 	 */
-	 MMINLINE bool isMasterThread() { return _slaveID == 0; }
+	MMINLINE bool isMasterThread() { return _slaveID == 0; }
 
 	/**
 	 * Gets the threads type.
 	 * @return The type of thread.
 	 */
-	MMINLINE ThreadType getThreadType() { return _threadType; } ;
+	MMINLINE ThreadType getThreadType() { return _threadType; };
 
 	/**
 	 * Sets the threads type.
 	 * @param threadType The thread type to set thread to.
 	 */
-	MMINLINE void
-	setThreadType(ThreadType threadType)
+	MMINLINE void setThreadType(ThreadType threadType)
 	{
 		_threadType = threadType;
 		_delegate.setGCMasterThread(GC_MASTER_THREAD == _threadType);
@@ -392,7 +404,7 @@ public:
 	 *
 	 * Object must previously have been saved via saveObjects().
 	 */
-	void restoreObjects(omrobjectptr_t *objectPtrIndirect);
+	void restoreObjects(omrobjectptr_t* objectPtrIndirect);
 
 	/**
 	 * This will be called for every allocated object.  Note this is not necessarily done when the object is allocated, but will
@@ -406,14 +418,14 @@ public:
 	 *	@param allocDescription Allocation Description
 	 *	@param flags current memory subspace flags
 	 */
-	void allocationFailureStartReportIfRequired(MM_AllocateDescription *allocDescription, uintptr_t flags);
+	void allocationFailureStartReportIfRequired(MM_AllocateDescription* allocDescription, uintptr_t flags);
 
 	/**
 	 *	Verbose: allocation Failure End Report if required
 	 *	clear flag allocation Failure Start Report required
 	 *	@param allocDescription - The current threads allocation description
 	 */
-	void allocationFailureEndReportIfRequired(MM_AllocateDescription *allocDescription);
+	void allocationFailureEndReportIfRequired(MM_AllocateDescription* allocDescription);
 
 	/**
 	 * Acquires shared VM access.
@@ -434,7 +446,8 @@ public:
 	 * @note this call should be considered a safe-point as the thread may release VM access to allow the other threads to acquire exclusivity.
 	 * @note this call supports recursion.
 	 */
-	bool acquireExclusiveVMAccessForGC(MM_Collector *collector, bool failIfNotFirst = false, bool flushCaches = true);
+	bool
+	acquireExclusiveVMAccessForGC(MM_Collector* collector, bool failIfNotFirst = false, bool flushCaches = true);
 
 	/**
 	 * Release exclusive access.
@@ -459,7 +472,7 @@ public:
 	 * Releases exclusive VM access.
 	 */
 	void releaseExclusiveVMAccess();
-	
+
 	/**
 	 * Give up exclusive access in preparation for transferring it to a collaborating thread (i.e. main-to-master or master-to-main)
 	 * @return the exclusive count of the current thread before relinquishing 
@@ -520,7 +533,7 @@ public:
 	void forceOutOfLineVMAccess() { _delegate.forceOutOfLineVMAccess(); }
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 
-#if defined (OMR_GC_THREAD_LOCAL_HEAP)
+#if defined(OMR_GC_THREAD_LOCAL_HEAP)
 	/**
 	 * Disable inline TLH allocates by hiding the real heap allocation address from
 	 * JIT/Interpreter in realHeapAlloc and setting heapALloc == HeapTop so TLH
@@ -545,7 +558,8 @@ public:
 	MMINLINE uintptr_t getWorkUnitToHandle() { return _workUnitToHandle; }
 	MMINLINE void setWorkUnitToHandle(uintptr_t workUnitToHandle) { _workUnitToHandle = workUnitToHandle; }
 	MMINLINE uintptr_t nextWorkUnitIndex() { return _workUnitIndex++; }
-	MMINLINE void resetWorkUnitIndex() {
+	MMINLINE void resetWorkUnitIndex()
+	{
 		_workUnitIndex = 1;
 		_workUnitToHandle = 0;
 	}
@@ -563,29 +577,35 @@ public:
 	/**
 	 * Return back pointer to thread's Allocation Context
 	 */
-	MMINLINE MM_AllocationContext *getAllocationContext() const { return _allocationContext; }
+	MMINLINE MM_AllocationContext* getAllocationContext() const { return _allocationContext; }
 
 	/**
 	 * Set pointer to thread's Allocation Context
 	 * param[in] allocationContext pointer to context to set
 	 */
-	MMINLINE void setAllocationContext(MM_AllocationContext *allocationContext) { _allocationContext = allocationContext; }
+	MMINLINE void setAllocationContext(MM_AllocationContext* allocationContext)
+	{
+		_allocationContext = allocationContext;
+	}
 
 	/**
 	 * Return back pointer to Common Allocation Context
 	 */
-	MMINLINE MM_AllocationContext *getCommonAllocationContext() const { return _commonAllocationContext; }
+	MMINLINE MM_AllocationContext* getCommonAllocationContext() const { return _commonAllocationContext; }
 
 	/**
 	 * Set pointer to Common Allocation Context
 	 * param[in] commonAllocationContext pointer to context to set
 	 */
-	MMINLINE void setCommonAllocationContext(MM_AllocationContext *commonAllocationContext) { _commonAllocationContext = commonAllocationContext; }
+	MMINLINE void setCommonAllocationContext(MM_AllocationContext* commonAllocationContext)
+	{
+		_commonAllocationContext = commonAllocationContext;
+	}
 
 	MMINLINE uint32_t getAllocationColor() const { return _allocationColor; }
 	MMINLINE void setAllocationColor(uint32_t allocationColor) { _allocationColor = allocationColor; }
 
-	MMINLINE MM_WorkStack *getWorkStack() { return &_workStack; }
+	MMINLINE MM_WorkStack* getWorkStack() { return &_workStack; }
 
 	virtual void flushNonAllocationCaches() { _delegate.flushNonAllocationCaches(); }
 	virtual void flushGCCaches() {}
@@ -596,116 +616,128 @@ public:
 	 * It is typically used to hold thread-local GC-related stats and caches that are merged at key
 	 * points into global structures.
 	 */
-	MMINLINE GC_Environment *getGCEnvironment() { return _delegate.getGCEnvironment(); }
+	MMINLINE GC_Environment* getGCEnvironment() { return _delegate.getGCEnvironment(); }
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
-	MMINLINE MM_HeapRegionQueue *getRegionWorkList() const { return _regionWorkList; }
-	MMINLINE MM_HeapRegionQueue *getRegionLocalFree() const { return _regionLocalFree; }
-	MMINLINE MM_HeapRegionQueue *getRegionLocalFull() const { return _regionLocalFull; }
+	MMINLINE MM_HeapRegionQueue* getRegionWorkList() const { return _regionWorkList; }
+	MMINLINE MM_HeapRegionQueue* getRegionLocalFree() const { return _regionLocalFree; }
+	MMINLINE MM_HeapRegionQueue* getRegionLocalFull() const { return _regionLocalFull; }
 #endif /* OMR_GC_SEGREGATED_HEAP */
 
 	/**
 	 * Create an EnvironmentBase object.
 	 */
-	MM_EnvironmentBase(OMR_VMThread *omrVMThread) :
-		MM_BaseVirtual()
+	MM_EnvironmentBase(OMR_VMThread* omrVMThread)
+	        : MM_BaseVirtual()
 #if defined(OMR_GC_COMPRESSED_POINTERS) && defined(OMR_GC_FULL_POINTERS)
-		, _compressObjectReferences(OMRVMTHREAD_COMPRESS_OBJECT_REFERENCES(omrVMThread))
+	          ,
+	          _compressObjectReferences(OMRVMTHREAD_COMPRESS_OBJECT_REFERENCES(omrVMThread))
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) && defined(OMR_GC_FULL_POINTERS) */
-		,_slaveID(0)
-		,_environmentId(0)
-		,_omrVM(omrVMThread->_vm)
-		,_omrVMThread(omrVMThread)
-		,_portLibrary(omrVMThread->_vm->_runtime->_portLibrary)
-		,_delegate()
-		,_workUnitIndex(0)
-		,_workUnitToHandle(0)
-		,_threadScanned(false)
-		,_allocationContext(NULL)
-		,_commonAllocationContext(NULL)
-		,_exclusiveAccessTime(0)
-		,_meanExclusiveAccessIdleTime(0)
-		,_lastExclusiveAccessResponder(NULL)
-		,_exclusiveAccessHaltedThreads(0)
-		,_exclusiveAccessBeatenByOtherThread(false)
-		,_exclusiveCount(0)
-		,_cachedGCExclusiveAccessThreadId(NULL)
-		,_allocationFailureReported(false)
+	          ,
+	          _slaveID(0),
+	          _environmentId(0),
+	          _omrVM(omrVMThread->_vm),
+	          _omrVMThread(omrVMThread),
+	          _portLibrary(omrVMThread->_vm->_runtime->_portLibrary),
+	          _delegate(),
+	          _workUnitIndex(0),
+	          _workUnitToHandle(0),
+	          _threadScanned(false),
+	          _allocationContext(NULL),
+	          _commonAllocationContext(NULL),
+	          _exclusiveAccessTime(0),
+	          _meanExclusiveAccessIdleTime(0),
+	          _lastExclusiveAccessResponder(NULL),
+	          _exclusiveAccessHaltedThreads(0),
+	          _exclusiveAccessBeatenByOtherThread(false),
+	          _exclusiveCount(0),
+	          _cachedGCExclusiveAccessThreadId(NULL),
+	          _allocationFailureReported(false)
 #if defined(OMR_GC_SEGREGATED_HEAP)
-		,_regionWorkList(NULL)
-		,_regionLocalFree(NULL)
-		,_regionLocalFull(NULL)
+	          ,
+	          _regionWorkList(NULL),
+	          _regionLocalFree(NULL),
+	          _regionLocalFull(NULL)
 #endif /* OMR_GC_SEGREGATED_HEAP */
-		,_objectAllocationInterface(NULL)
-		,_workStack()
-		,_threadType(MUTATOR_THREAD)
-		,_cycleState(NULL)
-		,_isInNoGCAllocationCall(false)
-		,_failAllocOnExcessiveGC(false)
-		,_currentTask(NULL)
-		,_slaveThreadCpuTimeNanos(0)
-		,_freeEntrySizeClassStats()
-		,_oolTraceAllocationBytes(0)
-		,approxScanCacheCount(0)
-		,_activeValidator(NULL)
-		,_lastSyncPointReached(NULL)
+	          ,
+	          _objectAllocationInterface(NULL),
+	          _workStack(),
+	          _threadType(MUTATOR_THREAD),
+	          _cycleState(NULL),
+	          _isInNoGCAllocationCall(false),
+	          _failAllocOnExcessiveGC(false),
+	          _currentTask(NULL),
+	          _slaveThreadCpuTimeNanos(0),
+	          _freeEntrySizeClassStats(),
+	          _oolTraceAllocationBytes(0),
+	          approxScanCacheCount(0),
+	          _activeValidator(NULL),
+	          _lastSyncPointReached(NULL)
 #if defined(OMR_GC_SEGREGATED_HEAP)
-		,_allocationTracker(NULL)
+	          ,
+	          _allocationTracker(NULL)
 #endif /* OMR_GC_SEGREGATED_HEAP */
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
-		,_concurrentScavengerSwitchCount(0)
+	          ,
+	          _concurrentScavengerSwitchCount(0)
 #endif /* defined(OMR_GC_CONCURRENT_SCAVENGER) */
 
 	{
 		_typeId = __FUNCTION__;
 	}
 
-	MM_EnvironmentBase(OMR_VM *omrVM) :
-		MM_BaseVirtual()
+	MM_EnvironmentBase(OMR_VM* omrVM)
+	        : MM_BaseVirtual()
 #if defined(OMR_GC_COMPRESSED_POINTERS) && defined(OMR_GC_FULL_POINTERS)
-		, _compressObjectReferences(OMRVM_COMPRESS_OBJECT_REFERENCES(omrVM))
+	          ,
+	          _compressObjectReferences(OMRVM_COMPRESS_OBJECT_REFERENCES(omrVM))
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) && defined(OMR_GC_FULL_POINTERS) */
-		,_slaveID(0)
-		,_environmentId(0)
-		,_omrVM(omrVM)
-		,_omrVMThread(NULL)
-		,_portLibrary(omrVM->_runtime->_portLibrary)
-		,_workUnitIndex(0)
-		,_workUnitToHandle(0)
-		,_threadScanned(false)
-		,_allocationContext(NULL)
-		,_commonAllocationContext(NULL)
-		,_exclusiveAccessTime(0)
-		,_meanExclusiveAccessIdleTime(0)
-		,_lastExclusiveAccessResponder(NULL)
-		,_exclusiveAccessHaltedThreads(0)
-		,_exclusiveAccessBeatenByOtherThread(false)
-		,_exclusiveCount(0)
-		,_cachedGCExclusiveAccessThreadId(NULL)
-		,_allocationFailureReported(false)
+	          ,
+	          _slaveID(0),
+	          _environmentId(0),
+	          _omrVM(omrVM),
+	          _omrVMThread(NULL),
+	          _portLibrary(omrVM->_runtime->_portLibrary),
+	          _workUnitIndex(0),
+	          _workUnitToHandle(0),
+	          _threadScanned(false),
+	          _allocationContext(NULL),
+	          _commonAllocationContext(NULL),
+	          _exclusiveAccessTime(0),
+	          _meanExclusiveAccessIdleTime(0),
+	          _lastExclusiveAccessResponder(NULL),
+	          _exclusiveAccessHaltedThreads(0),
+	          _exclusiveAccessBeatenByOtherThread(false),
+	          _exclusiveCount(0),
+	          _cachedGCExclusiveAccessThreadId(NULL),
+	          _allocationFailureReported(false)
 #if defined(OMR_GC_SEGREGATED_HEAP)
-		,_regionWorkList(NULL)
-		,_regionLocalFree(NULL)
-		,_regionLocalFull(NULL)
+	          ,
+	          _regionWorkList(NULL),
+	          _regionLocalFree(NULL),
+	          _regionLocalFull(NULL)
 #endif /* OMR_GC_SEGREGATED_HEAP */
-		,_objectAllocationInterface(NULL)
-		,_workStack()
-		,_threadType(MUTATOR_THREAD)
-		,_cycleState(NULL)
-		,_isInNoGCAllocationCall(false)
-		,_failAllocOnExcessiveGC(false)
-		,_currentTask(NULL)
-		,_slaveThreadCpuTimeNanos(0)
-		,_freeEntrySizeClassStats()
-		,_oolTraceAllocationBytes(0)
-		,approxScanCacheCount(0)
-		,_activeValidator(NULL)
-		,_lastSyncPointReached(NULL)
+	          ,
+	          _objectAllocationInterface(NULL),
+	          _workStack(),
+	          _threadType(MUTATOR_THREAD),
+	          _cycleState(NULL),
+	          _isInNoGCAllocationCall(false),
+	          _failAllocOnExcessiveGC(false),
+	          _currentTask(NULL),
+	          _slaveThreadCpuTimeNanos(0),
+	          _freeEntrySizeClassStats(),
+	          _oolTraceAllocationBytes(0),
+	          approxScanCacheCount(0),
+	          _activeValidator(NULL),
+	          _lastSyncPointReached(NULL)
 #if defined(OMR_GC_SEGREGATED_HEAP)
-		,_allocationTracker(NULL)
+	          ,
+	          _allocationTracker(NULL)
 #endif /* OMR_GC_SEGREGATED_HEAP */
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
-		,_concurrentScavengerSwitchCount(0)
+	          ,
+	          _concurrentScavengerSwitchCount(0)
 #endif /* defined(OMR_GC_CONCURRENT_SCAVENGER) */
 	{
 		_typeId = __FUNCTION__;

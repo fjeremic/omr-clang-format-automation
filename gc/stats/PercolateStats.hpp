@@ -23,12 +23,12 @@
 #if !defined(PERCOLATESTATS_HPP_)
 #define PERCOLATESTATS_HPP_
 
-#include "omrcomp.h"
-#include "modronbase.h"
-
 #include "Base.hpp"
+#include "modronbase.h"
+#include "omrcomp.h"
 
-class MM_PercolateStats : public MM_Base {
+class MM_PercolateStats : public MM_Base
+{
 	PercolateReason _lastPercolateReason;
 	uintptr_t _scavengesSincePercolate;
 
@@ -41,10 +41,7 @@ public:
 	void clearScavengesSincePercolate() { _scavengesSincePercolate = 0; }
 	uintptr_t getScavengesSincePercolate() { return _scavengesSincePercolate; }
 
-	MM_PercolateStats()
-		: MM_Base()
-		, _lastPercolateReason(NONE_SET)
-		, _scavengesSincePercolate(0) {};
+	MM_PercolateStats() : MM_Base(), _lastPercolateReason(NONE_SET), _scavengesSincePercolate(0){};
 };
 
 #endif /* PERCOLATESTATS_HPP_ */
