@@ -49,7 +49,7 @@ public:
 	GC_OMRVMThreadListIterator(OMR_VMThread* thread) : _initialOMRVMThread(thread), _omrVMThread(thread) {}
 
 	/**
-	 * Restart the iterator back to the initial thread.
+	 * Restart the iterator back to the initial thread some other stuff.
 	 */
 	MMINLINE void reset() { _omrVMThread = _initialOMRVMThread; }
 
