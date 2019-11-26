@@ -19,37 +19,45 @@
 # 
 # SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
 ###############################################################################
-language: cpp
-os:
-  - linux
-compiler:
-  - gcc
-cache: ccache # https://docs.travis-ci.com/user/caching/
+--- 
+os: linux
 dist: xenial
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-env:
-  global:
-    - BUILD_JOBS=2
-matrix:
-  include:
-    ## Auto tool builds
-    # Linter
-    - os: linux
-      addons:
-        apt:
-          packages:
+language: cpp
+cache: ccache
+jobs: 
+  include: 
+    - 
+      addons: 
+        apt: 
+          packages: 
             - clang-3.8
             - libclang-3.8-dev
             - llvm-3.8
             - llvm-3.8-dev
-      env: RUN_LINT=yes RUN_BUILD=no SPEC=linux_x86-64 PLATFORM=amd64-linux64-gcc LLVM_CONFIG=llvm-config-3.8 CLANG=clang++-3.8 CXX_PATH=clang++-3.8 CXX=clang++-3.8
-before_script:
-  - ulimit -c unlimited
-  - ccache -s -z
-script:
-  - bash ./scripts/build-on-travis.sh
-after_script:
-  - ccache -s
+          sources: 
+            - ubuntu-toolchain-r-test
+      env: "RUN_LINT=yes RUN_BUILD=no BUILD_JOBS=2 SPEC=linux_x86-64 PLATFORM=amd64-linux64-gcc LLVM_CONFIG=llvm-config-3.8 CLANG=clang++-3.8 CXX_PATH=clang++-3.8 CXX=clang++-3.8"
+      before_script: 
+        - "ulimit -c unlimited"
+        - "ccache -s -z"
+      script: 
+        - "bash ./scripts/travis-lint.sh"
+      after_script: 
+        - "ccache -s"
+    - 
+      addons: 
+        apt: 
+          packages: 
+            - clang-format-9
+          sources: 
+            - ubuntu-toolchain-r-test
+            - 
+              sourceline: "deb http://cz.archive.ubuntu.com/ubuntu eoan main universe"
+      before_install: 
+        - "bash ./scripts/travis-clang-format.sh --set-commit-status pending \"clang-format is running...\""
+      script: 
+        - "bash ./scripts/travis-clang-format.sh --check-against master"
+      after_failure:
+        - "bash ./scripts/travis-clang-format.sh --set-commit-status failure \"clang-format failed - see build log for details\""
+      after_success:
+        - "bash ./scripts/travis-clang-format.sh --set-commit-status success \"clang-format successful\""

@@ -40,3 +40,4 @@ if test "x$RUN_LINT" = "xyes"; then
   export TARGET_BITS=64
   time make --jobs $BUILD_JOBS lint
 fi
+
