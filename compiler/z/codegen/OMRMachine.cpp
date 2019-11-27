@@ -250,6 +250,8 @@ OMR::Z::Machine::registerExchange(TR::CodeGenerator* cg,
 
          currentInstruction = generateVRXInstruction(cg, TR::InstOpCode::VST, currentNode, targetReg, tempMR, 0, precedingInstruction);
          cg->traceRAInstruction(currentInstruction);
+         cg-> traceRAInstruction  (
+			 currentInstruction);
          currentInstruction = generateVRRaInstruction(cg, TR::InstOpCode::VLR, currentNode, targetReg, sourceReg, precedingInstruction);
          cg->traceRAInstruction(currentInstruction);
          TR::MemoryReference * tempMR2 = generateS390MemoryReference(*tempMR, 0, cg);

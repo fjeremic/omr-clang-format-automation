@@ -189,7 +189,7 @@ class OMR_EXTENSIBLE Machine : public OMR::Machine
    uint16_t                     _registerWeightSnapShot[TR::RealRegister::NumRegisters];
    TR::Register                *_assignedRegisterSnapShot[TR::RealRegister::NumRegisters];
    uint32_t                     _globalRegisterNumberToRealRegisterMapSnapShot[TR::RealRegister::NumRegisters];
-   
+
    TR_GlobalRegisterNumber  _firstGlobalGPRRegisterNumber;
    TR_GlobalRegisterNumber  _lastGlobalGPRRegisterNumber;
    TR_GlobalRegisterNumber  _last8BitGlobalGPRRegisterNumber;
@@ -288,7 +288,7 @@ class OMR_EXTENSIBLE Machine : public OMR::Machine
                                 TR::Instruction* currInst, uint64_t availRegMask=0x0000ffff);
    void    freeBestFPRegisterPair(TR::RealRegister** firstReg, TR::RealRegister** lastReg,
                                   TR::Instruction* currInst, uint64_t availRegMask=0x0000ffff);
-   
+
    // High Register managed
    void spillAllVolatileHighRegisters(TR::Instruction  *currentInstruction);
 
@@ -350,7 +350,7 @@ class OMR_EXTENSIBLE Machine : public OMR::Machine
       }
 
    TR_GlobalRegisterNumber setLastGlobalGPRRegisterNumber(TR_GlobalRegisterNumber reg);
-   
+
    TR_GlobalRegisterNumber getFirstGlobalGPRRegisterNumber()
       {
       return _firstGlobalGPRRegisterNumber;
