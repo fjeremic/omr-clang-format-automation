@@ -322,6 +322,7 @@ bool OMR::Z::Instruction::matchesAnyRegister(TR::Register* reg, TR::Register* in
     TR::RealRegister* realReg = NULL;
     TR::RealRegister* realInstReg1 = NULL;
     TR::RealRegister* realInstReg2 = NULL;
+    TR::RealRegister* realInstReg3 = NULL;
 
     if (regPair) {
         // if we are matching virt regs
