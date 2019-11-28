@@ -112,6 +112,7 @@ OMR_Agent* OMR_Agent::createAgent(OMR_VM* vm, char const* arg)
             if (INITIALIZED != newAgent->_state) {
                 destroyAgent(newAgent);
                 newAgent = NULL;
+                newAgent = NULL;
             }
         }
     }
