@@ -5502,6 +5502,7 @@ bool OMR::ValuePropagation::prepareForBlockVersion(TR_LinkHead<ArrayLengthToVers
         }
 
         TR_OpaqueClassBlock* instanceOfClass = NULL;
+        TR_OpaqueClassBlock* indexInstanceOfClass = NULL;
 
         // check if aloads are invariants
         if (!arrayLen->getOpCode().isLoadDirect()) {
@@ -5626,8 +5627,21 @@ bool OMR::ValuePropagation::prepareForBlockVersion(TR_LinkHead<ArrayLengthToVers
         if (!shouldAnalyze)
             continue;
 
+        if (baseNode && baseNode->getOpCode().getOpCodeValue() == TR::iloadi) {
+            // Get the class of the field
+            int32_t len;
+            TR::SymbolReference* symRefField = baseNode->getSymbolReference();
+            char* sig = symRefField->getOwningMethod(comp())->classNameOfFieldOrStatic(symRefField->getCPIndex(), len);
+            TR_OpaqueClassBlock* classOfField
+                = (sig) ? fe()->getClassFromSignature(sig, len, symRefField->getOwningMethod(comp())) : NULL;
+            if (!classOfField)
+                continue;
+            indexInstanceOfClass = classOfField;
+        }
+
         if (!array) {
-            createNewBucketForArrayIndex(array, arrayLengths, c, baseNode, bndchkNode, instanceOfClass);
+            createNewBucketForArrayIndex(
+                array, arrayLengths, c, baseNode, bndchkNode, instanceOfClass, indexInstanceOfClass);
             continue;
         }
 
@@ -5715,7 +5729,8 @@ bool OMR::ValuePropagation::prepareForBlockVersion(TR_LinkHead<ArrayLengthToVers
 
         } // if arrayIndexInfoFound
         else {
-            createNewBucketForArrayIndex(array, arrayLengths, c, baseNode, bndchkNode, instanceOfClass);
+            createNewBucketForArrayIndex(
+                array, arrayLengths, c, baseNode, bndchkNode, instanceOfClass, indexInstanceOfClass);
             continue; // next bndchk
         }
 
@@ -5770,7 +5785,6 @@ void OMR::ValuePropagation::buildBoundCheckComparisonNodes(BlockVersionInfo* blo
                 TR::Node* minIndex;
 
                 if (arrayIndex->_baseNode) {
-
                     maxIndex = TR::Node::create(TR::iadd, 2, arrayIndex->_baseNode->duplicateTree(),
                         TR::Node::create(arrayLength->_arrayLen, TR::iconst, 0, arrayIndex->_max));
                     minIndex = TR::Node::create(TR::iadd, 2, arrayIndex->_baseNode->duplicateTree(),
@@ -5799,6 +5813,29 @@ void OMR::ValuePropagation::buildBoundCheckComparisonNodes(BlockVersionInfo* blo
                         nextComparisonNode->getOpCode().getName());
 
                 temp.add(nextComparisonNode);
+
+                if (arrayIndex->_baseNode && arrayIndex->_instanceOfClass && !comp()->compileRelocatableCode()
+                    && arrayIndex->_baseNode->getOpCode().getOpCodeValue() == TR::iloadi) {
+                    // InstanceOf check for the object were we load the array index from
+                    TR::Node* objectRefChild = arrayIndex->_baseNode->getFirstChild();
+                    if (objectRefChild) {
+                        dumpOptDetails(comp(),
+                            "%s Creating test for instanceof of %p outside block_%d for versioning array index %p \n",
+                            OPT_DETAILS, objectRefChild, blockInfo->_block->getNumber(), arrayIndex->_baseNode);
+                        TR::Node* duplicateClassPtr = TR::Node::createWithSymRef(objectRefChild, TR::loadaddr, 0,
+                            comp()->getSymRefTab()->findOrCreateClassSymbol(
+                                arrayIndex->_baseNode->getSymbolReference()->getOwningMethodSymbol(comp()), -1,
+                                arrayIndex->_instanceOfClass, false));
+                        TR::Node* instanceofNode = TR::Node::createWithSymRef(
+                            TR:: instanceof, 2, 2, objectRefChild->duplicateTree(), duplicateClassPtr,
+                            comp()->getSymRefTab()->findOrCreateInstanceOfSymbolRef(comp()->getMethodSymbol()));
+                        TR::Node* ificmpeqNode = TR::Node::createif(
+                            TR::ificmpeq, instanceofNode, TR::Node::create(arrayIndex->_baseNode, TR::iconst, 0, 0));
+                        temp.add(ificmpeqNode);
+                        requestOpt(OMR::localCSE, true);
+                        requestOpt(OMR::localValuePropagation, true);
+                    }
+                }
             }
         }
         if (arrayLengthVersioned) {
@@ -5973,7 +6010,7 @@ TR::Node* OMR::ValuePropagation::findVarOfSimpleForm(
 
 void OMR::ValuePropagation::createNewBucketForArrayIndex(ArrayLengthToVersion* array,
     TR_LinkHead<ArrayLengthToVersion>* arrayLengths, int32_t c, TR::Node* baseNode, TR::Node* bndchkNode,
-    TR_OpaqueClassBlock* instanceOfClass)
+    TR_OpaqueClassBlock* instanceOfClass, TR_OpaqueClassBlock* indexInstanceOfClass)
 {
     if (!array) { // create a new arrayLengthToVersion
         array = new (trStackMemory()) ArrayLengthToVersion;
@@ -5988,6 +6025,7 @@ void OMR::ValuePropagation::createNewBucketForArrayIndex(ArrayLengthToVersion* a
     arrayIndex->_max = c;
     arrayIndex->_delta = 0;
     arrayIndex->_baseNode = baseNode;
+    arrayIndex->_instanceOfClass = indexInstanceOfClass;
     arrayIndex->_bndChecks = new (trStackMemory()) TR_ScratchList<TR::Node>(trMemory());
     arrayIndex->_bndChecks->add(bndchkNode);
     arrayIndex->_versionBucket = false;
