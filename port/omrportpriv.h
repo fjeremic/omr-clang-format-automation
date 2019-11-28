@@ -114,6 +114,7 @@ typedef struct OMRPortLibraryGlobalData {
     struct J9PortControlData control;
     struct J9NLSDataCache nls_data;
     omrthread_tls_key_t tls_key;
+    omrthread_tls_key_t socketTlsKey;
     MUTEX tls_mutex;
     void* buffer_list;
     void* procSelfMap;
@@ -461,6 +462,7 @@ extern J9_CFUNC uintptr_t omrsl_open_shared_library(
 extern J9_CFUNC void omrsl_shutdown(struct OMRPortLibrary* portLibrary);
 
 /* J9SourceJ9Sock*/
+extern J9_CFUNC int32_t omrsock_startup(struct OMRPortLibrary* portLibrary);
 extern J9_CFUNC int32_t omrsock_getaddrinfo_create_hints(struct OMRPortLibrary* portLibrary, omrsock_addrinfo_t* hints,
     int32_t family, int32_t socktype, int32_t protocol, int32_t flags);
 extern J9_CFUNC int32_t omrsock_getaddrinfo(
@@ -492,6 +494,7 @@ extern J9_CFUNC int32_t omrsock_recv(
 extern J9_CFUNC int32_t omrsock_recvfrom(struct OMRPortLibrary* portLibrary, omrsock_socket_t sock, uint8_t* buf,
     int32_t nbyte, int32_t flags, omrsock_sockaddr_t addrHandle);
 extern J9_CFUNC int32_t omrsock_close(struct OMRPortLibrary* portLibrary, omrsock_socket_t sock);
+extern J9_CFUNC int32_t omrsock_shutdown(struct OMRPortLibrary* portLibrary);
 
 /* J9SourceJ9Str*/
 extern J9_CFUNC uintptr_t omrstr_vprintf(
